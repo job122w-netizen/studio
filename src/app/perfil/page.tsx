@@ -51,8 +51,7 @@ export default function PerfilPage() {
   const { toast } = useToast();
   const [isRanksOpen, setIsRanksOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [username, setUsername] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const [editingUsername, setEditingUsername] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userProfileRef = useMemoFirebase(() => {
@@ -61,13 +60,6 @@ export default function PerfilPage() {
   }, [firestore, user]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
-
-  useEffect(() => {
-    if (userProfile) {
-        setUsername(userProfile.username);
-        setAvatarUrl(userProfile.imageUrl);
-    }
-  }, [userProfile]);
   
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -96,18 +88,16 @@ export default function PerfilPage() {
   const isLoading = isUserLoading || isProfileLoading;
 
   const handleEdit = () => {
-    setUsername(userProfile?.username || '');
+    setEditingUsername(userProfile?.username || '');
     setIsEditing(true);
   };
 
   const handleSave = async () => {
-    if (userProfileRef && username.trim() !== '') {
-        updateDocumentNonBlocking(userProfileRef, { username: username.trim() });
+    if (userProfileRef && editingUsername.trim() !== '') {
+        updateDocumentNonBlocking(userProfileRef, { username: editingUsername.trim() });
         toast({ title: "Perfil actualizado", description: "Tu nombre de usuario ha sido cambiado." });
-        setIsEditing(false);
-    } else {
-        setIsEditing(false);
     }
+    setIsEditing(false);
   };
   
   const handleAvatarClick = () => {
@@ -120,7 +110,7 @@ export default function PerfilPage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        setAvatarUrl(dataUrl); // Optimistically update UI
+        // The useDoc hook will show the change automatically after update
         updateDocumentNonBlocking(userProfileRef, { imageUrl: dataUrl });
         toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
       };
@@ -172,7 +162,7 @@ export default function PerfilPage() {
             <>
               <div className="relative">
                 <Avatar className="w-24 h-24 mb-4 border-4 border-card shadow-lg cursor-pointer" onClick={handleAvatarClick}>
-                  <AvatarImage src={avatarUrl} alt="Avatar de usuario" />
+                  <AvatarImage src={userProfile?.imageUrl} alt="Avatar de usuario" />
                   <AvatarFallback>{getInitials(userProfile?.username)}</AvatarFallback>
                 </Avatar>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
@@ -183,7 +173,7 @@ export default function PerfilPage() {
 
               {isEditing ? (
                  <div className="flex items-center gap-2 mt-2">
-                   <Input value={username} onChange={(e) => setUsername(e.target.value)} className="text-center text-2xl font-bold font-headline h-10" />
+                   <Input value={editingUsername} onChange={(e) => setEditingUsername(e.target.value)} className="text-center text-2xl font-bold font-headline h-10" />
                    <Button size="icon" onClick={handleSave}><Save className="w-4 h-4"/></Button>
                  </div>
               ) : (
