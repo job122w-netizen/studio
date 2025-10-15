@@ -53,7 +53,10 @@ export default function Home() {
   }, [user, isUserLoading, router]);
   
   useEffect(() => {
-    if (!isUserLoading && user && userProfile === null && userProfileRef) {
+    // This effect now correctly checks if the profile is explicitly null
+    // after the initial loading is complete. It won't run on subsequent navigations
+    // if the profile data is temporarily unavailable but not confirmed to be non-existent.
+    if (!isProfileLoading && !isUserLoading && user && userProfile === null && userProfileRef) {
       const createUserProfile = () => {
         const newUserProfile = {
           username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
@@ -69,7 +72,7 @@ export default function Home() {
       };
       createUserProfile();
     }
-  }, [user, isUserLoading, userProfile, userProfileRef]);
+  }, [user, isUserLoading, userProfile, isProfileLoading, userProfileRef]);
 
   useEffect(() => {
     if (isStudying) {
@@ -81,7 +84,7 @@ export default function Home() {
           if (thirtyMinuteMark > lastRewardTimeRef.current) {
             lastRewardTimeRef.current = thirtyMinuteMark;
             if (userProfileRef) {
-              updateDocumentNonBlocking(userProfileRef, {
+               updateDocumentNonBlocking(userProfileRef, {
                 experiencePoints: 1250,
                 goldLingots: 1,
                 casinoChips: 1,
@@ -185,7 +188,7 @@ export default function Home() {
 
   const isLoading = isUserLoading || isProfileLoading;
 
-  if (isLoading) {
+  if (isLoading && !userProfile) { // Show loading only on initial load
     return (
         <div className="flex justify-center items-center h-full">
             <div className="text-center">
@@ -270,5 +273,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
