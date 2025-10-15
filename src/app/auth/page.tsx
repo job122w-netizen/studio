@@ -13,7 +13,7 @@ import { initiateAnonymousSignIn, initiateEmailSignUp, initiateEmailSignIn } fro
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { AuthErrorCodes, UserCredential } from 'firebase/auth';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Por favor, introduce un correo válido.' }),
@@ -42,19 +42,25 @@ export default function AuthPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const createUserProfile = (user: UserCredential['user']) => {
+  const createUserProfile = async (user: UserCredential['user']) => {
     const userProfileRef = doc(firestore, 'users', user.uid);
-    const newUserProfile = {
-      username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
-      email: user.email || 'anonimo@desafiohv.com',
-      level: 1,
-      experiencePoints: 0,
-      goldLingots: 0,
-      casinoChips: 0,
-      createdAt: serverTimestamp(),
-      imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-    };
-    setDocumentNonBlocking(userProfileRef, newUserProfile, {});
+    const userProfileSnap = await getDoc(userProfileRef);
+
+    if (!userProfileSnap.exists()) {
+        const newUserProfile = {
+            username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
+            email: user.email || 'anonimo@desafiohv.com',
+            level: 1,
+            experiencePoints: 0,
+            goldLingots: 0,
+            casinoChips: 0,
+            createdAt: serverTimestamp(),
+            imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+            currentStreak: 0,
+            lastActivityDate: null,
+        };
+        setDocumentNonBlocking(userProfileRef, newUserProfile, {});
+    }
   };
 
   const handleAuthError = (errorCode: string) => {
@@ -93,7 +99,7 @@ export default function AuthPage() {
       let userCredential: UserCredential;
       if (isSignUp) {
         userCredential = await initiateEmailSignUp(auth, values.email, values.password);
-        createUserProfile(userCredential.user);
+        await createUserProfile(userCredential.user);
       } else {
         await initiateEmailSignIn(auth, values.email, values.password);
       }
@@ -109,7 +115,7 @@ export default function AuthPage() {
     setIsSubmitting(true);
     try {
         const userCredential = await initiateAnonymousSignIn(auth);
-        createUserProfile(userCredential.user);
+        await createUserProfile(userCredential.user);
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { updateUserStreak } from '@/lib/streaks';
 
 type Exercise = {
   id: string;
@@ -130,7 +131,6 @@ export default function EjerciciosPage() {
     let isCompleting = false;
     let wasDayAlreadyCompleted = false;
 
-    // First, find the previous state of the day's routine
     const dayBeforeUpdate = localRoutine.find(d => d.id === dayId);
     if(dayBeforeUpdate && dayBeforeUpdate.exercises.length > 0){
         wasDayAlreadyCompleted = dayBeforeUpdate.exercises.every(ex => ex.completed);
@@ -165,8 +165,8 @@ export default function EjerciciosPage() {
         title: "¡Ejercicio completado!",
         description: `¡Has ganado ${xpReward} XP!`,
       });
+      updateUserStreak(userProfileRef);
 
-      // Check if all exercises for the day are now complete
       const isDayNowCompleted = dayRoutine.exercises.length > 0 && dayRoutine.exercises.every(ex => ex.completed);
 
       if (isDayNowCompleted && !wasDayAlreadyCompleted) {

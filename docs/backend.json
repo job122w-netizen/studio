@@ -34,6 +34,15 @@
         "imageUrl": {
           "type": "string",
           "description": "URL of the user's profile picture."
+        },
+        "currentStreak": {
+          "type": "number",
+          "description": "The user's current daily streak of completing activities."
+        },
+        "lastActivityDate": {
+          "type": "string",
+          "description": "The date of the last recorded activity (YYYY-MM-DD).",
+          "format": "date"
         }
       },
       "required": [

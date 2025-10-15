@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,6 +75,7 @@ export default function PerfilPage() {
 
   const stats = [
     { icon: Star, label: "Puntos HV", value: userProfile?.experiencePoints?.toLocaleString('es-ES') || "0" },
+    { icon: Flame, label: "Racha de Días", value: userProfile?.currentStreak || "0" },
     { icon: BookOpen, label: "Horas de Estudio", value: userProfile?.studyHours || "0" },
     { icon: Dumbbell, label: "Ejercicios", value: userProfile?.exercisesCompleted || "0" },
   ];
@@ -200,7 +201,7 @@ export default function PerfilPage() {
              </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4">
+        <CardContent className="grid grid-cols-2 gap-4">
              <>
               {stats.map((stat) => (
                 <div key={stat.label} className="bg-muted/50 p-4 rounded-lg flex items-center gap-3">

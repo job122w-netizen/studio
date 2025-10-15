@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
+import { doc, collection, addDoc, query, orderBy, limit, serverTimestamp } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { updateUserStreak } from "@/lib/streaks";
 
 
 export default function Home() {
@@ -51,6 +52,7 @@ export default function Home() {
         router.push('/auth');
     }
   }, [user, isUserLoading, router]);
+
 
   useEffect(() => {
     if (isStudying) {
@@ -105,7 +107,7 @@ export default function Home() {
   
   const handleStopStudy = () => {
     setIsStudying(false);
-    if(user && studySessionsRef && sessionStartTime && elapsedTime > 10) {
+    if(user && studySessionsRef && sessionStartTime && elapsedTime > 10 && userProfileRef) {
         const endTime = new Date();
         const durationMinutes = Math.floor(elapsedTime / 60);
 
@@ -127,6 +129,7 @@ export default function Home() {
                    description: `Has estudiado "${studySubject}" por menos de un minuto.`,
                });
            }
+           updateUserStreak(userProfileRef);
         });
        
     } else if (elapsedTime > 0 && elapsedTime <= 10) {
