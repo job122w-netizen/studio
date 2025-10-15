@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp, setDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
@@ -25,7 +25,7 @@ export default function Home() {
   const lastRewardTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (!isUserLoading && user && !userProfile) {
       // Create user profile if it doesn't exist
       const createUserProfile = async () => {
         if (user && !userProfile) {
@@ -37,6 +37,7 @@ export default function Home() {
             goldLingots: 0,
             casinoChips: 0,
             createdAt: serverTimestamp(),
+            imageUrl: '',
           };
           if (userProfileRef) {
             await setDoc(userProfileRef, newUserProfile);
@@ -57,7 +58,7 @@ export default function Home() {
             lastRewardTimeRef.current = Math.floor(newTime / 1800);
             if (userProfileRef) {
               updateDocumentNonBlocking(userProfileRef, {
-                experiencePoints: increment(130),
+                experiencePoints: increment(1250),
                 goldLingots: increment(1),
                 casinoChips: increment(1),
               });
@@ -96,7 +97,7 @@ export default function Home() {
 
   const recentActivities = [
     { type: 'Estudio', detail: 'Psicología', duration: '45 min' },
-    { type: 'Ejercicio', detail: 'Meditación', duration: '10 min' },
+    { type: 'Ejercicio', detail: 'Flexiones', duration: '10 min' },
     { type: 'Estudio', detail: 'Programación', duration: '1.2 horas' },
   ];
 

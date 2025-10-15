@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown } from "lucide-react";
-import Image from "next/image";
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera } from "lucide-react";
+import { useUser, useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -40,11 +40,14 @@ const getRank = (xp: number) => {
     return { currentRank, nextRank };
 };
 
-
 export default function PerfilPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [isRanksOpen, setIsRanksOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [username, setUsername] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -53,14 +56,11 @@ export default function PerfilPage() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-  const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar');
-  
   const xp = userProfile?.experiencePoints ?? 0;
   const { currentRank, nextRank } = getRank(xp);
   const progressToNextRank = nextRank.xpThreshold > currentRank.xpThreshold 
     ? ((xp - currentRank.xpThreshold) / (nextRank.xpThreshold - currentRank.xpThreshold)) * 100
     : 100;
-
 
   const stats = [
     { icon: BookOpen, label: "Horas de Estudio", value: userProfile?.studyHours || "0" },
@@ -76,6 +76,36 @@ export default function PerfilPage() {
   
   const isLoading = isUserLoading || isProfileLoading;
 
+  const handleEdit = () => {
+    setUsername(userProfile?.username || '');
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    if (userProfileRef && username.trim() !== '') {
+      updateDocumentNonBlocking(userProfileRef, { username: username.trim() });
+      toast({ title: "Perfil actualizado", description: "Tu nombre de usuario ha sido cambiado." });
+    }
+    setIsEditing(false);
+  };
+  
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && userProfileRef) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        updateDocumentNonBlocking(userProfileRef, { imageUrl: dataUrl });
+        toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       <Card className="overflow-hidden">
@@ -89,15 +119,30 @@ export default function PerfilPage() {
           ) : (
             <>
               <div className="relative">
-                <Avatar className="w-24 h-24 mb-4 border-4 border-card shadow-lg">
-                  {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="Avatar de usuario" />}
+                <Avatar className="w-24 h-24 mb-4 border-4 border-card shadow-lg cursor-pointer" onClick={handleAvatarClick}>
+                  <AvatarImage src={userProfile?.imageUrl} alt="Avatar de usuario" />
                   <AvatarFallback>{userProfile?.username?.charAt(0) || 'HV'}</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="icon" className="absolute bottom-2 right-0 w-8 h-8 rounded-full">
-                  <Edit className="w-4 h-4" />
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                 <Button variant="outline" size="icon" className="absolute bottom-2 -right-1 w-8 h-8 rounded-full" onClick={handleAvatarClick}>
+                  <Camera className="w-4 h-4" />
                 </Button>
               </div>
-              <h1 className="text-2xl font-bold font-headline">{userProfile?.username || 'Usuario'}</h1>
+
+              {isEditing ? (
+                 <div className="flex items-center gap-2 mt-2">
+                   <Input value={username} onChange={(e) => setUsername(e.target.value)} className="text-center text-2xl font-bold font-headline h-10" />
+                   <Button size="icon" onClick={handleSave}><Save className="w-4 h-4"/></Button>
+                 </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold font-headline">{userProfile?.username || 'Usuario'}</h1>
+                    <Button variant="ghost" size="icon" onClick={handleEdit} className="h-8 w-8">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                </div>
+              )}
+
               <p className="text-muted-foreground">Miembro desde hace 3 meses</p>
               <Badge variant="secondary" className="mt-2">Pase HV Activo</Badge>
             </>
