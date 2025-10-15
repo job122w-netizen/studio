@@ -1,255 +1,211 @@
-/**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for most data,
- *              allowing users to only access and modify their own data. Public
- *              read access is granted to the storeItems and rankings collections.
- *
- * Data Structure:
- * - /users/{userId}: User profile data, owned by the user with matching UID.
- * - /users/{userId}/studySessions/{studySessionId}: Study sessions owned by the user.
- * - /users/{userId}/weeklyRoutine/{dayId}: Weekly exercise routines owned by the user.
- * - /users/{userId}/userExercises/{userExerciseId}: User exercise completion data owned by the user.
- * - /users/{userId}/userItems/{userItemId}: Items owned by the user.
- * - /users/{userId}/hvPass: HV Pass subscription information for the user.
- * - /users/{userId}/casinoGames/{casinoGameId}: Casino game history for the user.
- * - /storeItems/{storeItemId}: Publicly readable collection of store items.
- * - /rankings/{rankingId}: Publicly readable collection of global rankings.
- *
- * Key Security Decisions:
- * - User listing is disallowed to protect privacy.
- * - The storeItems and rankings collections are publicly readable.
- * - All other collections are strictly user-owned.
- * - Write access to the storeItems and rankings collections is denied (TODO: needs admin/curator logic).
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows access to user profile data.
+     * @description Controls access to user profile data.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user123' can create their profile.
-     * @allow (get) User with UID 'user123' can read their profile.
-     * @allow (update) User with UID 'user123' can update their profile.
-     * @allow (delete) User with UID 'user123' can delete their profile.
-     * @deny (create) User with UID 'user456' cannot create a profile for 'user123'.
-     * @deny (get) User with UID 'user456' cannot read the profile of 'user123'.
-     * @deny (update) User with UID 'user456' cannot update the profile of 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete the profile of 'user123'.
-     * @principle Enforces document ownership for writes. Allows owner-only access.
+     * @allow (create) User with UID 'userId' can create their own profile.
+     * @allow (get, update, delete) User with UID 'userId' can read, update, and delete their own profile.
+     * @deny (create, get, update, delete) Any other user cannot create, read, update, or delete this profile.
+     * @principle Enforces document ownership for user profiles.
      */
     match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+        return isOwner(userId) && resource.data != null;
       }
 
       allow get: if isOwner(userId);
-      allow list: if false; // User listing is disallowed
-
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows access to study session data for a specific user.
+     * @description Controls access to study session data for a specific user.
      * @path /users/{userId}/studySessions/{studySessionId}
-     * @allow (create) User with UID 'user123' can create a study session.
-     * @allow (get) User with UID 'user123' can read a study session.
-     * @allow (update) User with UID 'user123' can update a study session.
-     * @allow (delete) User with UID 'user123' can delete a study session.
-     * @deny (create) User with UID 'user456' cannot create a study session for 'user123'.
-     * @deny (get) User with UID 'user456' cannot read the study session of 'user123'.
-     * @deny (update) User with UID 'user456' cannot update the study session of 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete the study session of 'user123'.
-     * @principle Enforces document ownership for writes. Allows owner-only access.
+     * @allow (create, get, list, update, delete) User with UID 'userId' can manage their own study sessions.
+     * @deny (create, get, list, update, delete) Any other user cannot access these study sessions.
+     * @principle Enforces document ownership for study sessions.
      */
     match /users/{userId}/studySessions/{studySessionId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+     function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
       }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows access to a user's weekly exercise routine.
+     * @description Controls access to weekly exercise routines for a user.
      * @path /users/{userId}/weeklyRoutine/{dayId}
-     * @allow (create) User with UID 'user123' can create a weekly routine.
-     * @allow (get) User with UID 'user123' can read a weekly routine.
-     * @allow (update) User with UID 'user123' can update a weekly routine.
-     * @allow (delete) User with UID 'user123' can delete a weekly routine.
-     * @deny (create) User with UID 'user456' cannot create a weekly routine for 'user123'.
-     * @deny (get) User with UID 'user456' cannot read the weekly routine of 'user123'.
-     * @deny (update) User with UID 'user456' cannot update the weekly routine of 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete the weekly routine of 'user123'.
-     * @principle Enforces document ownership for writes. Allows owner-only access.
+     * @allow (create, get, list, update, delete) User with UID 'userId' can manage their own weekly routines.
+     * @deny (create, get, list, update, delete) Any other user cannot access these routines.
+     * @principle Enforces document ownership for weekly routines.
      */
     match /users/{userId}/weeklyRoutine/{dayId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+     function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
       }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows access to user exercise completion data.
+     * @description Controls access to user exercise completion data.
      * @path /users/{userId}/userExercises/{userExerciseId}
-     * @allow (create) User with UID 'user123' can create user exercise data.
-     * @allow (get) User with UID 'user123' can read user exercise data.
-     * @allow (update) User with UID 'user123' can update user exercise data.
-     * @allow (delete) User with UID 'user123' can delete user exercise data.
-     * @deny (create) User with UID 'user456' cannot create user exercise data for 'user123'.
-     * @deny (get) User with UID 'user456' cannot read the user exercise data of 'user123'.
-     * @deny (update) User with UID 'user456' cannot update the user exercise data of 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete the user exercise data of 'user123'.
-     * @principle Enforces document ownership for writes. Allows owner-only access.
+     * @allow (create, get, list, update, delete) User with UID 'userId' can manage their own exercise completion data.
+     * @deny (create, get, list, update, delete) Any other user cannot access this data.
+     * @principle Enforces document ownership for user exercises.
      */
     match /users/{userId}/userExercises/{userExerciseId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+     function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
       }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows public read access to store items. Write access is denied.
+     * @description Controls access to store items.
      * @path /storeItems/{storeItemId}
-     * @allow (get) Any user can read a store item.
-     * @allow (list) Any user can list store items.
-     * @deny (create) No user can create a store item (requires admin privileges - TODO).
-     * @deny (update) No user can update a store item (requires admin privileges - TODO).
-     * @deny (delete) No user can delete a store item (requires admin privileges - TODO).
-     * @principle Allows public read access but restricts write access.
+     * @allow (get, list) All users can read store item data.
+     * @deny (create, update, delete) No users can create, update, or delete store items (admin only).
+     * @principle Allows public read access to store items.
      */
     match /storeItems/{storeItemId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false; // TODO: Add admin validation.
-      allow update: if false; // TODO: Add admin validation.
-      allow delete: if false; // TODO: Add admin validation.
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows access to items owned by a user.
+     * @description Controls access to items owned by a user.
      * @path /users/{userId}/userItems/{userItemId}
-     * @allow (create) User with UID 'user123' can create a user item.
-     * @allow (get) User with UID 'user123' can read a user item.
-     * @allow (update) User with UID 'user123' can update a user item.
-     * @allow (delete) User with UID 'user123' can delete a user item.
-     * @deny (create) User with UID 'user456' cannot create a user item for 'user123'.
-     * @deny (get) User with UID 'user456' cannot read the user item of 'user123'.
-     * @deny (update) User with UID 'user456' cannot update the user item of 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete the user item of 'user123'.
-     * @principle Enforces document ownership for writes. Allows owner-only access.
+     * @allow (create, get, list, update, delete) User with UID 'userId' can manage their own owned items.
+     * @deny (create, get, list, update, delete) Any other user cannot access these items.
+     * @principle Enforces document ownership for user items.
      */
     match /users/{userId}/userItems/{userItemId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+     function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
       }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows access to HV Pass subscription information for a user.
+     * @description Controls access to HV Pass subscription information for a user.
      * @path /users/{userId}/hvPass
-     * @allow (create) User with UID 'user123' can create an HV Pass.
-     * @allow (get) User with UID 'user123' can read an HV Pass.
-     * @allow (update) User with UID 'user123' can update an HV Pass.
-     * @allow (delete) User with UID 'user123' can delete an HV Pass.
-     * @deny (create) User with UID 'user456' cannot create an HV Pass for 'user123'.
-     * @deny (get) User with UID 'user456' cannot read the HV Pass of 'user123'.
-     * @deny (update) User with UID 'user456' cannot update the HV Pass of 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete the HV Pass of 'user123'.
-     * @principle Enforces document ownership for writes. Allows owner-only access.
+     * @allow (create, get, list, update, delete) User with UID 'userId' can manage their own HV Pass.
+     * @deny (create, get, list, update, delete) Any other user cannot access this data.
+     * @principle Enforces document ownership for HV Pass data.
      */
     match /users/{userId}/hvPass {
-        function isOwner(userId) {
-          return request.auth != null && request.auth.uid == userId;
-        }
-         function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-        }
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Allows access to casino game history for a user.
-     * @path /users/{userId}/casinoGames/{casinoGameId}
-     * @allow (create) User with UID 'user123' can create a casino game record.
-     * @allow (get) User with UID 'user123' can read a casino game record.
-     * @allow (update) User with UID 'user123' can update a casino game record.
-     * @allow (delete) User with UID 'user123' can delete a casino game record.
-     * @deny (create) User with UID 'user456' cannot create a casino game record for 'user123'.
-     * @deny (get) User with UID 'user456' cannot read the casino game record of 'user123'.
-     * @deny (update) User with UID 'user456' cannot update the casino game record of 'user123'.
-     * @deny (delete) User with UID 'user456' cannot delete the casino game record of 'user123'.
-     * @principle Enforces document ownership for writes. Allows owner-only access.
-     */
-    match /users/{userId}/casinoGames/{casinoGameId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+     function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
       }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows public read access to global ranking information. Write access is denied.
+     * @description Controls access to casino game history for a user.
+     * @path /users/{userId}/casinoGames/{casinoGameId}
+     * @allow (create, get, list, update, delete) User with UID 'userId' can manage their own casino game history.
+     * @deny (create, get, list, update, delete) Any other user cannot access this history.
+     * @principle Enforces document ownership for casino game history.
+     */
+    match /users/{userId}/casinoGames/{casinoGameId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+     function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to global ranking information.
      * @path /rankings/{rankingId}
-     * @allow (get) Any user can read a ranking.
-     * @allow (list) Any user can list rankings.
-     * @deny (create) No user can create a ranking (requires admin privileges - TODO).
-     * @deny (update) No user can update a ranking (requires admin privileges - TODO).
-     * @deny (delete) No user can delete a ranking (requires admin privileges - TODO).
-     * @principle Allows public read access but restricts write access.
+     * @allow (get, list) All users can read ranking data.
+     * @deny (create, update, delete) No users can create, update, or delete ranking data (admin only).
+     * @principle Allows public read access to rankings.
      */
     match /rankings/{rankingId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false; // TODO: Add admin validation.
-      allow update: if false; // TODO: Add admin validation.
-      allow delete: if false; // TODO: Add admin validation.
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
