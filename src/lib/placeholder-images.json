@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "user-avatar",
+      "description": "User profile avatar",
+      "imageUrl": "https://picsum.photos/seed/avatar1/200/200",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "store-item-1",
+      "description": "A virtual gem item from the store",
+      "imageUrl": "https://picsum.photos/seed/item1/300/200",
+      "imageHint": "gem crystal"
+    },
+    {
+      "id": "store-item-2",
+      "description": "A virtual potion item from the store",
+      "imageUrl": "https://picsum.photos/seed/item2/300/200",
+      "imageHint": "potion bottle"
+    },
+    {
+      "id": "store-item-3",
+      "description": "A virtual key item from the store",
+      "imageUrl": "https://picsum.photos/seed/item3/300/200",
+      "imageHint": "ornate key"
+    },
+    {
+      "id": "store-item-4",
+      "description": "A virtual shield item from the store",
+      "imageUrl": "https://picsum.photos/seed/item4/300/200",
+      "imageHint": "medieval shield"
+    },
+    {
+      "id": "exercise-mindfulness",
+      "description": "Image for mindfulness exercise",
+      "imageUrl": "https://picsum.photos/seed/mindful/400/200",
+      "imageHint": "calm lake"
+    },
+    {
+      "id": "exercise-productivity",
+      "description": "Image for productivity exercise",
+      "imageUrl": "https://picsum.photos/seed/productive/400/200",
+      "imageHint": "desk setup"
+    },
+    {
+      "id": "exercise-journal",
+      "description": "Image for journaling exercise",
+      "imageUrl": "https://picsum.photos/seed/journal/400/200",
+      "imageHint": "open journal"
+    }
+  ]
 }
