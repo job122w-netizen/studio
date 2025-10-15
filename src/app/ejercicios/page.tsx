@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useUser, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection, setDoc, increment } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Edit, Plus, Save, Trash2, X } from "lucide-react";
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -64,7 +64,6 @@ export default function EjerciciosPage() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  // Sync Firestore data to local state
   useEffect(() => {
     if (weeklyRoutine) {
       const fullRoutine = daysOfWeek.map(day => {
@@ -73,17 +72,14 @@ export default function EjerciciosPage() {
       });
       setLocalRoutine(fullRoutine);
     } else if (!isRoutineLoading) {
-      // Initialize with empty days if firestore is empty
       setLocalRoutine(daysOfWeek.map(day => ({ id: day.id, exercises: [] })));
     }
   }, [weeklyRoutine, isRoutineLoading]);
 
-  // Function to save the entire local routine to Firestore
   const handleSaveChanges = () => {
     if (!weeklyRoutineRef) return;
     localRoutine.forEach(day => {
       const dayDocRef = doc(weeklyRoutineRef, day.id);
-      // Make sure we don't save undefined properties
       const dataToSave = { exercises: day.exercises.map(({id, name, completed}) => ({id, name, completed: !!completed})) };
       setDocumentNonBlocking(dayDocRef, dataToSave, { merge: true });
     });
@@ -133,7 +129,6 @@ export default function EjerciciosPage() {
     let targetExercise: Exercise | undefined;
     let isCompleting = false;
 
-    // We use local state for UI, and then update firestore
     const newLocalRoutine = localRoutine.map(day => {
       if (day.id === dayId) {
         const updatedExercises = day.exercises.map(ex => {
@@ -151,14 +146,12 @@ export default function EjerciciosPage() {
 
     setLocalRoutine(newLocalRoutine);
 
-    // Now update firestore based on the change
     if(targetExercise){
         const dayRoutine = newLocalRoutine.find(d => d.id === dayId);
         if (!dayRoutine) return;
         
         const xpReward = 100;
         
-        // Only give points if marking as complete
         if (isCompleting) {
           updateDocumentNonBlocking(userProfileRef, {
             experiencePoints: increment(xpReward)
@@ -167,6 +160,15 @@ export default function EjerciciosPage() {
             title: "¡Ejercicio completado!",
             description: `¡Has ganado ${xpReward} XP!`,
           });
+        } else {
+             updateDocumentNonBlocking(userProfileRef, {
+                experiencePoints: increment(-xpReward)
+             });
+             toast({
+                title: "Ejercicio deshecho",
+                description: `Se han restado ${xpReward} XP.`,
+                variant: 'destructive'
+            });
         }
 
         const dayDocRef = doc(weeklyRoutineRef, dayId);
@@ -200,7 +202,7 @@ export default function EjerciciosPage() {
                 const isToday = getToday() === day.id;
                 
                 return (
-                    <Card key={day.id} className={cn("transition-all", isToday && 'border-primary border-2')}>
+                    <Card key={day.id} className={cn("transition-all", isToday && 'border-primary border-2 shadow-lg')}>
                     <CardHeader>
                         <CardTitle className="flex justify-between items-center">
                         <span>{daysOfWeek.find(d => d.id === day.id)?.name}</span>
@@ -216,7 +218,7 @@ export default function EjerciciosPage() {
                                     <DialogHeader>
                                         <DialogTitle>Añadir Ejercicio a {daysOfWeek.find(d => d.id === day.id)?.name}</DialogTitle>
                                     </DialogHeader>
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 py-4">
                                         <Input 
                                             placeholder="Nombre del ejercicio (ej. Flexiones)"
                                             value={newExerciseName}
@@ -236,7 +238,7 @@ export default function EjerciciosPage() {
                         {day.exercises && day.exercises.length > 0 ? (
                         <ul className="space-y-3">
                             {day.exercises.map(exercise => (
-                            <li key={exercise.id} className="flex items-center justify-between group">
+                            <li key={exercise.id} className="flex items-center justify-between group transition-colors p-2 rounded-md hover:bg-muted/50">
                                 <span className={cn("font-medium", exercise.completed && 'line-through text-muted-foreground')}>
                                 {exercise.name}
                                 </span>
@@ -260,7 +262,7 @@ export default function EjerciciosPage() {
                             ))}
                         </ul>
                         ) : (
-                        <p className="text-muted-foreground text-sm text-center">Día de descanso.</p>
+                        <p className="text-muted-foreground text-sm text-center py-4">Día de descanso.</p>
                         )}
                     </CardContent>
                     </Card>
