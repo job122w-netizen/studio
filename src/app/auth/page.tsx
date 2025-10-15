@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { initiateAnonymousSignIn, initiateEmailSignUp, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { AuthErrorCodes } from 'firebase/auth';
+import { AuthErrorCodes, UserCredential } from 'firebase/auth';
+import { doc, serverTimestamp } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Por favor, introduce un correo válido.' }),
@@ -21,6 +22,7 @@ const formSchema = z.object({
 
 export default function AuthPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -39,6 +41,21 @@ export default function AuthPage() {
       router.push('/');
     }
   }, [user, isUserLoading, router]);
+
+  const createUserProfile = (user: UserCredential['user']) => {
+    const userProfileRef = doc(firestore, 'users', user.uid);
+    const newUserProfile = {
+      username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
+      email: user.email || 'anonimo@desafiohv.com',
+      level: 1,
+      experiencePoints: 0,
+      goldLingots: 0,
+      casinoChips: 0,
+      createdAt: serverTimestamp(),
+      imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+    };
+    setDocumentNonBlocking(userProfileRef, newUserProfile, {});
+  };
 
   const handleAuthError = (errorCode: string) => {
     let description = "Ocurrió un error inesperado.";
@@ -73,8 +90,10 @@ export default function AuthPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>, isSignUp: boolean) => {
     setIsSubmitting(true);
     try {
+      let userCredential: UserCredential;
       if (isSignUp) {
-        await initiateEmailSignUp(auth, values.email, values.password);
+        userCredential = await initiateEmailSignUp(auth, values.email, values.password);
+        createUserProfile(userCredential.user);
       } else {
         await initiateEmailSignIn(auth, values.email, values.password);
       }
@@ -89,7 +108,8 @@ export default function AuthPage() {
   const handleAnonymousSignIn = async () => {
     setIsSubmitting(true);
     try {
-        await initiateAnonymousSignIn(auth);
+        const userCredential = await initiateAnonymousSignIn(auth);
+        createUserProfile(userCredential.user);
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {

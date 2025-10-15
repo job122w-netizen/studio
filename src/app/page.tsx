@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, serverTimestamp, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
+import { doc, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
-import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -51,28 +51,6 @@ export default function Home() {
         router.push('/auth');
     }
   }, [user, isUserLoading, router]);
-  
-  useEffect(() => {
-    // This effect now correctly checks if the profile is explicitly null
-    // after the initial loading is complete. It won't run on subsequent navigations
-    // if the profile data is temporarily unavailable but not confirmed to be non-existent.
-    if (!isProfileLoading && !isUserLoading && user && userProfile === null && userProfileRef) {
-      const createUserProfile = () => {
-        const newUserProfile = {
-          username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
-          email: user.email || 'anonimo@desafiohv.com',
-          level: 1,
-          experiencePoints: 0,
-          goldLingots: 0,
-          casinoChips: 0,
-          createdAt: serverTimestamp(),
-          imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-        };
-        setDocumentNonBlocking(userProfileRef, newUserProfile, {});
-      };
-      createUserProfile();
-    }
-  }, [user, isUserLoading, userProfile, isProfileLoading, userProfileRef]);
 
   useEffect(() => {
     if (isStudying) {
