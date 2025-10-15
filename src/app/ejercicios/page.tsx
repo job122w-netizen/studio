@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -126,14 +127,19 @@ export default function EjerciciosPage() {
   const toggleCompleteExercise = (dayId: string, exerciseId: string) => {
     if (!userProfileRef || !weeklyRoutineRef) return;
 
-    let targetExercise: Exercise | undefined;
     let isCompleting = false;
+    let wasDayAlreadyCompleted = false;
+
+    // First, find the previous state of the day's routine
+    const dayBeforeUpdate = localRoutine.find(d => d.id === dayId);
+    if(dayBeforeUpdate && dayBeforeUpdate.exercises.length > 0){
+        wasDayAlreadyCompleted = dayBeforeUpdate.exercises.every(ex => ex.completed);
+    }
 
     const newLocalRoutine = localRoutine.map(day => {
       if (day.id === dayId) {
         const updatedExercises = day.exercises.map(ex => {
           if (ex.id === exerciseId) {
-            targetExercise = ex;
             isCompleting = !ex.completed;
             return { ...ex, completed: !ex.completed };
           }
@@ -146,34 +152,47 @@ export default function EjerciciosPage() {
 
     setLocalRoutine(newLocalRoutine);
 
-    if(targetExercise){
-        const dayRoutine = newLocalRoutine.find(d => d.id === dayId);
-        if (!dayRoutine) return;
-        
-        const xpReward = 100;
-        
-        if (isCompleting) {
-          updateDocumentNonBlocking(userProfileRef, {
-            experiencePoints: increment(xpReward)
-          });
-          toast({
-            title: "¡Ejercicio completado!",
-            description: `¡Has ganado ${xpReward} XP!`,
-          });
-        } else {
-             updateDocumentNonBlocking(userProfileRef, {
-                experiencePoints: increment(-xpReward)
-             });
-             toast({
-                title: "Ejercicio deshecho",
-                description: `Se han restado ${xpReward} XP.`,
-                variant: 'destructive'
-            });
-        }
+    const dayRoutine = newLocalRoutine.find(d => d.id === dayId);
+    if (!dayRoutine) return;
+    
+    const xpReward = 100;
+    
+    if (isCompleting) {
+      updateDocumentNonBlocking(userProfileRef, {
+        experiencePoints: increment(xpReward)
+      });
+      toast({
+        title: "¡Ejercicio completado!",
+        description: `¡Has ganado ${xpReward} XP!`,
+      });
 
-        const dayDocRef = doc(weeklyRoutineRef, dayId);
-        setDocumentNonBlocking(dayDocRef, { exercises: dayRoutine.exercises }, { merge: true });
+      // Check if all exercises for the day are now complete
+      const isDayNowCompleted = dayRoutine.exercises.length > 0 && dayRoutine.exercises.every(ex => ex.completed);
+
+      if (isDayNowCompleted && !wasDayAlreadyCompleted) {
+        updateDocumentNonBlocking(userProfileRef, {
+            goldLingots: increment(3),
+            casinoChips: increment(3)
+        });
+        toast({
+            title: "¡Rutina del día completada!",
+            description: "¡Has ganado 3 lingotes de oro y 3 fichas de casino por tu disciplina!",
+        });
+      }
+
+    } else {
+         updateDocumentNonBlocking(userProfileRef, {
+            experiencePoints: increment(-xpReward)
+         });
+         toast({
+            title: "Ejercicio deshecho",
+            description: `Se han restado ${xpReward} XP.`,
+            variant: 'destructive'
+        });
     }
+
+    const dayDocRef = doc(weeklyRoutineRef, dayId);
+    setDocumentNonBlocking(dayDocRef, { exercises: dayRoutine.exercises }, { merge: true });
   }
   
   const isLoading = isUserLoading || isRoutineLoading;
