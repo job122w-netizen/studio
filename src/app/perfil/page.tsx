@@ -83,7 +83,7 @@ export default function PerfilPage() {
     { icon: Shield, name: "Maratón de Estudio", description: "Estudia por más de 5 horas seguidas" },
   ];
   
-  const isLoading = isUserLoading || !userProfile;
+  const isLoading = isUserLoading || isProfileLoading;
 
   const handleEdit = () => {
     setUsername(userProfile?.username || '');
@@ -169,8 +169,7 @@ export default function PerfilPage() {
             </>
           ) : (
              <div className="text-center p-8">
-                <p className="text-muted-foreground">No se pudo cargar el perfil.</p>
-                <p className="text-sm text-muted-foreground">Por favor, intenta recargar la página.</p>
+                <p className="text-muted-foreground">Inicia sesión para ver tu perfil.</p>
              </div>
           )}
         </CardContent>
@@ -188,7 +187,7 @@ export default function PerfilPage() {
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
             </>
-          ) : (
+          ) : userProfile ? (
              <>
               {stats.map((stat) => (
                 <div key={stat.label} className="bg-muted/50 p-4 rounded-lg flex items-center gap-3">
@@ -237,6 +236,10 @@ export default function PerfilPage() {
                 </CollapsibleContent>
               </Collapsible>
              </>
+          ) : (
+            <div className="col-span-2 text-center text-muted-foreground p-4">
+                No hay estadísticas para mostrar.
+            </div>
           )}
         </CardContent>
       </Card>

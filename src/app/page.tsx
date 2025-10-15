@@ -6,10 +6,10 @@ import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, serverTimestamp, setDoc, increment, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
