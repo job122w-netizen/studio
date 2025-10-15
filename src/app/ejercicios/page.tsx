@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection, setDoc, increment } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Edit, Plus, Save, Trash2, X } from "lucide-react";
+import { Check, Edit, Plus, Save, Trash2, X, CheckCircle } from "lucide-react";
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -212,8 +212,8 @@ export default function EjerciciosPage() {
 
        {isLoading && localRoutine.length === 0 ? (
             <div className="space-y-4">
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full rounded-lg" />
+                <Skeleton className="h-48 w-full rounded-lg" />
             </div>
         ) : (
             <div className="space-y-4">
@@ -221,15 +221,15 @@ export default function EjerciciosPage() {
                 const isToday = getToday() === day.id;
                 
                 return (
-                    <Card key={day.id} className={cn("transition-all", isToday && 'border-primary border-2 shadow-lg')}>
+                    <Card key={day.id} className={cn("transition-all duration-300 hover:shadow-md", isToday && 'border-primary/50 border-2 shadow-primary/10')}>
                     <CardHeader>
-                        <CardTitle className="flex justify-between items-center">
+                        <CardTitle className="flex justify-between items-center text-xl font-semibold">
                         <span>{daysOfWeek.find(d => d.id === day.id)?.name}</span>
                         {isEditing && (
                             <Dialog onOpenChange={(open) => !open && setEditingDay(null)}>
                                 <DialogTrigger asChild>
-                                    <Button size="icon" variant="ghost" onClick={() => setEditingDay(day.id)}>
-                                        <Plus className="h-4 w-4"/>
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10 rounded-full" onClick={() => setEditingDay(day.id)}>
+                                        <Plus className="h-5 w-5"/>
                                     </Button>
                                 </DialogTrigger>
                                 {editingDay === day.id && (
@@ -257,19 +257,27 @@ export default function EjerciciosPage() {
                         {day.exercises && day.exercises.length > 0 ? (
                         <ul className="space-y-3">
                             {day.exercises.map(exercise => (
-                            <li key={exercise.id} className="flex items-center justify-between group transition-colors p-2 rounded-md hover:bg-muted/50">
-                                <span className={cn("font-medium", exercise.completed && 'line-through text-muted-foreground')}>
-                                {exercise.name}
-                                </span>
+                            <li key={exercise.id} className="flex items-center justify-between group p-2 rounded-lg transition-colors duration-200 hover:bg-muted/50">
+                                <div className="flex items-center gap-3">
+                                  {exercise.completed ? (
+                                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                                  ) : (
+                                    isToday && <div className="h-5 w-5 border-2 border-muted-foreground rounded-full flex-shrink-0 group-hover:border-primary" />
+                                  )}
+                                  <span className={cn("font-medium", exercise.completed && 'line-through text-muted-foreground')}>
+                                  {exercise.name}
+                                  </span>
+                                </div>
                                 {isEditing ? (
-                                    <Button variant="ghost" size="icon" className="text-destructive opacity-0 group-hover:opacity-100" onClick={() => handleRemoveExercise(day.id, exercise.id)}>
+                                    <Button variant="ghost" size="icon" className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 rounded-full" onClick={() => handleRemoveExercise(day.id, exercise.id)}>
                                         <Trash2 className="h-4 w-4"/>
                                     </Button>
                                 ) : (
                                 isToday && (
                                     <Button 
-                                        variant={exercise.completed ? "secondary" : "default"} 
+                                        variant={exercise.completed ? "outline" : "default"} 
                                         size="sm"
+                                        className="rounded-full px-4"
                                         onClick={() => toggleCompleteExercise(day.id, exercise.id)}
                                         >
                                         {exercise.completed ? <X className="mr-2 h-4 w-4"/> : <Check className="mr-2 h-4 w-4"/>}
