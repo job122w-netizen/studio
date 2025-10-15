@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Award, BookOpenText, Dice5, Dumbbell, Store, Trophy, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 const navItems = [
   { href: '/', label: 'Estudio', icon: BookOpenText },
@@ -15,29 +16,41 @@ const navItems = [
   { href: '/ranking', label: 'Ranking', icon: Trophy },
 ];
 
-export function MobileNav() {
+function MobileNavContent() {
   const pathname = usePathname();
 
   return (
+    <nav className="mx-auto grid h-full max-w-lg grid-cols-7 items-stretch">
+      {navItems.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              'flex flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-primary',
+              isActive && 'text-primary bg-muted/50'
+            )}
+          >
+            <item.icon className="h-4 w-4" />
+            <span className="text-[10px] font-medium tracking-tighter">{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function MobileNav() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  return (
     <div className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-card/95 backdrop-blur-sm sm:h-auto">
-      <nav className="mx-auto grid h-full max-w-lg grid-cols-7 items-stretch">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-primary',
-                isActive && 'text-primary bg-muted/50'
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="text-[10px] font-medium tracking-tighter">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {isClient ? <MobileNavContent /> : null}
     </div>
   );
 }
