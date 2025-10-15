@@ -12,33 +12,6 @@ export const rankingData = [
   { rank: 6, user: 'Sofia M.', points: 9800, avatar: 'https://i.pravatar.cc/40?img=6' },
 ];
 
-export const ejerciciosData = [
-  {
-    id: 1,
-    title: 'Flexiones (3 series)',
-    category: 'Fuerza',
-    description: 'Realiza 3 series del máximo de flexiones que puedas.',
-    image: getImage('exercise-pushups'),
-    xpReward: 50,
-  },
-  {
-    id: 2,
-    title: 'Cardio 20 Minutos',
-    category: 'Cardio',
-    description: 'Corre, salta la cuerda o usa una elíptica por 20 minutos.',
-    image: getImage('exercise-cardio'),
-    xpReward: 75,
-  },
-  {
-    id: 3,
-    title: 'Estiramiento Completo',
-    category: 'Flexibilidad',
-    description: 'Dedica 15 minutos a estirar todos tus grupos musculares.',
-    image: getImage('exercise-stretching'),
-    xpReward: 40,
-  },
-];
-
 export const tiendaItems = [
   {
     id: 1,

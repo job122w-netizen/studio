@@ -82,30 +82,40 @@
         "durationMinutes"
       ]
     },
-    "Exercise": {
+    "WeeklyRoutine": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Exercise",
+      "title": "WeeklyRoutine",
       "type": "object",
-      "description": "Represents an exercise or activity for personal development.",
+      "description": "Represents a user's weekly exercise routine for a specific day.",
       "properties": {
-        "title": {
+        "dayOfWeek": {
           "type": "string",
-          "description": "The title of the exercise."
+          "description": "The day of the week (e.g., lunes, martes)."
         },
-        "description": {
-          "type": "string",
-          "description": "A description of the exercise."
-        },
-        "category": {
-          "type": "string",
-          "description": "The category of the exercise (e.g., mindfulness, productivity)."
+        "exercises": {
+          "type": "array",
+          "description": "List of exercises for the day.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the exercise."
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the exercise."
+              },
+              "completed": {
+                "type": "boolean",
+                "description": "Whether the exercise has been completed for the day."
+              }
+            },
+            "required": ["id", "name", "completed"]
+          }
         }
       },
-      "required": [
-        "title",
-        "description",
-        "category"
-      ]
+      "required": ["dayOfWeek", "exercises"]
     },
     "UserExercise": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -307,11 +317,11 @@
       },
       "description": "Stores study session data for a specific user."
     },
-    "/exercises/{exerciseId}": {
+    "/users/{userId}/weeklyRoutine/{dayId}": {
       "schema": {
-        "$ref": "#/entities/Exercise"
+        "$ref": "#/entities/WeeklyRoutine"
       },
-      "description": "Stores a list of available exercises."
+      "description": "Stores a user's exercise routine for a specific day of the week."
     },
     "/users/{userId}/userExercises/{userExerciseId}": {
       "schema": {
