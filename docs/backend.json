@@ -6,10 +6,6 @@
       "type": "object",
       "description": "Represents a user's profile within the Desafío HV app.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity."
-        },
         "username": {
           "type": "string",
           "description": "The username of the user."
@@ -34,10 +30,13 @@
         "casinoChips": {
           "type": "number",
           "description": "The number of casino chips the user has."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the user's profile picture."
         }
       },
       "required": [
-        "id",
         "username",
         "email",
         "level",
@@ -52,13 +51,13 @@
       "type": "object",
       "description": "Represents a study session recorded by a user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the StudySession entity."
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N StudySession)"
+          "description": "Reference to UserProfile."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject of the study session."
         },
         "startTime": {
           "type": "string",
@@ -76,8 +75,8 @@
         }
       },
       "required": [
-        "id",
         "userId",
+        "subject",
         "startTime",
         "endTime",
         "durationMinutes"
@@ -89,10 +88,6 @@
       "type": "object",
       "description": "Represents an exercise or activity for personal development.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Exercise entity."
-        },
         "title": {
           "type": "string",
           "description": "The title of the exercise."
@@ -107,7 +102,6 @@
         }
       },
       "required": [
-        "id",
         "title",
         "description",
         "category"
@@ -119,17 +113,13 @@
       "type": "object",
       "description": "Represents a user's completion of an exercise.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserExercise entity."
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N UserExercise)"
+          "description": "Reference to UserProfile."
         },
         "exerciseId": {
           "type": "string",
-          "description": "Reference to Exercise. (Relationship: Exercise 1:N UserExercise)"
+          "description": "Reference to Exercise."
         },
         "completionDate": {
           "type": "string",
@@ -142,7 +132,6 @@
         }
       },
       "required": [
-        "id",
         "userId",
         "exerciseId",
         "completionDate"
@@ -154,10 +143,6 @@
       "type": "object",
       "description": "Represents an item available for purchase in the virtual store.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the StoreItem entity."
-        },
         "name": {
           "type": "string",
           "description": "The name of the item."
@@ -172,7 +157,6 @@
         }
       },
       "required": [
-        "id",
         "name",
         "description",
         "price"
@@ -184,17 +168,13 @@
       "type": "object",
       "description": "Represents an item owned by a user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserItem entity."
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N UserItem)"
+          "description": "Reference to UserProfile."
         },
         "itemId": {
           "type": "string",
-          "description": "Reference to StoreItem. (Relationship: StoreItem 1:N UserItem)"
+          "description": "Reference to StoreItem."
         },
         "purchaseDate": {
           "type": "string",
@@ -203,7 +183,6 @@
         }
       },
       "required": [
-        "id",
         "userId",
         "itemId",
         "purchaseDate"
@@ -215,13 +194,9 @@
       "type": "object",
       "description": "Represents the HV Pass subscription for a user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the HvPass entity."
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 HvPass)"
+          "description": "Reference to UserProfile."
         },
         "startDate": {
           "type": "string",
@@ -239,7 +214,6 @@
         }
       },
       "required": [
-        "id",
         "userId",
         "startDate",
         "endDate",
@@ -252,13 +226,9 @@
       "type": "object",
       "description": "Represents a casino game record.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the CasinoGame entity."
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N CasinoGame)"
+          "description": "Reference to UserProfile."
         },
         "gameType": {
           "type": "string",
@@ -279,7 +249,6 @@
         }
       },
       "required": [
-        "id",
         "userId",
         "gameType",
         "betAmount",
@@ -293,13 +262,9 @@
       "type": "object",
       "description": "Represents a user's ranking in the global leaderboard.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Ranking entity."
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 Ranking)"
+          "description": "Reference to UserProfile."
         },
         "rank": {
           "type": "number",
@@ -316,7 +281,6 @@
         }
       },
       "required": [
-        "id",
         "userId",
         "rank",
         "score",
@@ -331,168 +295,59 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile data.  The 'userId' parameter is the Firebase Authentication UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
-            }
-          ]
-        }
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
       },
-      {
-        "path": "/users/{userId}/studySessions/{studySessionId}",
-        "definition": {
-          "entityName": "StudySession",
-          "schema": {
-            "$ref": "#/backend/entities/StudySession"
-          },
-          "description": "Stores study session data for a specific user. The 'userId' parameter is the Firebase Authentication UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
-            },
-            {
-              "name": "studySessionId",
-              "description": "The unique identifier for the study session."
-            }
-          ]
-        }
+      "description": "Stores user profile data. The 'userId' parameter is the Firebase Authentication UID."
+    },
+    "/users/{userId}/studySessions/{studySessionId}": {
+      "schema": {
+        "$ref": "#/entities/StudySession"
       },
-      {
-        "path": "/exercises/{exerciseId}",
-        "definition": {
-          "entityName": "Exercise",
-          "schema": {
-            "$ref": "#/backend/entities/Exercise"
-          },
-          "description": "Stores a list of available exercises.",
-          "params": [
-            {
-              "name": "exerciseId",
-              "description": "The unique identifier for the exercise."
-            }
-          ]
-        }
+      "description": "Stores study session data for a specific user."
+    },
+    "/exercises/{exerciseId}": {
+      "schema": {
+        "$ref": "#/entities/Exercise"
       },
-      {
-        "path": "/users/{userId}/userExercises/{userExerciseId}",
-        "definition": {
-          "entityName": "UserExercise",
-          "schema": {
-            "$ref": "#/backend/entities/UserExercise"
-          },
-          "description": "Stores information about a user's completion of an exercise. The 'userId' parameter is the Firebase Authentication UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
-            },
-            {
-              "name": "userExerciseId",
-              "description": "The unique identifier for the user exercise."
-            }
-          ]
-        }
+      "description": "Stores a list of available exercises."
+    },
+    "/users/{userId}/userExercises/{userExerciseId}": {
+      "schema": {
+        "$ref": "#/entities/UserExercise"
       },
-      {
-        "path": "/storeItems/{storeItemId}",
-        "definition": {
-          "entityName": "StoreItem",
-          "schema": {
-            "$ref": "#/backend/entities/StoreItem"
-          },
-          "description": "Stores a list of available store items.",
-          "params": [
-            {
-              "name": "storeItemId",
-              "description": "The unique identifier for the store item."
-            }
-          ]
-        }
+      "description": "Stores information about a user's completion of an exercise."
+    },
+    "/storeItems/{storeItemId}": {
+      "schema": {
+        "$ref": "#/entities/StoreItem"
       },
-      {
-        "path": "/users/{userId}/userItems/{userItemId}",
-        "definition": {
-          "entityName": "UserItem",
-          "schema": {
-            "$ref": "#/backend/entities/UserItem"
-          },
-          "description": "Stores information about items owned by a user. The 'userId' parameter is the Firebase Authentication UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
-            },
-            {
-              "name": "userItemId",
-              "description": "The unique identifier for the user item."
-            }
-          ]
-        }
+      "description": "Stores a list of available store items."
+    },
+    "/users/{userId}/userItems/{userItemId}": {
+      "schema": {
+        "$ref": "#/entities/UserItem"
       },
-      {
-        "path": "/users/{userId}/hvPass",
-        "definition": {
-          "entityName": "HvPass",
-          "schema": {
-            "$ref": "#/backend/entities/HvPass"
-          },
-          "description": "Stores HV Pass subscription information for a user. The 'userId' parameter is the Firebase Authentication UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
-            }
-          ]
-        }
+      "description": "Stores information about items owned by a user."
+    },
+    "/users/{userId}/hvPass": {
+      "schema": {
+        "$ref": "#/entities/HvPass"
       },
-      {
-        "path": "/users/{userId}/casinoGames/{casinoGameId}",
-        "definition": {
-          "entityName": "CasinoGame",
-          "schema": {
-            "$ref": "#/backend/entities/CasinoGame"
-          },
-          "description": "Stores casino game history for a user. The 'userId' parameter is the Firebase Authentication UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
-            },
-            {
-              "name": "casinoGameId",
-              "description": "The unique identifier for the casino game."
-            }
-          ]
-        }
+      "description": "Stores HV Pass subscription information for a user."
+    },
+    "/users/{userId}/casinoGames/{casinoGameId}": {
+      "schema": {
+        "$ref": "#/entities/CasinoGame"
       },
-      {
-        "path": "/rankings/{rankingId}",
-        "definition": {
-          "entityName": "Ranking",
-          "schema": {
-            "$ref": "#/backend/entities/Ranking"
-          },
-          "description": "Stores global ranking information.",
-          "params": [
-            {
-              "name": "rankingId",
-              "description": "The unique identifier for the ranking."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to optimize data access and ensure security while supporting the features of the Desafío HV app. User-owned data is stored in hierarchical paths under the `/users/{userId}` collection to ensure clear ownership and simplified security rules. Data crucial for authorization, such as user roles or group memberships, is denormalized to avoid `get()` calls in security rules, improving performance and security.\n\nTo optimize data access for the user's request (rewards for study sessions), the `StudySession` subcollection is used under `/users/{userId}`.  This allows efficient querying and updating of user-specific study session data.  By storing study sessions as subcollections of user profiles, we maintain a clear data hierarchy and ensure that each study session is directly associated with its owner.\n\nThe structure supports QAPs by using structural segregation. User-specific data is separated from global data. Each collection is designed with a specific security posture. For instance, user profiles are private and accessible only to the authenticated user.  This approach simplifies security rules and prevents unauthorized data access.\n\nAuthorization Independence is achieved by avoiding hierarchical authorization dependencies. Security rules rely solely on the authenticated user's UID (`request.auth.uid`) and the path structure.  There are no `get()` calls to parent documents required to authorize access to subcollections."
+      "description": "Stores casino game history for a user."
+    },
+    "/rankings/{rankingId}": {
+      "schema": {
+        "$ref": "#/entities/Ranking"
+      },
+      "description": "Stores global ranking information."
+    }
   }
 }

@@ -2,15 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, serverTimestamp, setDoc, increment } from "firebase/firestore";
+import { Clock, ListChecks, BookOpen, Play, Square, Plus } from "lucide-react";
+import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, serverTimestamp, setDoc, increment, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -19,8 +23,24 @@ export default function Home() {
 
   const { data: userProfile } = useDoc(userProfileRef);
 
+  const studySessionsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, `users/${user.uid}/studySessions`);
+  }, [firestore, user]);
+
+  const recentStudySessionsQuery = useMemoFirebase(() => {
+    if (!studySessionsRef) return null;
+    return query(studySessionsRef, orderBy("endTime", "desc"), limit(5));
+  }, [studySessionsRef]);
+
+  const { data: recentActivities } = useCollection(recentStudySessionsQuery);
+
+
   const [isStudying, setIsStudying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [studySubject, setStudySubject] = useState("");
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastRewardTimeRef = useRef<number>(0);
 
@@ -30,14 +50,14 @@ export default function Home() {
       const createUserProfile = async () => {
         if (user && !userProfile) {
           const newUserProfile = {
-            username: 'Usuario Anónimo',
+            username: user.displayName || 'Usuario Anónimo',
             email: user.email || 'anonimo@desafiohv.com',
             level: 1,
             experiencePoints: 0,
             goldLingots: 0,
             casinoChips: 0,
             createdAt: serverTimestamp(),
-            imageUrl: '',
+            imageUrl: user.photoURL || '',
           };
           if (userProfileRef) {
             await setDoc(userProfileRef, newUserProfile);
@@ -62,6 +82,10 @@ export default function Home() {
                 goldLingots: increment(1),
                 casinoChips: increment(1),
               });
+               toast({
+                title: "¡Recompensa de estudio!",
+                description: "¡Has ganado 1250 XP, 1 Lingote y 1 Ficha de Casino!",
+              });
             }
           }
           return newTime;
@@ -77,16 +101,53 @@ export default function Home() {
         clearInterval(timerRef.current);
       }
     };
-  }, [isStudying, userProfileRef]);
+  }, [isStudying, userProfileRef, toast]);
 
-  const toggleStudySession = () => {
-    setIsStudying(!isStudying);
-    if(isStudying){
-      // Optional: save study session duration when stopped
-    } else {
-      lastRewardTimeRef.current = Math.floor(elapsedTime / 1800);
+  const handleStartStudy = () => {
+    if (!studySubject) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Por favor, introduce un tema de estudio.",
+      });
+      return;
     }
+    setIsStudying(true);
+    setSessionStartTime(new Date());
+    lastRewardTimeRef.current = Math.floor(elapsedTime / 1800);
   };
+  
+  const handleStopStudy = async () => {
+    setIsStudying(false);
+    if(studySessionsRef && sessionStartTime && elapsedTime > 0) {
+        const endTime = new Date();
+        const durationMinutes = Math.floor(elapsedTime / 60);
+
+        try {
+            await addDoc(studySessionsRef, {
+                subject: studySubject,
+                startTime: sessionStartTime,
+                endTime: endTime,
+                durationMinutes: durationMinutes
+            });
+            toast({
+                title: "Sesión guardada",
+                description: `Has estudiado "${studySubject}" por ${durationMinutes} minutos.`,
+            });
+        } catch (error) {
+            console.error("Error saving study session: ", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "No se pudo guardar la sesión de estudio.",
+            });
+        }
+    }
+    setElapsedTime(0);
+    setStudySubject("");
+    setSessionStartTime(null);
+  };
+
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -95,11 +156,14 @@ export default function Home() {
     return `${h}:${m}:${s}`;
   };
 
-  const recentActivities = [
-    { type: 'Estudio', detail: 'Psicología', duration: '45 min' },
-    { type: 'Ejercicio', detail: 'Flexiones', duration: '10 min' },
-    { type: 'Estudio', detail: 'Programación', duration: '1.2 horas' },
-  ];
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+        return `${hours}h ${mins}m`;
+    }
+    return `${mins} min`;
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -117,10 +181,26 @@ export default function Home() {
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
           <p className="text-6xl font-bold font-mono text-primary">{formatTime(elapsedTime)}</p>
-          <Button size="lg" className="w-full" onClick={toggleStudySession} disabled={isUserLoading}>
-            {isStudying ? <Square className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
-            {isStudying ? 'Detener Sesión' : 'Iniciar Sesión de Estudio'}
-          </Button>
+          {!isStudying ? (
+            <div className="w-full space-y-4">
+              <Input 
+                placeholder="¿Qué vas a estudiar?" 
+                value={studySubject}
+                onChange={(e) => setStudySubject(e.target.value)}
+                disabled={isUserLoading}
+              />
+              <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isUserLoading || !studySubject}>
+                <Play className="mr-2 h-5 w-5"/>
+                Iniciar Sesión de Estudio
+              </Button>
+            </div>
+          ) : (
+             <Button size="lg" className="w-full" onClick={handleStopStudy} disabled={isUserLoading}>
+                <Square className="mr-2 h-5 w-5"/>
+                Detener Sesión
+              </Button>
+          )}
+
         </CardContent>
       </Card>
 
@@ -132,20 +212,20 @@ export default function Home() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {recentActivities.length > 0 ? (
+          {recentActivities && recentActivities.length > 0 ? (
             <ul className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <li key={index} className="flex items-center justify-between">
+              {recentActivities.map((activity) => (
+                <li key={activity.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="bg-muted p-2 rounded-full">
                        <BookOpen className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-semibold">{activity.type}: {activity.detail}</p>
-                      <p className="text-sm text-muted-foreground">{activity.duration}</p>
+                      <p className="font-semibold">Estudio: {activity.subject}</p>
+                      <p className="text-sm text-muted-foreground">{formatDuration(activity.durationMinutes)}</p>
                     </div>
                   </div>
-                  <div className="text-sm font-medium text-primary">+15 XP</div>
+                  <div className="text-sm font-medium text-primary">+{Math.floor(activity.durationMinutes / 30) * 1250} XP</div>
                 </li>
               ))}
             </ul>

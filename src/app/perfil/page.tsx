@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera } from "lucide-react";
-import { useUser, useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
-import { doc } from "firebase/firestore";
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, updateDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,7 +54,13 @@ export default function PerfilPage() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading, error } = useDoc(userProfileRef);
+
+  useEffect(() => {
+    if (userProfile) {
+        setUsername(userProfile.username);
+    }
+  }, [userProfile]);
 
   const xp = userProfile?.experiencePoints ?? 0;
   const { currentRank, nextRank } = getRank(xp);
@@ -81,10 +87,15 @@ export default function PerfilPage() {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (userProfileRef && username.trim() !== '') {
-      updateDocumentNonBlocking(userProfileRef, { username: username.trim() });
-      toast({ title: "Perfil actualizado", description: "Tu nombre de usuario ha sido cambiado." });
+      try {
+        await updateDoc(userProfileRef, { username: username.trim() });
+        toast({ title: "Perfil actualizado", description: "Tu nombre de usuario ha sido cambiado." });
+      } catch(e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el perfil."})
+      }
     }
     setIsEditing(false);
   };
@@ -93,18 +104,32 @@ export default function PerfilPage() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && userProfileRef) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        updateDocumentNonBlocking(userProfileRef, { imageUrl: dataUrl });
-        toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
+        try {
+          await updateDoc(userProfileRef, { imageUrl: dataUrl });
+          toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
+        } catch(e) {
+          console.error(e);
+          toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el avatar."})
+        }
       };
       reader.readAsDataURL(file);
     }
   };
+  
+  const getInitials = (name: string) => {
+    if (!name) return 'HV';
+    const names = name.split(' ');
+    if (names.length > 1) {
+        return names[0][0] + names[1][0];
+    }
+    return name.substring(0, 2);
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -121,7 +146,7 @@ export default function PerfilPage() {
               <div className="relative">
                 <Avatar className="w-24 h-24 mb-4 border-4 border-card shadow-lg cursor-pointer" onClick={handleAvatarClick}>
                   <AvatarImage src={userProfile?.imageUrl} alt="Avatar de usuario" />
-                  <AvatarFallback>{userProfile?.username?.charAt(0) || 'HV'}</AvatarFallback>
+                  <AvatarFallback>{getInitials(userProfile?.username)}</AvatarFallback>
                 </Avatar>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                  <Button variant="outline" size="icon" className="absolute bottom-2 -right-1 w-8 h-8 rounded-full" onClick={handleAvatarClick}>
