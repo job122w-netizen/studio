@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
@@ -83,7 +83,7 @@ export default function PerfilPage() {
     { icon: Shield, name: "Maratón de Estudio", description: "Estudia por más de 5 horas seguidas" },
   ];
   
-  const isLoading = isUserLoading || (user && isProfileLoading);
+  const isLoading = isUserLoading || !userProfile;
 
   const handleEdit = () => {
     setUsername(userProfile?.username || '');
@@ -168,7 +168,10 @@ export default function PerfilPage() {
               <Badge variant="secondary" className="mt-2">Pase HV Activo</Badge>
             </>
           ) : (
-            <p>Cargando perfil...</p>
+             <div className="text-center p-8">
+                <p className="text-muted-foreground">No se pudo cargar el perfil.</p>
+                <p className="text-sm text-muted-foreground">Por favor, intenta recargar la página.</p>
+             </div>
           )}
         </CardContent>
       </Card>

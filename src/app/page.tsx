@@ -45,10 +45,10 @@ export default function Home() {
   const lastRewardTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!isUserLoading && user && !userProfile) {
+    if (!isUserLoading && user && userProfile === null) {
       // Create user profile if it doesn't exist
       const createUserProfile = async () => {
-        if (user && !userProfile) {
+        if (user && userProfileRef) {
           const newUserProfile = {
             username: user.displayName || 'Usuario Anónimo',
             email: user.email || 'anonimo@desafiohv.com',
@@ -59,9 +59,7 @@ export default function Home() {
             createdAt: serverTimestamp(),
             imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
           };
-          if (userProfileRef) {
-            await setDoc(userProfileRef, newUserProfile);
-          }
+          await setDoc(userProfileRef, newUserProfile);
         }
       };
       createUserProfile();
@@ -144,7 +142,7 @@ export default function Home() {
             });
         }
        
-    } else if (elapsedTime <= 10) {
+    } else if (elapsedTime > 0 && elapsedTime <= 10) {
         toast({
             variant: "destructive",
             title: "Sesión no guardada",
