@@ -9,19 +9,21 @@ import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  const { data: userProfile } = useDoc(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   const studySessionsRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -45,35 +47,39 @@ export default function Home() {
   const lastRewardTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!isUserLoading && user && userProfile === null) {
-      // Create user profile if it doesn't exist
+    if (!isUserLoading && !user) {
+        router.push('/auth');
+    }
+  }, [user, isUserLoading, router]);
+  
+  useEffect(() => {
+    if (!isUserLoading && user && userProfile === null && userProfileRef) {
       const createUserProfile = async () => {
-        if (user && userProfileRef) {
-          const newUserProfile = {
-            username: user.displayName || 'Usuario Anónimo',
-            email: user.email || 'anonimo@desafiohv.com',
-            level: 1,
-            experiencePoints: 0,
-            goldLingots: 0,
-            casinoChips: 0,
-            createdAt: serverTimestamp(),
-            imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-          };
-          await setDoc(userProfileRef, newUserProfile);
-        }
+        const newUserProfile = {
+          username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
+          email: user.email || 'anonimo@desafiohv.com',
+          level: 1,
+          experiencePoints: 0,
+          goldLingots: 0,
+          casinoChips: 0,
+          createdAt: serverTimestamp(),
+          imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+        };
+        await setDoc(userProfileRef, newUserProfile);
       };
       createUserProfile();
     }
-  }, [user, isUserLoading, userProfile, firestore, userProfileRef]);
+  }, [user, isUserLoading, userProfile, userProfileRef]);
 
   useEffect(() => {
     if (isStudying) {
       timerRef.current = setInterval(() => {
         setElapsedTime(prevTime => {
           const newTime = prevTime + 1;
-          // Reward every 30 minutes (1800 seconds)
-          if (Math.floor(newTime / 1800) > lastRewardTimeRef.current) {
-            lastRewardTimeRef.current = Math.floor(newTime / 1800);
+          const thirtyMinuteMark = Math.floor(newTime / 1800);
+
+          if (thirtyMinuteMark > lastRewardTimeRef.current) {
+            lastRewardTimeRef.current = thirtyMinuteMark;
             if (userProfileRef) {
               updateDocumentNonBlocking(userProfileRef, {
                 experiencePoints: increment(1250),
@@ -82,7 +88,7 @@ export default function Home() {
               });
                toast({
                 title: "¡Recompensa de estudio!",
-                description: "¡Has ganado 1250 XP, 1 Lingote y 1 Ficha de Casino!",
+                description: "¡Has ganado 1250 Puntos, 1 Lingote y 1 Ficha!",
               });
             }
           }
@@ -118,29 +124,29 @@ export default function Home() {
   
   const handleStopStudy = () => {
     setIsStudying(false);
-    if(studySessionsRef && sessionStartTime && elapsedTime > 10) {
+    if(user && studySessionsRef && sessionStartTime && elapsedTime > 10) {
         const endTime = new Date();
         const durationMinutes = Math.floor(elapsedTime / 60);
 
         addDocumentNonBlocking(studySessionsRef, {
-            userId: user?.uid,
+            userId: user.uid,
             subject: studySubject,
             startTime: sessionStartTime,
             endTime: endTime,
             durationMinutes: durationMinutes
+        }).then(() => {
+            if (durationMinutes > 0) {
+                toast({
+                   title: "Sesión guardada",
+                   description: `Has estudiado "${studySubject}" por ${durationMinutes} minutos.`,
+               });
+           } else {
+                toast({
+                   title: "Sesión guardada",
+                   description: `Has estudiado "${studySubject}" por menos de un minuto.`,
+               });
+           }
         });
-
-        if (durationMinutes > 0) {
-             toast({
-                title: "Sesión guardada",
-                description: `Has estudiado "${studySubject}" por ${durationMinutes} minutos.`,
-            });
-        } else {
-             toast({
-                title: "Sesión guardada",
-                description: `Has estudiado "${studySubject}" por menos de un minuto.`,
-            });
-        }
        
     } else if (elapsedTime > 0 && elapsedTime <= 10) {
         toast({
@@ -177,6 +183,18 @@ export default function Home() {
     return Math.floor(minutes / 30) * 1250;
   }
 
+  const isLoading = isUserLoading || isProfileLoading;
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-full">
+            <div className="text-center">
+                <p>Cargando tu espacio...</p>
+            </div>
+        </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       <section className="text-center">
@@ -199,9 +217,9 @@ export default function Home() {
                 placeholder="¿Qué vas a estudiar?" 
                 value={studySubject}
                 onChange={(e) => setStudySubject(e.target.value)}
-                disabled={isStudying || isUserLoading}
+                disabled={isStudying || isLoading}
               />
-              <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isUserLoading || !studySubject}>
+              <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || !studySubject}>
                 <Play className="mr-2 h-5 w-5"/>
                 Iniciar Sesión de Estudio
               </Button>
@@ -209,7 +227,7 @@ export default function Home() {
           ) : (
              <div className="w-full space-y-4 text-center">
                 <p className="text-muted-foreground">Estudiando: <span className="font-semibold text-foreground">{studySubject}</span></p>
-                <Button size="lg" className="w-full" onClick={handleStopStudy} disabled={isUserLoading}>
+                <Button size="lg" className="w-full" onClick={handleStopStudy} disabled={isLoading}>
                     <Square className="mr-2 h-5 w-5"/>
                     Detener Sesión
                 </Button>
@@ -227,7 +245,9 @@ export default function Home() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {recentActivities && recentActivities.length > 0 ? (
+          {!recentActivities || recentActivities.length === 0 ? (
+            <p className="text-center text-muted-foreground">No hay actividad reciente. ¡Empieza a estudiar!</p>
+          ) : (
             <ul className="space-y-4">
               {recentActivities.map((activity) => (
                 <li key={activity.id} className="flex items-center justify-between">
@@ -244,8 +264,6 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="text-center text-muted-foreground">No hay actividad reciente. ¡Empieza a estudiar!</p>
           )}
         </CardContent>
       </Card>

@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera } from "lucide-react";
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut } from "lucide-react";
+import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +13,8 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -44,6 +46,8 @@ const getRank = (xp: number) => {
 export default function PerfilPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const auth = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [isRanksOpen, setIsRanksOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -64,6 +68,12 @@ export default function PerfilPage() {
         setAvatarUrl(userProfile.imageUrl);
     }
   }, [userProfile]);
+  
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/auth');
+    }
+  }, [user, isUserLoading, router]);
 
   const xp = userProfile?.experiencePoints ?? 0;
   const { currentRank, nextRank } = getRank(xp);
@@ -72,9 +82,9 @@ export default function PerfilPage() {
     : 100;
 
   const stats = [
+    { icon: Star, label: "Puntos HV", value: userProfile?.experiencePoints?.toLocaleString('es-ES') || "0" },
     { icon: BookOpen, label: "Horas de Estudio", value: userProfile?.studyHours || "0" },
     { icon: Dumbbell, label: "Ejercicios", value: userProfile?.exercisesCompleted || "0" },
-    { icon: Star, label: "Puntos HV", value: userProfile?.experiencePoints?.toLocaleString('es-ES') || "0" },
   ];
 
   const achievements = [
@@ -110,7 +120,7 @@ export default function PerfilPage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        setAvatarUrl(dataUrl);
+        setAvatarUrl(dataUrl); // Optimistically update UI
         updateDocumentNonBlocking(userProfileRef, { imageUrl: dataUrl });
         toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
       };
@@ -127,17 +137,38 @@ export default function PerfilPage() {
     return name.substring(0, 2).toUpperCase();
   }
 
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/auth');
+  }
+
+  if (isLoading || !userProfile) {
+    return (
+      <div className="space-y-8 animate-fade-in pb-16">
+        <Card className="overflow-hidden">
+          <CardContent className="p-6 flex flex-col items-center text-center">
+            <Skeleton className="w-24 h-24 rounded-full mb-4" />
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-5 w-32" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Estadísticas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       <Card className="overflow-hidden">
         <CardContent className="p-6 flex flex-col items-center text-center">
-          {isLoading ? (
-            <>
-              <Skeleton className="w-24 h-24 rounded-full mb-4" />
-              <Skeleton className="h-8 w-48 mb-2" />
-              <Skeleton className="h-5 w-32" />
-            </>
-          ) : userProfile ? (
             <>
               <div className="relative">
                 <Avatar className="w-24 h-24 mb-4 border-4 border-card shadow-lg cursor-pointer" onClick={handleAvatarClick}>
@@ -164,30 +195,22 @@ export default function PerfilPage() {
                 </div>
               )}
 
-              <p className="text-muted-foreground">Miembro desde hace 3 meses</p>
+              <p className="text-muted-foreground">{user?.email}</p>
               <Badge variant="secondary" className="mt-2">Pase HV Activo</Badge>
             </>
-          ) : (
-             <div className="text-center p-8">
-                <p className="text-muted-foreground">Inicia sesión para ver tu perfil.</p>
-             </div>
-          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><BarChart className="h-5 w-5 text-primary"/> Estadísticas</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2"><BarChart className="h-5 w-5 text-primary"/> Estadísticas</div>
+             <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8">
+                <LogOut className="w-4 h-4 text-destructive"/>
+             </Button>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
-          {isLoading ? (
-            <>
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </>
-          ) : userProfile ? (
+        <CardContent className="grid grid-cols-1 gap-4">
              <>
               {stats.map((stat) => (
                 <div key={stat.label} className="bg-muted/50 p-4 rounded-lg flex items-center gap-3">
@@ -236,11 +259,6 @@ export default function PerfilPage() {
                 </CollapsibleContent>
               </Collapsible>
              </>
-          ) : (
-            <div className="col-span-2 text-center text-muted-foreground p-4">
-                No hay estadísticas para mostrar.
-            </div>
-          )}
         </CardContent>
       </Card>
       

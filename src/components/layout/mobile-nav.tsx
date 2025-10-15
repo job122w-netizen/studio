@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Award, BookOpenText, Dice5, Dumbbell, Store, Trophy, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { useUser } from '@/firebase';
 
 const navItems = [
   { href: '/', label: 'Estudio', icon: BookOpenText },
@@ -18,6 +19,11 @@ const navItems = [
 
 function MobileNavContent() {
   const pathname = usePathname();
+  const { user } = useUser();
+
+  if (!user) {
+    return null; // Don't render nav if user is not logged in
+  }
 
   return (
     <nav className="mx-auto grid h-full max-w-lg grid-cols-7 items-stretch">
@@ -47,10 +53,12 @@ export function MobileNav() {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
+  
+  // Use a wrapper div that is always present to avoid hydration issues,
+  // but the content inside will only render on the client.
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-card/95 backdrop-blur-sm sm:h-auto">
-      {isClient ? <MobileNavContent /> : null}
+    <div className="fixed bottom-0 left-0 right-0 z-50 h-14 border-t bg-card/95 backdrop-blur-sm">
+      {isClient ? <MobileNavContent /> : <div className="h-full" />}
     </div>
   );
 }
