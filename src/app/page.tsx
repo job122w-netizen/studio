@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, serverTimestamp, setDoc, increment, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
+import { doc, serverTimestamp, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
-import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -54,7 +54,7 @@ export default function Home() {
   
   useEffect(() => {
     if (!isUserLoading && user && userProfile === null && userProfileRef) {
-      const createUserProfile = async () => {
+      const createUserProfile = () => {
         const newUserProfile = {
           username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
           email: user.email || 'anonimo@desafiohv.com',
@@ -65,7 +65,7 @@ export default function Home() {
           createdAt: serverTimestamp(),
           imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
         };
-        await setDoc(userProfileRef, newUserProfile);
+        setDocumentNonBlocking(userProfileRef, newUserProfile, {});
       };
       createUserProfile();
     }
@@ -82,9 +82,9 @@ export default function Home() {
             lastRewardTimeRef.current = thirtyMinuteMark;
             if (userProfileRef) {
               updateDocumentNonBlocking(userProfileRef, {
-                experiencePoints: increment(1250),
-                goldLingots: increment(1),
-                casinoChips: increment(1),
+                experiencePoints: 1250,
+                goldLingots: 1,
+                casinoChips: 1,
               });
                toast({
                 title: "¡Recompensa de estudio!",
@@ -270,3 +270,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
