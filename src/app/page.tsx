@@ -9,6 +9,7 @@ import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -117,40 +118,40 @@ export default function Home() {
     lastRewardTimeRef.current = 0;
   };
   
-  const handleStopStudy = async () => {
+  const handleStopStudy = () => {
     setIsStudying(false);
-    if(studySessionsRef && sessionStartTime && elapsedTime > 0) {
+    if(studySessionsRef && sessionStartTime && elapsedTime > 10) {
         const endTime = new Date();
         const durationMinutes = Math.floor(elapsedTime / 60);
 
-        if (durationMinutes === 0) {
-            setElapsedTime(0);
-            setStudySubject("");
-            setSessionStartTime(null);
-            return;
-        }
+        addDocumentNonBlocking(studySessionsRef, {
+            userId: user?.uid,
+            subject: studySubject,
+            startTime: sessionStartTime,
+            endTime: endTime,
+            durationMinutes: durationMinutes
+        });
 
-        try {
-            await addDoc(studySessionsRef, {
-                userId: user?.uid,
-                subject: studySubject,
-                startTime: sessionStartTime,
-                endTime: endTime,
-                durationMinutes: durationMinutes
-            });
-            toast({
+        if (durationMinutes > 0) {
+             toast({
                 title: "Sesión guardada",
                 description: `Has estudiado "${studySubject}" por ${durationMinutes} minutos.`,
             });
-        } catch (error) {
-            console.error("Error saving study session: ", error);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "No se pudo guardar la sesión de estudio.",
+        } else {
+             toast({
+                title: "Sesión guardada",
+                description: `Has estudiado "${studySubject}" por menos de un minuto.`,
             });
         }
+       
+    } else if (elapsedTime <= 10) {
+        toast({
+            variant: "destructive",
+            title: "Sesión no guardada",
+            description: "La sesión de estudio debe durar más de 10 segundos.",
+        });
     }
+    
     setElapsedTime(0);
     setStudySubject("");
     setSessionStartTime(null);

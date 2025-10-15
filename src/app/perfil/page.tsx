@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -82,7 +83,7 @@ export default function PerfilPage() {
     { icon: Shield, name: "Maratón de Estudio", description: "Estudia por más de 5 horas seguidas" },
   ];
   
-  const isLoading = isUserLoading || isProfileLoading;
+  const isLoading = isUserLoading || (user && isProfileLoading);
 
   const handleEdit = () => {
     setUsername(userProfile?.username || '');
@@ -91,15 +92,9 @@ export default function PerfilPage() {
 
   const handleSave = async () => {
     if (userProfileRef && username.trim() !== '') {
-      try {
-        await updateDoc(userProfileRef, { username: username.trim() });
+        updateDocumentNonBlocking(userProfileRef, { username: username.trim() });
         toast({ title: "Perfil actualizado", description: "Tu nombre de usuario ha sido cambiado." });
-      } catch(e) {
-        console.error(e);
-        toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el perfil."})
-      } finally {
         setIsEditing(false);
-      }
     } else {
         setIsEditing(false);
     }
@@ -115,17 +110,9 @@ export default function PerfilPage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        // Optimistic update
         setAvatarUrl(dataUrl);
-        try {
-          await updateDoc(userProfileRef, { imageUrl: dataUrl });
-          toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
-        } catch(e) {
-          console.error(e);
-          // Revert if error
-          setAvatarUrl(userProfile?.imageUrl || '');
-          toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el avatar."})
-        }
+        updateDocumentNonBlocking(userProfileRef, { imageUrl: dataUrl });
+        toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
       };
       reader.readAsDataURL(file);
     }
@@ -181,7 +168,7 @@ export default function PerfilPage() {
               <Badge variant="secondary" className="mt-2">Pase HV Activo</Badge>
             </>
           ) : (
-            <p>Creando perfil...</p>
+            <p>Cargando perfil...</p>
           )}
         </CardContent>
       </Card>
