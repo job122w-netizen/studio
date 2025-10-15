@@ -49,6 +49,7 @@ export default function AuthPage() {
         case AuthErrorCodes.INVALID_EMAIL:
             description = "El correo electrónico no es válido.";
             break;
+        case "auth/invalid-credential":
         case AuthErrorCodes.INVALID_PASSWORD:
              description = "La contraseña es incorrecta.";
             break;
@@ -77,7 +78,7 @@ export default function AuthPage() {
       } else {
         await initiateEmailSignIn(auth, values.email, values.password);
       }
-      // Non-blocking, onAuthStateChanged will handle redirect
+      // onAuthStateChanged will handle redirect
     } catch (error: any) {
         handleAuthError(error.code);
     } finally {
