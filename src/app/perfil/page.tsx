@@ -4,11 +4,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap } from "lucide-react";
 import Image from "next/image";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const ranks = [
+    { name: "Novato", xpThreshold: 0 },
+    { name: "Aprendiz", xpThreshold: 10000 },
+    { name: "Erudito", xpThreshold: 25000 },
+    { name: "Maestro", xpThreshold: 50000 },
+    { name: "Gran Maestro", xpThreshold: 100000 },
+    { name: "Sabio", xpThreshold: 200000 },
+];
+
+const getRank = (xp: number) => {
+    let currentRank = ranks[0];
+    for (const rank of ranks) {
+        if (xp >= rank.xpThreshold) {
+            currentRank = rank;
+        } else {
+            break;
+        }
+    }
+    return currentRank;
+};
+
 
 export default function PerfilPage() {
   const { user, isUserLoading } = useUser();
@@ -22,11 +44,13 @@ export default function PerfilPage() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar');
+  
+  const currentRank = userProfile ? getRank(userProfile.experiencePoints) : ranks[0];
 
   const stats = [
     { icon: BookOpen, label: "Horas de Estudio", value: userProfile?.studyHours || "0" },
     { icon: Dumbbell, label: "Ejercicios", value: userProfile?.exercisesCompleted || "0" },
-    { icon: Trophy, label: "Rango Actual", value: "#4" }, // Placeholder
+    { icon: GraduationCap, label: "Rango Actual", value: currentRank.name },
     { icon: Star, label: "Puntos HV", value: userProfile?.experiencePoints?.toLocaleString('es-ES') || "0" },
   ];
 

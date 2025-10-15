@@ -20,7 +20,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/90 backdrop-blur-sm">
-      <div className="mx-auto grid h-20 max-w-lg grid-cols-7 items-center justify-around px-2">
+      <div className="mx-auto grid h-16 max-w-lg grid-cols-7 items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -28,7 +28,7 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 rounded-md p-2 text-muted-foreground transition-colors hover:text-primary',
+                'flex flex-col items-center justify-center gap-1 rounded-md p-1 text-muted-foreground transition-colors hover:text-primary',
                 isActive && 'text-primary'
               )}
             >

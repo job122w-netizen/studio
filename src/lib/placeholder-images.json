@@ -31,22 +31,22 @@
       "imageHint": "medieval shield"
     },
     {
-      "id": "exercise-mindfulness",
-      "description": "Image for mindfulness exercise",
-      "imageUrl": "https://picsum.photos/seed/mindful/400/200",
-      "imageHint": "calm lake"
+      "id": "exercise-pushups",
+      "description": "Image for pushups exercise",
+      "imageUrl": "https://picsum.photos/seed/pushups/400/200",
+      "imageHint": "person pushups"
     },
     {
-      "id": "exercise-productivity",
-      "description": "Image for productivity exercise",
-      "imageUrl": "https://picsum.photos/seed/productive/400/200",
-      "imageHint": "desk setup"
+      "id": "exercise-cardio",
+      "description": "Image for cardio exercise",
+      "imageUrl": "https://picsum.photos/seed/cardio/400/200",
+      "imageHint": "person running"
     },
     {
-      "id": "exercise-journal",
-      "description": "Image for journaling exercise",
-      "imageUrl": "https://picsum.photos/seed/journal/400/200",
-      "imageHint": "open journal"
+      "id": "exercise-stretching",
+      "description": "Image for stretching exercise",
+      "imageUrl": "https://picsum.photos/seed/stretching/400/200",
+      "imageHint": "person stretching"
     }
   ]
 }
