@@ -2,13 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, ListChecks, BookOpen, Play, Square, Plus } from "lucide-react";
+import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, serverTimestamp, setDoc, increment, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
@@ -57,7 +56,7 @@ export default function Home() {
             goldLingots: 0,
             casinoChips: 0,
             createdAt: serverTimestamp(),
-            imageUrl: user.photoURL || '',
+            imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
           };
           if (userProfileRef) {
             await setDoc(userProfileRef, newUserProfile);
@@ -114,7 +113,8 @@ export default function Home() {
     }
     setIsStudying(true);
     setSessionStartTime(new Date());
-    lastRewardTimeRef.current = Math.floor(elapsedTime / 1800);
+    setElapsedTime(0);
+    lastRewardTimeRef.current = 0;
   };
   
   const handleStopStudy = async () => {
@@ -123,8 +123,16 @@ export default function Home() {
         const endTime = new Date();
         const durationMinutes = Math.floor(elapsedTime / 60);
 
+        if (durationMinutes === 0) {
+            setElapsedTime(0);
+            setStudySubject("");
+            setSessionStartTime(null);
+            return;
+        }
+
         try {
             await addDoc(studySessionsRef, {
+                userId: user?.uid,
                 subject: studySubject,
                 startTime: sessionStartTime,
                 endTime: endTime,
@@ -157,6 +165,7 @@ export default function Home() {
   };
 
   const formatDuration = (minutes: number) => {
+    if (minutes < 1) return "Menos de 1 min";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     if (hours > 0) {
@@ -164,9 +173,13 @@ export default function Home() {
     }
     return `${mins} min`;
   }
+  
+  const xpFromDuration = (minutes: number) => {
+    return Math.floor(minutes / 30) * 1250;
+  }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-16">
       <section className="text-center">
         <h1 className="text-3xl font-bold font-headline text-foreground">Tu Espacio de Crecimiento</h1>
         <p className="text-muted-foreground mt-2">"La disciplina es el puente entre las metas y los logros."</p>
@@ -187,7 +200,7 @@ export default function Home() {
                 placeholder="¿Qué vas a estudiar?" 
                 value={studySubject}
                 onChange={(e) => setStudySubject(e.target.value)}
-                disabled={isUserLoading}
+                disabled={isStudying || isUserLoading}
               />
               <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isUserLoading || !studySubject}>
                 <Play className="mr-2 h-5 w-5"/>
@@ -195,10 +208,13 @@ export default function Home() {
               </Button>
             </div>
           ) : (
-             <Button size="lg" className="w-full" onClick={handleStopStudy} disabled={isUserLoading}>
-                <Square className="mr-2 h-5 w-5"/>
-                Detener Sesión
-              </Button>
+             <div className="w-full space-y-4 text-center">
+                <p className="text-muted-foreground">Estudiando: <span className="font-semibold text-foreground">{studySubject}</span></p>
+                <Button size="lg" className="w-full" onClick={handleStopStudy} disabled={isUserLoading}>
+                    <Square className="mr-2 h-5 w-5"/>
+                    Detener Sesión
+                </Button>
+             </div>
           )}
 
         </CardContent>
@@ -221,11 +237,11 @@ export default function Home() {
                        <BookOpen className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-semibold">Estudio: {activity.subject}</p>
+                      <p className="font-semibold">{activity.subject}</p>
                       <p className="text-sm text-muted-foreground">{formatDuration(activity.durationMinutes)}</p>
                     </div>
                   </div>
-                  <div className="text-sm font-medium text-primary">+{Math.floor(activity.durationMinutes / 30) * 1250} XP</div>
+                  <div className="text-sm font-medium text-primary">+{xpFromDuration(activity.durationMinutes).toLocaleString('es-ES')} Puntos</div>
                 </li>
               ))}
             </ul>

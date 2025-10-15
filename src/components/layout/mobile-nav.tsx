@@ -19,8 +19,8 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/90 backdrop-blur-sm">
-      <div className="mx-auto grid h-14 max-w-lg grid-cols-7 items-center justify-around px-1">
+    <div className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-card/95 backdrop-blur-sm sm:h-auto">
+      <nav className="mx-auto grid h-full max-w-lg grid-cols-7 items-stretch">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -28,16 +28,16 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 rounded-md p-1 text-muted-foreground transition-colors hover:text-primary',
-                isActive && 'text-primary'
+                'flex flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-primary',
+                isActive && 'text-primary bg-muted/50'
               )}
             >
               <item.icon className="h-4 w-4" />
-              <span className="text-[9px] font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium tracking-tighter">{item.label}</span>
             </Link>
           );
         })}
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 }

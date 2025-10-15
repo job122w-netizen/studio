@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
@@ -47,6 +47,7 @@ export default function PerfilPage() {
   const [isRanksOpen, setIsRanksOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userProfileRef = useMemoFirebase(() => {
@@ -54,11 +55,12 @@ export default function PerfilPage() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  const { data: userProfile, isLoading: isProfileLoading, error } = useDoc(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   useEffect(() => {
     if (userProfile) {
         setUsername(userProfile.username);
+        setAvatarUrl(userProfile.imageUrl);
     }
   }, [userProfile]);
 
@@ -95,9 +97,12 @@ export default function PerfilPage() {
       } catch(e) {
         console.error(e);
         toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el perfil."})
+      } finally {
+        setIsEditing(false);
       }
+    } else {
+        setIsEditing(false);
     }
-    setIsEditing(false);
   };
   
   const handleAvatarClick = () => {
@@ -110,11 +115,15 @@ export default function PerfilPage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
+        // Optimistic update
+        setAvatarUrl(dataUrl);
         try {
           await updateDoc(userProfileRef, { imageUrl: dataUrl });
           toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
         } catch(e) {
           console.error(e);
+          // Revert if error
+          setAvatarUrl(userProfile?.imageUrl || '');
           toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el avatar."})
         }
       };
@@ -125,14 +134,14 @@ export default function PerfilPage() {
   const getInitials = (name: string) => {
     if (!name) return 'HV';
     const names = name.split(' ');
-    if (names.length > 1) {
-        return names[0][0] + names[1][0];
+    if (names.length > 1 && names[1]) {
+        return (names[0][0] + names[1][0]).toUpperCase();
     }
-    return name.substring(0, 2);
+    return name.substring(0, 2).toUpperCase();
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-16">
       <Card className="overflow-hidden">
         <CardContent className="p-6 flex flex-col items-center text-center">
           {isLoading ? (
@@ -141,11 +150,11 @@ export default function PerfilPage() {
               <Skeleton className="h-8 w-48 mb-2" />
               <Skeleton className="h-5 w-32" />
             </>
-          ) : (
+          ) : userProfile ? (
             <>
               <div className="relative">
                 <Avatar className="w-24 h-24 mb-4 border-4 border-card shadow-lg cursor-pointer" onClick={handleAvatarClick}>
-                  <AvatarImage src={userProfile?.imageUrl} alt="Avatar de usuario" />
+                  <AvatarImage src={avatarUrl} alt="Avatar de usuario" />
                   <AvatarFallback>{getInitials(userProfile?.username)}</AvatarFallback>
                 </Avatar>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
@@ -161,7 +170,7 @@ export default function PerfilPage() {
                  </div>
               ) : (
                 <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold font-headline">{userProfile?.username || 'Usuario'}</h1>
+                    <h1 className="text-2xl font-bold font-headline">{userProfile?.username}</h1>
                     <Button variant="ghost" size="icon" onClick={handleEdit} className="h-8 w-8">
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -171,6 +180,8 @@ export default function PerfilPage() {
               <p className="text-muted-foreground">Miembro desde hace 3 meses</p>
               <Badge variant="secondary" className="mt-2">Pase HV Activo</Badge>
             </>
+          ) : (
+            <p>Creando perfil...</p>
           )}
         </CardContent>
       </Card>
@@ -219,8 +230,9 @@ export default function PerfilPage() {
                         </p>
                         <Progress value={progressToNextRank} className="my-2 h-2" />
                          <p className="text-xs text-muted-foreground">
-                           {currentRank.name !== nextRank.name && 
-                           `Te faltan ${(nextRank.xpThreshold - xp).toLocaleString('es-ES')} puntos`
+                           {currentRank.name !== nextRank.name && xp < nextRank.xpThreshold
+                           ? `Te faltan ${(nextRank.xpThreshold - xp).toLocaleString('es-ES')} puntos`
+                           : xp >= nextRank.xpThreshold && currentRank.name !== nextRank.name ? '¡Listo para ascender!' : ''
                            }
                         </p>
                     </div>
