@@ -43,6 +43,7 @@ export default function AuthPage() {
   }, [user, isUserLoading, router]);
 
   const createUserProfile = async (user: UserCredential['user']) => {
+    if (!firestore) return;
     const userProfileRef = doc(firestore, 'users', user.uid);
     const userProfileSnap = await getDoc(userProfileRef);
 
@@ -58,6 +59,10 @@ export default function AuthPage() {
             imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
             currentStreak: 0,
             lastActivityDate: null,
+            hvPassLevel: 1,
+            hvPassXp: 0,
+            hasPremiumPass: false,
+            unlockedBackgrounds: [],
         };
         setDocumentNonBlocking(userProfileRef, newUserProfile, {});
     }
@@ -94,6 +99,7 @@ export default function AuthPage() {
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>, isSignUp: boolean) => {
+    if (!auth) return;
     setIsSubmitting(true);
     try {
       let userCredential: UserCredential;
@@ -112,6 +118,7 @@ export default function AuthPage() {
   };
 
   const handleAnonymousSignIn = async () => {
+    if (!auth) return;
     setIsSubmitting(true);
     try {
         const userCredential = await initiateAnonymousSignIn(auth);

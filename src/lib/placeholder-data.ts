@@ -42,3 +42,50 @@ export const tiendaItems = [
     image: getImage('store-item-4'),
   },
 ];
+
+export type HvPassReward = {
+    type: 'goldLingots' | 'casinoChips' | 'chest' | 'profileBackground';
+    quantity?: number;
+    itemId?: string; // For backgrounds
+};
+
+export type HvPassLevel = {
+    level: number;
+    freeReward: HvPassReward;
+    premiumReward?: HvPassReward;
+};
+
+// Generate 100 levels for the pass
+export const hvPassLevels: HvPassLevel[] = Array.from({ length: 100 }, (_, i) => {
+    const level = i + 1;
+    const freeReward: HvPassReward = { type: 'goldLingots', quantity: (level % 5 === 0) ? 25 : 10 };
+    
+    let premiumReward: HvPassReward | undefined;
+
+    if (level % 10 === 0) {
+        premiumReward = { type: 'chest', quantity: 1 };
+    } else if (level % 5 === 0) {
+        premiumReward = { type: 'casinoChips', quantity: 10 };
+    } else if (level % 3 === 0) {
+        premiumReward = { type: 'goldLingots', quantity: 50 };
+    }
+    
+    // Assign one of the 10 profile backgrounds at specific premium levels
+    if (level === 20) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-1' };
+    if (level === 30) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-2' };
+    if (level === 40) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-3' };
+    if (level === 50) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-4' };
+    if (level === 60) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-5' };
+    if (level === 70) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-6' };
+    if (level === 80) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-7' };
+    if (level === 90) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-8' };
+    if (level === 95) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-9' };
+    if (level === 100) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-10' };
+
+
+    return {
+        level,
+        freeReward,
+        premiumReward,
+    };
+});

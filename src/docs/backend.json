@@ -1,0 +1,413 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile within the Desafío HV app.",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "level": {
+          "type": "number",
+          "description": "The user's current level in the app."
+        },
+        "experiencePoints": {
+          "type": "number",
+          "description": "The user's current experience points."
+        },
+        "goldLingots": {
+          "type": "number",
+          "description": "The number of gold lingots the user has."
+        },
+        "casinoChips": {
+          "type": "number",
+          "description": "The number of casino chips the user has."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the user's profile picture."
+        },
+        "currentStreak": {
+          "type": "number",
+          "description": "The user's current daily streak of completing activities."
+        },
+        "lastActivityDate": {
+          "type": "string",
+          "description": "The date of the last recorded activity (YYYY-MM-DD).",
+          "format": "date"
+        },
+        "hvPassLevel": {
+          "type": "number",
+          "description": "The user's current level in the HV Pass."
+        },
+        "hvPassXp": {
+          "type": "number",
+          "description": "The user's current XP towards the next HV Pass level."
+        },
+        "hasPremiumPass": {
+            "type": "boolean",
+            "description": "Indicates if the user has the premium HV Pass."
+        },
+        "unlockedBackgrounds": {
+            "type": "array",
+            "description": "List of unlocked profile background IDs.",
+            "items": { "type": "string" }
+        }
+      },
+      "required": [
+        "username",
+        "email",
+        "level",
+        "experiencePoints",
+        "goldLingots",
+        "casinoChips",
+        "hvPassLevel",
+        "hvPassXp",
+        "hasPremiumPass"
+      ]
+    },
+    "StudySession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudySession",
+      "type": "object",
+      "description": "Represents a study session recorded by a user.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject of the study session."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The start time of the study session.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The end time of the study session.",
+          "format": "date-time"
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "The duration of the study session in minutes."
+        }
+      },
+      "required": [
+        "userId",
+        "subject",
+        "startTime",
+        "endTime",
+        "durationMinutes"
+      ]
+    },
+    "WeeklyRoutine": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WeeklyRoutine",
+      "type": "object",
+      "description": "Represents a user's weekly exercise routine for a specific day.",
+      "properties": {
+        "dayOfWeek": {
+          "type": "string",
+          "description": "The day of the week (e.g., lunes, martes)."
+        },
+        "exercises": {
+          "type": "array",
+          "description": "List of exercises for the day.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the exercise."
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the exercise."
+              },
+              "completed": {
+                "type": "boolean",
+                "description": "Whether the exercise has been completed for the day."
+              }
+            },
+            "required": ["id", "name", "completed"]
+          }
+        }
+      },
+      "required": ["dayOfWeek", "exercises"]
+    },
+    "UserExercise": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserExercise",
+      "type": "object",
+      "description": "Represents a user's completion of an exercise.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile."
+        },
+        "exerciseId": {
+          "type": "string",
+          "description": "Reference to Exercise."
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "The date the user completed the exercise.",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes from the user about the exercise."
+        }
+      },
+      "required": [
+        "userId",
+        "exerciseId",
+        "completionDate"
+      ]
+    },
+    "StoreItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StoreItem",
+      "type": "object",
+      "description": "Represents an item available for purchase in the virtual store.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the item."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the item."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the item in gold lingots."
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "price"
+      ]
+    },
+    "UserItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserItem",
+      "type": "object",
+      "description": "Represents an item owned by a user.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile."
+        },
+        "itemId": {
+          "type": "string",
+          "description": "Reference to StoreItem."
+        },
+        "purchaseDate": {
+          "type": "string",
+          "description": "The date the item was purchased.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "itemId",
+        "purchaseDate"
+      ]
+    },
+    "HvPass": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HvPass",
+      "type": "object",
+      "description": "Defines the structure of the HV Pass with its 100 levels of rewards.",
+      "properties": {
+        "levels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "level": { "type": "number" },
+              "freeReward": { "$ref": "#/entities/HvPassReward" },
+              "premiumReward": { "$ref": "#/entities/HvPassReward" }
+            },
+            "required": ["level", "freeReward"]
+          }
+        }
+      }
+    },
+    "HvPassReward": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "HvPassReward",
+        "type": "object",
+        "description": "A reward for a level in the HV Pass.",
+        "properties": {
+            "type": {
+                "type": "string",
+                "enum": ["goldLingots", "casinoChips", "chest", "profileBackground"]
+            },
+            "quantity": { "type": "number" },
+            "itemId": { "type": "string", "description": "ID of the specific item, e.g., a background ID." }
+        },
+        "required": ["type"]
+    },
+     "ProfileBackground": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProfileBackground",
+      "type": "object",
+      "description": "A pixel art background for the user profile.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["id", "name", "imageUrl"]
+    },
+    "CasinoGame": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CasinoGame",
+      "type": "object",
+      "description": "Represents a casino game record.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile."
+        },
+        "gameType": {
+          "type": "string",
+          "description": "The type of casino game played."
+        },
+        "betAmount": {
+          "type": "number",
+          "description": "The amount of casino chips bet."
+        },
+        "winAmount": {
+          "type": "number",
+          "description": "The amount of casino chips won."
+        },
+        "gameDate": {
+          "type": "string",
+          "description": "The date and time the game was played.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "gameType",
+        "betAmount",
+        "winAmount",
+        "gameDate"
+      ]
+    },
+    "Ranking": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ranking",
+      "type": "object",
+      "description": "Represents a user's ranking in the global leaderboard.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile."
+        },
+        "rank": {
+          "type": "number",
+          "description": "The user's current rank in the leaderboard."
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score used for ranking."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "The date and time the ranking was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "rank",
+        "score",
+        "lastUpdated"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Stores user profile data. The 'userId' parameter is the Firebase Authentication UID."
+    },
+    "/users/{userId}/studySessions/{studySessionId}": {
+      "schema": {
+        "$ref": "#/entities/StudySession"
+      },
+      "description": "Stores study session data for a specific user."
+    },
+    "/users/{userId}/weeklyRoutine/{dayId}": {
+      "schema": {
+        "$ref": "#/entities/WeeklyRoutine"
+      },
+      "description": "Stores a user's exercise routine for a specific day of the week."
+    },
+    "/users/{userId}/userExercises/{userExerciseId}": {
+      "schema": {
+        "$ref": "#/entities/UserExercise"
+      },
+      "description": "Stores information about a user's completion of an exercise."
+    },
+    "/storeItems/{storeItemId}": {
+      "schema": {
+        "$ref": "#/entities/StoreItem"
+      },
+      "description": "Stores a list of available store items."
+    },
+    "/users/{userId}/userItems/{userItemId}": {
+      "schema": {
+        "$ref": "#/entities/UserItem"
+      },
+      "description": "Stores information about items owned by a user."
+    },
+    "/hvPass/v1": {
+      "schema": {
+        "$ref": "#/entities/HvPass"
+      },
+      "description": "Stores the definition of the HV Pass rewards for version 1."
+    },
+     "/profileBackgrounds/{backgroundId}": {
+      "schema": {
+        "$ref": "#/entities/ProfileBackground"
+      },
+      "description": "List of all available profile backgrounds."
+    },
+    "/users/{userId}/casinoGames/{casinoGameId}": {
+      "schema": {
+        "$ref": "#/entities/CasinoGame"
+      },
+      "description": "Stores casino game history for a user."
+    },
+    "/rankings/{rankingId}": {
+      "schema": {
+        "$ref": "#/entities/Ranking"
+      },
+      "description": "Stores global ranking information."
+    }
+  }
+}
