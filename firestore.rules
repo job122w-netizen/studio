@@ -1,0 +1,239 @@
+/**
+ * @fileOverview Firestore Security Rules for Desafío HV App.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for personal data while allowing public read access to certain global collections. User-specific data is nested under the /users/{userId} path, ensuring that only the authenticated user can access their own data. Global collections like exercises and store items are publicly readable but writable only with appropriate authorization (not yet defined in this prototype).
+ *
+ * Data Structure:
+ * - /users/{userId}: User profile data, owned by the user with the matching UID.
+ * - /users/{userId}/studySessions/{studySessionId}: Study session data for a specific user.
+ * - /users/{userId}/userExercises/{userExerciseId}: Exercises completed by a specific user.
+ * - /users/{userId}/userItems/{userItemId}: Items owned by a specific user.
+ * - /users/{userId}/hvPass: HV Pass subscription information for a user.
+ * - /users/{userId}/casinoGames/{casinoGameId}: Casino game history for a user.
+ * - /exercises/{exerciseId}: Globally available exercise definitions.
+ * - /storeItems/{storeItemId}: Globally available store item definitions.
+ * - /rankings/{rankingId}: Global ranking information.
+ *
+ * Key Security Decisions:
+ * - User data is strictly owned: Only the authenticated user can read or write their profile and related data (study sessions, exercises, items).
+ * - Global collections (exercises, store items, rankings) are publicly readable.  Write access to these collections is currently denied but should be restricted to authorized roles in a production environment.
+ * - User listing is disallowed to protect user privacy.
+ * - The rules prioritize authorization and relational integrity checks, omitting detailed data validation for rapid prototyping.
+ *
+ * Denormalization for Authorization:
+ * The rules rely on the `userId` within documents to match the `userId` in the path, ensuring that users can only access their own data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'user_abc' can create their profile if request.auth.uid == 'user_abc'.
+     * @allow (get, update, delete) User with UID 'user_abc' can read, update, or delete their profile.
+     * @deny (create) User with UID 'user_xyz' cannot create a profile for user 'user_abc'.
+     * @deny (update, delete) User with UID 'user_xyz' cannot update or delete user 'user_abc's profile.
+     * @principle Enforces document ownership for writes and reads.
+     */
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // Listing users is not permitted.
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to study session documents for a user.
+     * @path /users/{userId}/studySessions/{studySessionId}
+     * @allow (create) User with UID 'user_abc' can create a study session under their profile.
+     * @allow (get, list, update, delete) User with UID 'user_abc' can read, list, update, and delete their own study sessions.
+     * @deny (create) User with UID 'user_xyz' cannot create a study session under user 'user_abc's profile.
+     * @deny (update, delete) User with UID 'user_xyz' cannot update or delete user 'user_abc's study sessions.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /users/{userId}/studySessions/{studySessionId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to exercise documents. These are globally readable.
+     * @path /exercises/{exerciseId}
+     * @allow (get, list) Any user can read the exercise.
+     * @deny (create, update, delete) No user can create, update, or delete exercises without specific authorization.
+     * @principle Allows public read access with restricted writes.
+     */
+    match /exercises/{exerciseId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin role check for write access.
+    }
+
+    /**
+     * @description Controls access to user exercise documents.
+     * @path /users/{userId}/userExercises/{userExerciseId}
+     * @allow (create) User with UID 'user_abc' can create a user exercise under their profile.
+     * @allow (get, list, update, delete) User with UID 'user_abc' can read, list, update, and delete their own user exercises.
+     * @deny (create) User with UID 'user_xyz' cannot create a user exercise under user 'user_abc's profile.
+     * @deny (update, delete) User with UID 'user_xyz' cannot update or delete user 'user_abc's user exercises.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /users/{userId}/userExercises/{userExerciseId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to store item documents. These are globally readable.
+     * @path /storeItems/{storeItemId}
+     * @allow (get, list) Any user can read store items.
+     * @deny (create, update, delete) No user can create, update, or delete store items without specific authorization.
+     * @principle Allows public read access with restricted writes.
+     */
+    match /storeItems/{storeItemId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;  // TODO: Add admin role check for write access.
+    }
+
+    /**
+     * @description Controls access to user item documents.
+     * @path /users/{userId}/userItems/{userItemId}
+     * @allow (create) User with UID 'user_abc' can create a user item under their profile.
+     * @allow (get, list, update, delete) User with UID 'user_abc' can read, list, update, and delete their own user items.
+     * @deny (create) User with UID 'user_xyz' cannot create a user item under user 'user_abc's profile.
+     * @deny (update, delete) User with UID 'user_xyz' cannot update or delete user 'user_abc's user items.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /users/{userId}/userItems/{userItemId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to the HV Pass document for a user.
+     * @path /users/{userId}/hvPass
+     * @allow (create) User with UID 'user_abc' can create their HV Pass.
+     * @allow (get, update, delete) User with UID 'user_abc' can read, update, or delete their own HV Pass.
+     * @deny (create) User with UID 'user_xyz' cannot create an HV Pass for user 'user_abc'.
+     * @deny (update, delete) User with UID 'user_xyz' cannot update or delete user 'user_abc's HV Pass.
+     * @principle Enforces document ownership.
+     */
+    match /users/{userId}/hvPass {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; //  hvPass is a single document, listing is not applicable
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to casino game documents for a user.
+     * @path /users/{userId}/casinoGames/{casinoGameId}
+     * @allow (create) User with UID 'user_abc' can create a casino game record under their profile.
+     * @allow (get, list, update, delete) User with UID 'user_abc' can read, list, update, and delete their own casino game records.
+     * @deny (create) User with UID 'user_xyz' cannot create a casino game record under user 'user_abc's profile.
+     * @deny (update, delete) User with UID 'user_xyz' cannot update or delete user 'user_abc's casino game records.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /users/{userId}/casinoGames/{casinoGameId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to ranking documents. These are globally readable.
+     * @path /rankings/{rankingId}
+     * @allow (get, list) Any user can read the ranking.
+     * @deny (create, update, delete) No user can create, update, or delete rankings without specific authorization.
+     * @principle Allows public read access with restricted writes.
+     */
+    match /rankings/{rankingId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin role check for write access.
+    }
+  }
+}

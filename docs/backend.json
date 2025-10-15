@@ -1,0 +1,498 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile within the Desafío HV app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "level": {
+          "type": "number",
+          "description": "The user's current level in the app."
+        },
+        "experiencePoints": {
+          "type": "number",
+          "description": "The user's current experience points."
+        },
+        "goldLingots": {
+          "type": "number",
+          "description": "The number of gold lingots the user has."
+        },
+        "casinoChips": {
+          "type": "number",
+          "description": "The number of casino chips the user has."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "level",
+        "experiencePoints",
+        "goldLingots",
+        "casinoChips"
+      ]
+    },
+    "StudySession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudySession",
+      "type": "object",
+      "description": "Represents a study session recorded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StudySession entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N StudySession)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The start time of the study session.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The end time of the study session.",
+          "format": "date-time"
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "The duration of the study session in minutes."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startTime",
+        "endTime",
+        "durationMinutes"
+      ]
+    },
+    "Exercise": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Exercise",
+      "type": "object",
+      "description": "Represents an exercise or activity for personal development.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Exercise entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the exercise."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the exercise."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the exercise (e.g., mindfulness, productivity)."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "category"
+      ]
+    },
+    "UserExercise": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserExercise",
+      "type": "object",
+      "description": "Represents a user's completion of an exercise.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserExercise entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N UserExercise)"
+        },
+        "exerciseId": {
+          "type": "string",
+          "description": "Reference to Exercise. (Relationship: Exercise 1:N UserExercise)"
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "The date the user completed the exercise.",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes from the user about the exercise."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "exerciseId",
+        "completionDate"
+      ]
+    },
+    "StoreItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StoreItem",
+      "type": "object",
+      "description": "Represents an item available for purchase in the virtual store.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StoreItem entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the item."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the item."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the item in gold lingots."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price"
+      ]
+    },
+    "UserItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserItem",
+      "type": "object",
+      "description": "Represents an item owned by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserItem entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N UserItem)"
+        },
+        "itemId": {
+          "type": "string",
+          "description": "Reference to StoreItem. (Relationship: StoreItem 1:N UserItem)"
+        },
+        "purchaseDate": {
+          "type": "string",
+          "description": "The date the item was purchased.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "itemId",
+        "purchaseDate"
+      ]
+    },
+    "HvPass": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HvPass",
+      "type": "object",
+      "description": "Represents the HV Pass subscription for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the HvPass entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 HvPass)"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date of the HV Pass subscription.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The end date of the HV Pass subscription.",
+          "format": "date-time"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the HV Pass is currently active."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startDate",
+        "endDate",
+        "active"
+      ]
+    },
+    "CasinoGame": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CasinoGame",
+      "type": "object",
+      "description": "Represents a casino game record.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CasinoGame entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N CasinoGame)"
+        },
+        "gameType": {
+          "type": "string",
+          "description": "The type of casino game played."
+        },
+        "betAmount": {
+          "type": "number",
+          "description": "The amount of casino chips bet."
+        },
+        "winAmount": {
+          "type": "number",
+          "description": "The amount of casino chips won."
+        },
+        "gameDate": {
+          "type": "string",
+          "description": "The date and time the game was played.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameType",
+        "betAmount",
+        "winAmount",
+        "gameDate"
+      ]
+    },
+    "Ranking": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ranking",
+      "type": "object",
+      "description": "Represents a user's ranking in the global leaderboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Ranking entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 Ranking)"
+        },
+        "rank": {
+          "type": "number",
+          "description": "The user's current rank in the leaderboard."
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score used for ranking."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "The date and time the ranking was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "rank",
+        "score",
+        "lastUpdated"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile data.  The 'userId' parameter is the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/studySessions/{studySessionId}",
+        "definition": {
+          "entityName": "StudySession",
+          "schema": {
+            "$ref": "#/backend/entities/StudySession"
+          },
+          "description": "Stores study session data for a specific user. The 'userId' parameter is the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            },
+            {
+              "name": "studySessionId",
+              "description": "The unique identifier for the study session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/exercises/{exerciseId}",
+        "definition": {
+          "entityName": "Exercise",
+          "schema": {
+            "$ref": "#/backend/entities/Exercise"
+          },
+          "description": "Stores a list of available exercises.",
+          "params": [
+            {
+              "name": "exerciseId",
+              "description": "The unique identifier for the exercise."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userExercises/{userExerciseId}",
+        "definition": {
+          "entityName": "UserExercise",
+          "schema": {
+            "$ref": "#/backend/entities/UserExercise"
+          },
+          "description": "Stores information about a user's completion of an exercise. The 'userId' parameter is the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            },
+            {
+              "name": "userExerciseId",
+              "description": "The unique identifier for the user exercise."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/storeItems/{storeItemId}",
+        "definition": {
+          "entityName": "StoreItem",
+          "schema": {
+            "$ref": "#/backend/entities/StoreItem"
+          },
+          "description": "Stores a list of available store items.",
+          "params": [
+            {
+              "name": "storeItemId",
+              "description": "The unique identifier for the store item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userItems/{userItemId}",
+        "definition": {
+          "entityName": "UserItem",
+          "schema": {
+            "$ref": "#/backend/entities/UserItem"
+          },
+          "description": "Stores information about items owned by a user. The 'userId' parameter is the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            },
+            {
+              "name": "userItemId",
+              "description": "The unique identifier for the user item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/hvPass",
+        "definition": {
+          "entityName": "HvPass",
+          "schema": {
+            "$ref": "#/backend/entities/HvPass"
+          },
+          "description": "Stores HV Pass subscription information for a user. The 'userId' parameter is the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/casinoGames/{casinoGameId}",
+        "definition": {
+          "entityName": "CasinoGame",
+          "schema": {
+            "$ref": "#/backend/entities/CasinoGame"
+          },
+          "description": "Stores casino game history for a user. The 'userId' parameter is the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            },
+            {
+              "name": "casinoGameId",
+              "description": "The unique identifier for the casino game."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/rankings/{rankingId}",
+        "definition": {
+          "entityName": "Ranking",
+          "schema": {
+            "$ref": "#/backend/entities/Ranking"
+          },
+          "description": "Stores global ranking information.",
+          "params": [
+            {
+              "name": "rankingId",
+              "description": "The unique identifier for the ranking."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to optimize data access and ensure security while supporting the features of the Desafío HV app. User-owned data is stored in hierarchical paths under the `/users/{userId}` collection to ensure clear ownership and simplified security rules. Data crucial for authorization, such as user roles or group memberships, is denormalized to avoid `get()` calls in security rules, improving performance and security.\n\nTo optimize data access for the user's request (rewards for study sessions), the `StudySession` subcollection is used under `/users/{userId}`.  This allows efficient querying and updating of user-specific study session data.  By storing study sessions as subcollections of user profiles, we maintain a clear data hierarchy and ensure that each study session is directly associated with its owner.\n\nThe structure supports QAPs by using structural segregation. User-specific data is separated from global data. Each collection is designed with a specific security posture. For instance, user profiles are private and accessible only to the authenticated user.  This approach simplifies security rules and prevents unauthorized data access.\n\nAuthorization Independence is achieved by avoiding hierarchical authorization dependencies. Security rules rely solely on the authenticated user's UID (`request.auth.uid`) and the path structure.  There are no `get()` calls to parent documents required to authorize access to subcollections."
+  }
+}
