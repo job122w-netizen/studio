@@ -124,10 +124,9 @@ const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => voi
 // -------------------------
 
 // --- Plinko Game Config ---
-const PLINKO_MULTIPLIERS = [9, -4, -2, 1.5, 2, 1.5, -2, -4, 9];
+const PLINKO_MULTIPLIERS = [9, 0, 0, 1.5, 2, 1.5, 0, 0, 9];
 const MULTIPLIER_COLORS: { [key: number]: string } = {
-    [-4]: 'hsla(0, 84%, 60%, 0.7)',
-    [-2]: 'hsla(30, 84%, 60%, 0.7)',
+    0: 'hsla(0, 0%, 50%, 0.7)',
     1.5: 'hsla(142, 71%, 45%, 0.7)',
     2: 'hsla(262, 83%, 60%, 0.7)',
     9: 'hsla(280, 85%, 55%, 0.8)',
@@ -186,10 +185,7 @@ export default function CasinoPage() {
 
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-
         let isMounted = true;
-        
         const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
             matterJsRef.current = Matter;
@@ -218,8 +214,8 @@ export default function CasinoPage() {
 
             Matter.World.add(world, [
                 Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { visible: false } }),
-                Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
-                Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
+                Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }),
+                Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }),
             ]);
 
             const pegRadius = 5;
@@ -260,7 +256,7 @@ export default function CasinoPage() {
                         isSensor: true,
                         label: `multiplier-${multiplier}`,
                         render: { 
-                            fillStyle: MULTIPLIER_COLORS[colorKey],
+                            fillStyle: MULTIPLIER_COLORS[colorKey] || 'grey',
                         },
                     }
                 );
@@ -303,6 +299,11 @@ export default function CasinoPage() {
                                      variant: 'destructive',
                                  });
                              }
+                        } else {
+                            toast({
+                                     title: '¡Casi!',
+                                     description: `No has ganado ni perdido fichas. (x0)`,
+                                 });
                         }
                         
                         Matter.World.remove(engine.world, ballInPair);
@@ -329,7 +330,6 @@ export default function CasinoPage() {
                     render.canvas.remove();
                 }
                 matterInstance.current = null;
-                matterJsRef.current = null;
             }
         };
     }, []); 
@@ -899,5 +899,7 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
 
     
