@@ -130,7 +130,6 @@ const MULTIPLIER_COLORS: { [key: number]: string } = {
     1: 'hsla(221, 83%, 53%, 0.7)',
     1.5: 'hsla(142, 71%, 45%, 0.7)',
     2: 'hsla(262, 83%, 60%, 0.7)',
-    10: 'hsla(48, 95%, 53%, 0.7)',
 };
 // ------------------------
 
@@ -245,7 +244,7 @@ export default function CasinoPage() {
             const prizeSlotWidth = width / prizeCount;
             for (let i = 0; i < prizeCount; i++) {
                 const multiplier = PLINKO_MULTIPLIERS[i];
-                const colorKey = multiplier === 2 ? 10 : multiplier;
+                const colorKey = multiplier;
                 const prizeSlot = localMatterInstance.Bodies.rectangle(
                     prizeSlotWidth / 2 + i * prizeSlotWidth,
                     height - 15,
@@ -320,7 +319,7 @@ export default function CasinoPage() {
                 matterInstance.current = null;
             }
         };
-    }, []);
+    }, [userProfileRef]);
 
     const dropPlinkoBall = () => {
         if (!userProfileRef || !matterInstance.current) return;
@@ -660,7 +659,7 @@ export default function CasinoPage() {
                     <div ref={plinkoContainerRef} className="w-full h-[400px] relative">
                          <div className="absolute bottom-0 left-0 right-0 flex justify-around">
                             {PLINKO_MULTIPLIERS.map((mult, i) => {
-                                const colorKey = mult === 2 ? 10 : mult;
+                                const colorKey = mult;
                                 return (
                                 <div key={i} className="w-full text-center text-xs sm:text-sm font-bold text-white py-1.5 rounded-b-sm" style={{ backgroundColor: MULTIPLIER_COLORS[colorKey] }}>
                                     x{mult}
