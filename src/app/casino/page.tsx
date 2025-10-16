@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, Award } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -15,15 +15,15 @@ const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
 // --- Slot Machine Config ---
 const slotSymbols = [
-    { icon: Coins, id: 'coins' },
-    { icon: Ticket, id: 'ticket' },
-    { icon: Gem, id: 'gem' },
-    { icon: Star, id: 'star' },
+    { icon: Coins, id: 'coins', label: 'Lingotes' },
+    { icon: Ticket, id: 'ticket', label: 'Fichas' },
+    { icon: Gem, id: 'gem', label: 'Gemas' },
+    { icon: Star, id: 'star', label: 'Pase Premium' },
 ];
 
 const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, id: string }, isSpinning: boolean }) => {
     const Icon = symbol.icon;
-    return <Icon className={cn("h-16 w-16 sm:h-20 sm:w-20", isSpinning && "animate-spin", {
+    return <Icon className={cn("h-16 w-16 sm:h-20 sm:w-20 transition-transform duration-100", isSpinning && "animate-spin", {
         'text-yellow-500': symbol.id === 'coins',
         'text-red-400': symbol.id === 'ticket',
         'text-purple-400': symbol.id === 'gem',
@@ -54,6 +54,7 @@ export default function CasinoPage() {
     const [reels, setReels] = useState([slotSymbols[0], slotSymbols[1], slotSymbols[2]]);
     const [spinning, setSpinning] = useState(false);
     const [slotResultMessage, setSlotResultMessage] = useState('');
+    const [reelsSpinning, setReelsSpinning] = useState([false, false, false]);
 
     const rollDice = () => {
         if (!userProfileRef || (userProfile?.casinoChips ?? 0) < 1) {
@@ -85,7 +86,7 @@ export default function CasinoPage() {
         }, 100);
     };
 
-    const spinSlots = () => {
+     const spinSlots = () => {
         const cost = 5;
         if (!userProfileRef || (userProfile?.casinoChips ?? 0) < cost) {
             setSlotResultMessage('¡No tienes suficientes fichas!');
@@ -95,28 +96,32 @@ export default function CasinoPage() {
         setSpinning(true);
         setSlotResultMessage('');
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-cost) });
+        setReelsSpinning([true, true, true]);
 
-        let spinCount = 0;
-        const interval = setInterval(() => {
-            setReels([
-                slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-                slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-                slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-            ]);
-            spinCount++;
-            if (spinCount > 15) {
-                clearInterval(interval);
-                
-                const finalReels = [
-                    slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-                    slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-                    slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-                ];
-                setReels(finalReels);
-                setSpinning(false);
-                checkWin(finalReels);
-            }
+        // Start the spinning animation
+        const spinInterval = setInterval(() => {
+            setReels(currentReels => currentReels.map((_, i) =>
+                reelsSpinning[i] ? slotSymbols[Math.floor(Math.random() * slotSymbols.length)] : currentReels[i]
+            ));
         }, 100);
+
+        // Determine final result
+        const finalReels = [
+            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+        ];
+
+        // Stagger the stopping of reels
+        setTimeout(() => setReelsSpinning(s => [false, s[1], s[2]]), 1000); // Stop reel 1
+        setTimeout(() => setReelsSpinning(s => [s[0], false, s[2]]), 2000); // Stop reel 2
+        setTimeout(() => {
+            setReelsSpinning(s => [s[0], s[1], false]); // Stop reel 3
+            clearInterval(spinInterval);
+            setReels(finalReels);
+            setSpinning(false);
+            checkWin(finalReels);
+        }, 3000);
     };
 
     const checkWin = (finalReels: typeof slotSymbols) => {
@@ -191,15 +196,24 @@ export default function CasinoPage() {
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader>
                     <CardTitle>Tragamonedas HV</CardTitle>
-                    <CardDescription>¡Alinea 3 símbolos iguales para ganar! Premios gordos incluyen gemas y el Pase Premium.</CardDescription>
+                    <CardDescription>¡Alinea 3 símbolos para ganar! Cuesta 5 fichas por tirada.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
-                    <div className="flex gap-4 sm:gap-8 p-4 bg-muted/50 rounded-lg border">
-                       {reels.map((symbol, index) => (
-                          <ReelIcon key={index} symbol={symbol} isSpinning={spinning} />
-                       ))}
+                    <div className="w-full bg-muted/30 p-2 rounded-lg border">
+                        <div className="text-center mb-2">
+                             <p className="text-sm font-bold text-muted-foreground tracking-wider uppercase">Grandes Premios</p>
+                             <div className="flex justify-center items-center gap-4 text-xs font-semibold">
+                                 <div className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400"/> Pase Premium</div>
+                                 <div className="flex items-center gap-1"><Gem className="h-4 w-4 text-purple-400"/> Gemas</div>
+                             </div>
+                        </div>
+                        <div className="flex justify-center gap-4 sm:gap-8 p-4 bg-muted/50 rounded-lg border-2 border-primary/20">
+                           {reels.map((symbol, index) => (
+                              <ReelIcon key={index} symbol={symbol} isSpinning={reelsSpinning[index]} />
+                           ))}
+                        </div>
                     </div>
-                     {slotResultMessage && <p className="text-foreground font-semibold text-center">{slotResultMessage}</p>}
+                     {slotResultMessage && <p className="text-foreground font-semibold text-center h-5">{slotResultMessage}</p>}
                 </CardContent>
                 <CardFooter>
                     <Button size="lg" className="w-full" onClick={spinSlots} disabled={spinning || isLoading || casinoChips < 5}>
@@ -244,4 +258,3 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
-}
