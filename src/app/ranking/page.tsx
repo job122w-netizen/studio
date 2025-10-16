@@ -50,7 +50,7 @@ export default function RankingPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-           {isLoading ? (
+           {isLoading && (!rankedList || rankedList.length === 0) ? (
             <div className="space-y-2">
               {Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 p-2">
@@ -61,6 +61,8 @@ export default function RankingPage() {
                 </div>
               ))}
             </div>
+           ) : !rankedList || rankedList.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Aún no hay nadie en el ranking. ¡Sigue ganando puntos para aparecer aquí!</p>
            ) : (
             <Table>
                 <TableHeader>
@@ -71,7 +73,7 @@ export default function RankingPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {rankedList && rankedList.map((player, index) => (
+                {rankedList.map((player, index) => (
                     <TableRow key={player.id} className={player.userId === currentUser?.uid ? 'bg-primary/10' : ''}>
                     <TableCell className="font-bold text-lg text-center">
                         {index + 1 <= 3 ? (
