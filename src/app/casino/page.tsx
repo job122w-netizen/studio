@@ -267,7 +267,9 @@ export default function CasinoPage() {
             }
         
             Matter.Events.on(engine, 'collisionStart', (event) => {
-                 if (!userProfileRef) return;
+                 const Matter = matterJsRef.current;
+                 if (!Matter || !userProfileRef) return;
+
                  const pairs = event.pairs;
                  for (let i = 0; i < pairs.length; i++) {
                     const pair = pairs[i];
@@ -284,14 +286,12 @@ export default function CasinoPage() {
                         const multiplier = parseFloat(prizeInPair.label.split('-')[1]);
                         const winnings = Math.floor(bet * multiplier);
                         
-                        if (winnings !== 0) {
+                        if (winnings > 0) {
                              updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
-                             if(winnings > 0) {
-                                 toast({
-                                     title: '¡Has Ganado!',
-                                     description: `Recibes ${winnings} fichas. (x${multiplier})`,
-                                 });
-                             }
+                             toast({
+                                 title: '¡Has Ganado!',
+                                 description: `Recibes ${winnings} fichas. (x${multiplier})`,
+                             });
                         } else {
                             toast({
                                      title: '¡Casi!',
