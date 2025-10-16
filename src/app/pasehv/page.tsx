@@ -10,6 +10,8 @@ import { hvPassLevels, type HvPassReward } from "@/lib/placeholder-data";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const XP_PER_LEVEL = 2000;
 
@@ -33,16 +35,25 @@ const RewardIcon = ({ reward }: { reward: HvPassReward }) => {
 export default function PaseHVPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  // For now, we assume user has premium pass. This should be a field in userProfile.
-  const hasPremiumPass = true; 
-
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
+  const hasPremiumPass = userProfile?.hasPremiumPass ?? false;
+
+  const handlePurchasePass = () => {
+    if (!userProfileRef) return;
+    updateDocumentNonBlocking(userProfileRef, { hasPremiumPass: true });
+    toast({
+        title: "¡Pase Premium Activado!",
+        description: "¡Ahora tienes acceso a todas las recompensas exclusivas!",
+    });
+  }
 
   const currentLevel = userProfile?.hvPassLevel ?? 1;
   const currentXP = userProfile?.hvPassXp ?? 0;
@@ -140,11 +151,11 @@ export default function PaseHVPage() {
        {!hasPremiumPass && (
          <Card className="shadow-lg bg-gradient-to-br from-primary via-purple-600 to-indigo-700 text-primary-foreground mt-8">
             <CardHeader>
-                <CardTitle className="text-2xl">Conviértete en Premium</CardTitle>
+                <CardTitle className="text-2xl">Conviértete en Premium por $5 USD</CardTitle>
                 <CardDescription className="text-purple-200">Acceso a todas las recompensas exclusivas del pase.</CardDescription>
             </CardHeader>
             <CardFooter>
-            <Button size="lg" variant="secondary" className="w-full text-primary font-bold hover:bg-white/90">
+            <Button size="lg" variant="secondary" className="w-full text-primary font-bold hover:bg-white/90" onClick={handlePurchasePass}>
                 <Zap className="mr-2 h-4 w-4" />
                 Obtener Pase Premium
             </Button>

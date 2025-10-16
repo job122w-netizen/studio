@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { PlaceHolderImages, type ImagePlaceholder } from "@/lib/placeholder-images";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -42,6 +45,8 @@ const getRank = (xp: number) => {
     }
     return { currentRank, nextRank };
 };
+
+const pixelArtBackgrounds = PlaceHolderImages.filter(img => img.id.startsWith('pixel-art-'));
 
 export default function PerfilPage() {
   const { user, isUserLoading } = useUser();
@@ -111,7 +116,6 @@ export default function PerfilPage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        // The useDoc hook will show the change automatically after update
         updateDocumentNonBlocking(userProfileRef, { imageUrl: dataUrl });
         toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
       };
@@ -129,8 +133,20 @@ export default function PerfilPage() {
   }
 
   const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/auth');
+    if (auth) {
+        await signOut(auth);
+        router.push('/auth');
+    }
+  }
+
+  const unlockAllBackgroundsForTesting = () => {
+    if (!userProfileRef) return;
+    const allBackgroundIds = pixelArtBackgrounds.map(bg => bg.id);
+    updateDocumentNonBlocking(userProfileRef, { unlockedBackgrounds: allBackgroundIds });
+    toast({
+        title: "¡Modo desarrollador!",
+        description: "Todos los fondos de perfil han sido desbloqueados para pruebas."
+    });
   }
 
   if (isLoading || !userProfile) {
@@ -187,7 +203,7 @@ export default function PerfilPage() {
               )}
 
               <p className="text-muted-foreground">{user?.email}</p>
-              <Badge variant="secondary" className="mt-2">Pase HV Activo</Badge>
+              {userProfile.hasPremiumPass && <Badge variant="secondary" className="mt-2 bg-yellow-400 text-yellow-900">Pase HV Premium</Badge>}
             </>
         </CardContent>
       </Card>
@@ -253,6 +269,36 @@ export default function PerfilPage() {
         </CardContent>
       </Card>
       
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary"/> Fondos de Perfil</div>
+            <Button variant="outline" size="sm" onClick={unlockAllBackgroundsForTesting}>Desbloquear todos (Test)</Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(userProfile.unlockedBackgrounds && userProfile.unlockedBackgrounds.length > 0) ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {pixelArtBackgrounds.map(bg => {
+                    const isUnlocked = userProfile.unlockedBackgrounds.includes(bg.id);
+                    return (
+                        <div key={bg.id} className={cn("relative aspect-video rounded-md overflow-hidden border-2", isUnlocked ? "border-primary" : "border-transparent")}>
+                            <Image src={bg.imageUrl} alt={bg.description} fill className="object-cover"/>
+                             {!isUnlocked && (
+                                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                                    <Lock className="h-6 w-6 text-white"/>
+                                </div>
+                             )}
+                        </div>
+                    )
+                })}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground">Desbloquea fondos en el Pase HV para personalizar tu perfil.</p>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary"/> Logros</CardTitle>
