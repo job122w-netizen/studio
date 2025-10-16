@@ -185,40 +185,50 @@ export default function CasinoPage() {
     const [plinkoBetAmount, setPlinkoBetAmount] = useState([1]);
 
 
-     useEffect(() => {
-        let render: Matter.Render, runner: Matter.Runner;
-
-        const init = async () => {
+    useEffect(() => {
+        const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
             matterJsRef.current = Matter;
 
             if (!plinkoContainerRef.current) return;
+            // Cleanup previous instance if it exists
+            if (matterInstance.current) {
+                Matter.Render.stop(matterInstance.current.render);
+                Matter.Runner.stop(matterInstance.current.runner);
+                Matter.World.clear(matterInstance.current.engine.world, false);
+                Matter.Engine.clear(matterInstance.current.engine);
+                matterInstance.current.render.canvas.remove();
+                matterInstance.current = null;
+            }
+
 
             const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
-            render = Matter.Render.create({
+            const render = Matter.Render.create({
                 element: container,
                 engine: engine,
                 options: {
                     width: container.clientWidth,
                     height: 400,
                     background: 'transparent',
-                    wireframes: false,
+                    wireframes: false, // This is key to see filled shapes
                 },
             });
-            runner = Matter.Runner.create();
+            const runner = Matter.Runner.create();
             matterInstance.current = { engine, render, runner };
 
             const world = engine.world;
             const width = container.clientWidth;
             const height = 400;
 
+            // Add side walls to prevent balls from getting stuck
             Matter.World.add(world, [
                 Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { visible: false } }),
                 Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
                 Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
             ]);
 
+            // Create pegs
             const pegRadius = 5;
             const rows = 8;
             const cols = 10;
@@ -235,7 +245,7 @@ export default function CasinoPage() {
                         isStatic: true,
                         restitution: 0.5,
                         friction: 0.01,
-                        render: { fillStyle: 'hsl(var(--primary))' },
+                        render: { fillStyle: 'hsl(var(--primary))' }, // Make pegs visible
                     });
                     Matter.World.add(world, peg);
                 }
@@ -243,6 +253,8 @@ export default function CasinoPage() {
             
             const prizeCount = PLINKO_MULTIPLIERS.length;
             const prizeSlotWidth = width / prizeCount;
+
+            // Create prize slots
             for (let i = 0; i < prizeCount; i++) {
                 const multiplier = PLINKO_MULTIPLIERS[i];
                 const colorKey = multiplier;
@@ -263,6 +275,7 @@ export default function CasinoPage() {
                 Matter.World.add(world, prizeSlot);
             }
             
+            // Create visible dividers between prize slots
             for (let i = 1; i < prizeCount; i++) {
                 Matter.World.add(world, Matter.Bodies.rectangle(i * prizeSlotWidth, height - 30, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
             }
@@ -278,7 +291,7 @@ export default function CasinoPage() {
 
                     if(ballInPair && prizeInPair){
                         if (!engine.world.bodies.includes(ballInPair)) {
-                            continue;
+                            continue; // Ball already processed
                         }
                         
                         const bet = ballInPair.plugin.bet || 1;
@@ -310,8 +323,9 @@ export default function CasinoPage() {
             Matter.Render.run(render);
         };
         
-        init();
+        initPlinko();
     
+        // The main cleanup function in useEffect's return
         return () => {
              if (matterInstance.current && matterJsRef.current) {
                 const Matter = matterJsRef.current;
@@ -325,12 +339,14 @@ export default function CasinoPage() {
                 matterJsRef.current = null;
             }
         };
-    }, [userProfileRef]);
+    }, []); // Empty dependency array ensures this runs only ONCE
 
     const dropPlinkoBall = () => {
         if (!userProfileRef || !matterInstance.current || !matterJsRef.current) return;
+        
         const Matter = matterJsRef.current;
         const currentBet = plinkoBetAmount[0];
+        
         if ((userProfile?.casinoChips ?? 0) < currentBet) {
             toast({ variant: 'destructive', title: 'Fichas insuficientes' });
             return;
@@ -355,6 +371,7 @@ export default function CasinoPage() {
         
         Matter.World.add(world, ball);
 
+        // Auto-remove ball after 8 seconds to prevent it getting stuck
         setTimeout(() => {
             if (world.bodies.includes(ball)) {
                  Matter.World.remove(world, ball);
@@ -890,6 +907,8 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
 
     
 
