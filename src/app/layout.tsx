@@ -6,12 +6,19 @@ import { MobileNav } from '@/components/layout/mobile-nav';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { PT_Sans } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: 'Desafío HV',
   description: 'Tu app de desarrollo personal.',
   manifest: '/manifest.json',
 };
+
+const ptSans = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-pt-sans',
+});
 
 export default function RootLayout({
   children,
@@ -20,12 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="h-full" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
-      </head>
-      <body className={cn('font-body antialiased h-full bg-muted/40')}>
+      <body className={cn(ptSans.variable, 'font-body antialiased h-full bg-muted/40')}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
