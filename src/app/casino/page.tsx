@@ -124,10 +124,10 @@ const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => voi
 // -------------------------
 
 // --- Plinko Game Config ---
-const PLINKO_MULTIPLIERS = [9, 0.5, 1, 1.5, 2, 1.5, 1, 0.5, 9];
+const PLINKO_MULTIPLIERS = [9, -4, -2, 1.5, 2, 1.5, -2, -4, 9];
 const MULTIPLIER_COLORS: { [key: number]: string } = {
-    0.5: 'hsla(0, 84%, 60%, 0.7)',
-    1: 'hsla(221, 83%, 53%, 0.7)',
+    [-4]: 'hsla(0, 84%, 60%, 0.7)',
+    [-2]: 'hsla(30, 84%, 60%, 0.7)',
     1.5: 'hsla(142, 71%, 45%, 0.7)',
     2: 'hsla(262, 83%, 60%, 0.7)',
     9: 'hsla(280, 85%, 55%, 0.8)',
@@ -288,9 +288,11 @@ export default function CasinoPage() {
                                 description: `Recibes ${winnings} fichas. (x${multiplier})`,
                             });
                         } else {
+                             updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
                             toast({
                                 title: '¡Mala suerte!',
-                                description: `No has ganado nada esta vez. (x${multiplier})`,
+                                description: `Pierdes ${-winnings} fichas. (x${multiplier})`,
+                                variant: 'destructive',
                             });
                         }
                         
@@ -657,7 +659,7 @@ export default function CasinoPage() {
                     <div ref={plinkoContainerRef} className="w-full h-[400px] relative">
                          <div className="absolute bottom-0 left-0 right-0 flex justify-around">
                             {PLINKO_MULTIPLIERS.map((mult, i) => {
-                                const colorKey = mult;
+                                const colorKey = mult > 1 ? mult : (mult < 0 ? mult : 1.5);
                                 return (
                                 <div key={i} className="w-full text-center text-xs sm:text-sm font-bold text-white py-1.5 rounded-b-sm" style={{ backgroundColor: MULTIPLIER_COLORS[colorKey] }}>
                                     x{mult}
@@ -881,3 +883,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
