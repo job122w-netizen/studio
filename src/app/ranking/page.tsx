@@ -10,7 +10,7 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebas
 import { collection, query, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type Ranking = {
+type RankingPlayer = {
   id: string;
   username: string;
   experiencePoints: number;
@@ -22,18 +22,30 @@ export default function RankingPage() {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
 
-  const rankingsCollectionRef = useMemoFirebase(() => {
+  // Query the 'users' collection directly
+  const usersCollectionRef = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'rankings');
+    return collection(firestore, 'users');
   }, [firestore]);
 
-  const rankingsQuery = useMemoFirebase(() => {
-    if (!rankingsCollectionRef) return null;
-    return query(rankingsCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
-  }, [rankingsCollectionRef]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!usersCollectionRef) return null;
+    // Order by experiencePoints and take the top 100
+    return query(usersCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
+  }, [usersCollectionRef]);
 
-  const { data: rankedList, isLoading } = useCollection<Ranking>(rankingsQuery);
+  // Use the useCollection hook to get real-time user data
+  const { data: rankedList, isLoading } = useCollection<RankingPlayer>(usersQuery);
   
+  const getInitials = (name: string) => {
+    if (!name) return '?';
+    const names = name.split(' ');
+    if (names.length > 1 && names[1]) {
+        return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+
   return (
     <div className="space-y-8 animate-fade-in">
       <section className="text-center">
@@ -73,7 +85,7 @@ export default function RankingPage() {
                 </TableHeader>
                 <TableBody>
                 {rankedList.map((player, index) => (
-                    <TableRow key={player.id} className={player.userId === currentUser?.uid ? 'bg-primary/10' : ''}>
+                    <TableRow key={player.id} className={player.id === currentUser?.uid ? 'bg-primary/10' : ''}>
                     <TableCell className="font-bold text-lg text-center">
                         {index + 1 <= 3 ? (
                         <span className={
@@ -89,10 +101,10 @@ export default function RankingPage() {
                         <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                             <AvatarImage src={player.imageUrl} />
-                            <AvatarFallback>{player.username?.charAt(0) ?? '?'}</AvatarFallback>
+                            <AvatarFallback>{getInitials(player.username)}</AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{player.username}</span>
-                        {player.userId === currentUser?.uid && <Badge variant="default">Tú</Badge>}
+                        {player.id === currentUser?.uid && <Badge variant="default">Tú</Badge>}
                         </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">{player.experiencePoints.toLocaleString('es-ES')}</TableCell>
