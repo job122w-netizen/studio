@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift, Minus, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from "firebase/firestore";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { updateCasinoChips } from "@/lib/transactions";
+import { Input } from "@/components/ui/input";
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -142,7 +143,7 @@ export default function CasinoPage() {
         { id: 2, hasPrize: false, isRevealed: false },
     ]);
     const [shellResultMessage, setShellResultMessage] = useState('');
-    const shellBetAmount = 1;
+    const [shellBetAmount, setShellBetAmount] = useState(1);
 
     const [minePhase, setMinePhase] = useState<MineSweeperPhase>('betting');
     const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
@@ -414,7 +415,7 @@ export default function CasinoPage() {
             await updateCasinoChips(userProfileRef, chipWinnings);
         }
 
-        toast({ title: `¡Premios cobrados! (x${currentMultiplier})`, description: description.slice(0, -2) });
+        toast({ title: `¡Premios cobrados! (x${multiplier})`, description: description.slice(0, -2) });
         setMinePhase('betting');
     };
     
@@ -493,9 +494,21 @@ export default function CasinoPage() {
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                  <CardHeader>
                     <CardTitle>Juego de los Vasos</CardTitle>
-                    <CardDescription>Apuesta 1 ficha y adivina dónde está la ficha ganadora. ¡Gana el doble de tu apuesta!</CardDescription>
+                    <CardDescription>Adivina dónde está la ficha ganadora. ¡Gana el doble de tu apuesta!</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
+                    {shellGamePhase === 'betting' && (
+                        <div className="flex items-center gap-2">
+                            <Button size="icon" variant="outline" onClick={() => setShellBetAmount(v => Math.max(1, v - 1))}><Minus /></Button>
+                            <Input
+                                type="number"
+                                value={shellBetAmount}
+                                onChange={(e) => setShellBetAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                                className="w-24 text-center text-lg font-bold"
+                            />
+                            <Button size="icon" variant="outline" onClick={() => setShellBetAmount(v => Math.min(casinoChips, v + 1))}><Plus /></Button>
+                        </div>
+                    )}
                     <div className="flex justify-around w-full min-h-[120px] items-center">
                         {cups.map((cup) => (
                              <Cup
@@ -512,8 +525,8 @@ export default function CasinoPage() {
                 </CardContent>
                 <CardFooter>
                     {shellGamePhase === 'betting' && (
-                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || (casinoChips < shellBetAmount) || isChipCountInvalid}>
-                            Jugar (1 Ficha)
+                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || (casinoChips < shellBetAmount) || shellBetAmount < 1 || isChipCountInvalid}>
+                            Jugar ({shellBetAmount} {shellBetAmount === 1 ? 'Ficha' : 'Fichas'})
                         </Button>
                     )}
                      {(shellGamePhase === 'result') && (
@@ -617,3 +630,4 @@ export default function CasinoPage() {
         </div>
     );
 }
+    
