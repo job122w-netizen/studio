@@ -651,24 +651,6 @@ export default function CasinoPage() {
                     </Button>
                 </CardFooter>
             </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Lotería Semanal</CardTitle>
-                    <CardDescription>Compra un boleto y participa por un premio mayor.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-center text-3xl font-bold text-primary">Premio Mayor: 50,000 <span className="inline-block align-middle"><Coins className="h-6 w-6"/></span></p>
-                </CardContent>
-                <CardFooter>
-                    <Button variant="outline" className="w-full" disabled>
-                        <Ticket className="mr-2 h-4 w-4"/>
-                        Próximamente
-                    </Button>
-                </CardFooter>
-            </Card>
         </div>
     );
 }
-
-    
