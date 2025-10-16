@@ -185,12 +185,11 @@ export default function CasinoPage() {
 
 
     useEffect(() => {
-        let isMounted = true;
         const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
             matterJsRef.current = Matter;
 
-            if (!plinkoContainerRef.current || !isMounted || matterInstance.current) return;
+            if (!plinkoContainerRef.current || matterInstance.current) return;
             
             const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
@@ -281,7 +280,7 @@ export default function CasinoPage() {
                             continue;
                         }
                         
-                        const bet = ballInPair.plugin.bet || 1;
+                        const bet = ballInPair.plugin.bet || 0;
                         const multiplier = parseFloat(prizeInPair.label.split('-')[1]);
                         const winnings = Math.floor(bet * multiplier);
                         
@@ -291,12 +290,6 @@ export default function CasinoPage() {
                                  toast({
                                      title: '¡Has Ganado!',
                                      description: `Recibes ${winnings} fichas. (x${multiplier})`,
-                                 });
-                             } else {
-                                toast({
-                                     title: '¡Mala suerte!',
-                                     description: `Pierdes ${-winnings} fichas. (x${multiplier})`,
-                                     variant: 'destructive',
                                  });
                              }
                         } else {
@@ -318,7 +311,6 @@ export default function CasinoPage() {
         initPlinko();
     
         return () => {
-             isMounted = false;
              if (matterInstance.current && matterJsRef.current) {
                 const Matter = matterJsRef.current;
                 const { render, runner, engine } = matterInstance.current;
@@ -365,8 +357,8 @@ export default function CasinoPage() {
         Matter.World.add(world, ball);
 
         setTimeout(() => {
-            if (world.bodies.includes(ball)) {
-                 Matter.World.remove(world, ball);
+            if (engine.world.bodies.includes(ball)) {
+                 Matter.World.remove(engine.world, ball);
             }
         }, 8000);
     };
@@ -899,6 +891,8 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
 
     
 
