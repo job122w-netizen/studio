@@ -56,7 +56,7 @@ type PlayingCardProps = {
 };
 
 const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: PlayingCardProps) => {
-    const cardToShow = (isRevealed && hasPrize && cardWinnerImg) ? cardWinnerImg : cardBackImg;
+    const cardToShow = (hasPrize && cardWinnerImg) ? cardWinnerImg : cardBackImg;
 
     return (
         <div
@@ -74,11 +74,11 @@ const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: Play
             )}>
                  {/* Card Back */}
                 <div className="absolute w-full h-full [backface-visibility:hidden]">
-                    {cardBackImg && <Image src={cardBackImg.imageUrl} alt="Card Back" fill className="object-contain" />}
+                    {cardBackImg && <Image src={cardBackImg.imageUrl} alt="Card Back" fill className="object-contain rounded-lg" />}
                 </div>
                  {/* Card Front */}
                 <div className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                    {cardToShow && <Image src={cardToShow.imageUrl} alt={cardToShow.description} fill className="object-contain" />}
+                    {cardToShow && <Image src={cardToShow.imageUrl} alt={cardToShow.description} fill className="object-contain rounded-lg" />}
                 </div>
             </div>
         </div>
@@ -504,5 +504,7 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
 
     
