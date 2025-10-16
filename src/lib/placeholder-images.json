@@ -95,6 +95,18 @@
       "description": "Pixel art de pesas de gimnasio.",
       "imageUrl": "https://i.imgur.com/wyiFuyy.png",
       "imageHint": "pixel art gym"
+    },
+    {
+      "id": "card-back",
+      "description": "The back of a playing card.",
+      "imageUrl": "https://i.imgur.com/MOfa4pU.png",
+      "imageHint": "playing card"
+    },
+    {
+      "id": "card-winner",
+      "description": "The winning playing card, an ace of spades.",
+      "imageUrl": "https://i.imgur.com/sI5a2gU.png",
+      "imageHint": "ace spades"
     }
   ]
 }

@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import Image from "next/image";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -42,6 +44,9 @@ const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, i
 // -------------------------
 
 // --- Shell Game Config ---
+const cardBackImg = PlaceHolderImages.find(img => img.id === 'card-back');
+const cardWinnerImg = PlaceHolderImages.find(img => img.id === 'card-winner');
+
 type PlayingCardProps = {
     isRevealed: boolean;
     hasPrize: boolean;
@@ -51,27 +56,35 @@ type PlayingCardProps = {
 };
 
 const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: PlayingCardProps) => {
+    const cardToShow = (isRevealed && hasPrize && cardWinnerImg) ? cardWinnerImg : cardBackImg;
+
     return (
         <div
             className={cn(
-                "relative transition-transform duration-300 ease-out",
+                "relative transition-transform duration-500",
                 phase === 'picking' && 'cursor-pointer hover:scale-110',
                 isShuffling && 'animate-pulse'
             )}
             onClick={onClick}
-            style={{ width: '72px', height: '100px' }}
+            style={{ width: '80px', height: '112px' }} // Aspect ratio of a poker card
         >
             <div className={cn(
-                "w-full h-full rounded-lg border-2 flex items-center justify-center transition-all duration-300",
-                (isRevealed || phase === 'betting' || phase === 'shuffling') ? 'bg-muted border-muted-foreground' : 'bg-primary/20 border-primary'
+                "relative w-full h-full rounded-lg transition-all duration-500 [transform-style:preserve-3d]",
+                isRevealed && '[transform:rotateY(180deg)]'
             )}>
-                {isRevealed && hasPrize && (
-                    <Ticket className="h-8 w-8 text-red-500 animate-fade-in" />
-                )}
+                 {/* Card Back */}
+                <div className="absolute w-full h-full [backface-visibility:hidden]">
+                    {cardBackImg && <Image src={cardBackImg.imageUrl} alt="Card Back" fill className="object-contain" />}
+                </div>
+                 {/* Card Front */}
+                <div className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                    {cardToShow && <Image src={cardToShow.imageUrl} alt={cardToShow.description} fill className="object-contain" />}
+                </div>
             </div>
         </div>
     );
 };
+
 
 type Cup = { id: number; hasPrize: boolean; isRevealed: boolean };
 type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
@@ -306,7 +319,7 @@ export default function CasinoPage() {
 
                  // Stop shuffling and wait for pick
                 setShellGamePhase('picking');
-                setShellResultMessage('¿Dónde está la ficha?');
+                setShellResultMessage('¿Dónde está la carta ganadora?');
             }, 2500); // Shuffle duration
         }, 1500); // Time to see the prize
     };
@@ -357,10 +370,10 @@ export default function CasinoPage() {
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                  <CardHeader>
                     <CardTitle>Juego de las Cartas</CardTitle>
-                    <CardDescription>Apuesta tus fichas y adivina dónde está el premio. ¡Gana el doble de tu apuesta!</CardDescription>
+                    <CardDescription>Apuesta tus fichas y adivina dónde está la carta ganadora. ¡Gana el doble de tu apuesta!</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
-                    <div className="flex justify-around w-full h-[100px] items-center">
+                    <div className="flex justify-around w-full min-h-[120px] items-center">
                         {cups.map((cup) => (
                              <PlayingCard
                                 key={cup.id}
