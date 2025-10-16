@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type Matter from 'matter-js';
 
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
@@ -123,15 +122,6 @@ const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => voi
 };
 // -------------------------
 
-// --- Plinko Game Config ---
-const PLINKO_MULTIPLIERS = [9, 0, 0, 1.5, 2, 1.5, 0, 0, 9];
-const MULTIPLIER_COLORS: { [key: number]: string } = {
-    0: 'hsla(0, 0%, 50%, 0.7)',
-    1.5: 'hsla(142, 71%, 45%, 0.7)',
-    2: 'hsla(262, 83%, 60%, 0.7)',
-    9: 'hsla(280, 85%, 55%, 0.8)',
-};
-// ------------------------
 
 export default function CasinoPage() {
     const { user, isUserLoading } = useUser();
@@ -172,197 +162,6 @@ export default function CasinoPage() {
     const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
     const [foundPrizes, setFoundPrizes] = useState<MineCellContent[]>([]);
     const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
-
-    // Plinko State
-    const plinkoContainerRef = useRef<HTMLDivElement>(null);
-    const matterInstance = useRef<{
-        engine: Matter.Engine;
-        render: Matter.Render;
-        runner: Matter.Runner;
-    } | null>(null);
-    const matterJsRef = useRef<typeof Matter | null>(null);
-    const [plinkoBetAmount, setPlinkoBetAmount] = useState([1]);
-
-
-    useEffect(() => {
-        const initPlinko = async () => {
-            const Matter = (await import('matter-js')).default;
-            matterJsRef.current = Matter;
-
-            if (!plinkoContainerRef.current || matterInstance.current) return;
-            
-            const container = plinkoContainerRef.current;
-            const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
-            
-            const render = Matter.Render.create({
-                element: container,
-                engine: engine,
-                options: {
-                    width: container.clientWidth,
-                    height: 400,
-                    background: 'transparent',
-                    wireframes: false, 
-                },
-            });
-            const runner = Matter.Runner.create();
-            matterInstance.current = { engine, render, runner };
-
-            const world = engine.world;
-            const width = container.clientWidth;
-            const height = 400;
-
-            Matter.World.add(world, [
-                Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { visible: false } }),
-                Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }),
-                Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }),
-            ]);
-
-            const pegRadius = 5;
-            const rows = 8;
-            const cols = 10;
-            for (let i = 0; i < rows; i++) {
-                const isOddRow = i % 2 !== 0;
-                const numCols = isOddRow ? cols - 1 : cols;
-                for (let j = 0; j < numCols; j++) {
-                    let x = (width / (cols -1)) * j;
-                    if (isOddRow) {
-                        x += width / (cols-1) / 2;
-                    }
-                    const y = height * 0.2 + i * 35;
-                    const peg = Matter.Bodies.circle(x, y, pegRadius, {
-                        isStatic: true,
-                        restitution: 0.5,
-                        friction: 0.01,
-                        render: { fillStyle: 'hsl(var(--primary))' },
-                    });
-                    Matter.World.add(world, peg);
-                }
-            }
-            
-            const prizeCount = PLINKO_MULTIPLIERS.length;
-            const prizeSlotWidth = width / prizeCount;
-
-            for (let i = 0; i < prizeCount; i++) {
-                const multiplier = PLINKO_MULTIPLIERS[i];
-                const colorKey = multiplier;
-                const prizeSlot = Matter.Bodies.rectangle(
-                    prizeSlotWidth / 2 + i * prizeSlotWidth,
-                    height - 15,
-                    prizeSlotWidth,
-                    30,
-                    {
-                        isStatic: true,
-                        isSensor: true,
-                        label: `multiplier-${multiplier}`,
-                        render: { 
-                            fillStyle: MULTIPLIER_COLORS[colorKey] || 'grey',
-                        },
-                    }
-                );
-                Matter.World.add(world, prizeSlot);
-            }
-            
-            for (let i = 1; i < prizeCount; i++) {
-                Matter.World.add(world, Matter.Bodies.rectangle(i * prizeSlotWidth, height - 30, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
-            }
-        
-            Matter.Events.on(engine, 'collisionStart', (event) => {
-                 const Matter = matterJsRef.current;
-                 if (!Matter || !userProfileRef) return;
-
-                 const pairs = event.pairs;
-                 for (let i = 0; i < pairs.length; i++) {
-                    const pair = pairs[i];
-                    
-                    const ballInPair = pair.bodyA.label === 'ball' ? pair.bodyA : pair.bodyB.label === 'ball' ? pair.bodyB : null;
-                    const prizeInPair = pair.bodyA.label.startsWith('multiplier-') ? pair.bodyA : pair.bodyB.label.startsWith('multiplier-') ? pair.bodyB : null;
-
-                    if(ballInPair && prizeInPair){
-                        if (!engine.world.bodies.includes(ballInPair)) {
-                            continue;
-                        }
-                        
-                        const bet = ballInPair.plugin.bet || 0;
-                        const multiplier = parseFloat(prizeInPair.label.split('-')[1]);
-                        const winnings = Math.floor(bet * multiplier);
-                        
-                        if (winnings > 0) {
-                             updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
-                             toast({
-                                 title: '¡Has Ganado!',
-                                 description: `Recibes ${winnings} fichas. (x${multiplier})`,
-                             });
-                        } else {
-                            toast({
-                                     title: '¡Casi!',
-                                     description: `No has ganado ni perdido fichas. (x0)`,
-                                 });
-                        }
-                        
-                        Matter.World.remove(engine.world, ballInPair);
-                    }
-                }
-            });
-
-            Matter.Runner.run(runner, engine);
-            Matter.Render.run(render);
-        };
-        
-        initPlinko();
-    
-        return () => {
-             if (matterInstance.current && matterJsRef.current) {
-                const Matter = matterJsRef.current;
-                const { render, runner, engine } = matterInstance.current;
-                Matter.Render.stop(render);
-                Matter.Runner.stop(runner);
-                Matter.World.clear(engine.world, false);
-                Matter.Engine.clear(engine);
-                if (render.canvas) {
-                    render.canvas.remove();
-                }
-                matterInstance.current = null;
-            }
-        };
-    }, []); 
-
-    const dropPlinkoBall = () => {
-        if (!userProfileRef || !matterInstance.current || !matterJsRef.current) return;
-        
-        const Matter = matterJsRef.current;
-        const currentBet = plinkoBetAmount[0];
-        
-        if ((userProfile?.casinoChips ?? 0) < currentBet) {
-            toast({ variant: 'destructive', title: 'Fichas insuficientes' });
-            return;
-        }
-
-        updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
-
-        const { engine } = matterInstance.current;
-        const world = engine.world;
-        const container = plinkoContainerRef.current;
-        if (!container) return;
-        
-        const ball = Matter.Bodies.circle(container.clientWidth / 2 + (Math.random() * 40 - 20), 20, 10, {
-            restitution: 0.8,
-            friction: 0.05,
-            label: 'ball',
-            plugin: {
-                bet: currentBet
-            },
-            render: { fillStyle: 'hsl(var(--primary))' }
-        });
-        
-        Matter.World.add(world, ball);
-
-        setTimeout(() => {
-            if (engine.world.bodies.includes(ball)) {
-                 Matter.World.remove(engine.world, ball);
-            }
-        }, 8000);
-    };
-
 
     const rollDice = () => {
         if (!userProfileRef || (userProfile?.casinoChips ?? 0) < 1) {
@@ -660,45 +459,6 @@ export default function CasinoPage() {
 
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader>
-                    <CardTitle>Plinko de la Suerte</CardTitle>
-                    <CardDescription>Deja caer la ficha y mira cómo la suerte multiplica tu apuesta.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center gap-4">
-                    <div ref={plinkoContainerRef} className="w-full h-[400px] relative">
-                         <div className="absolute bottom-0 left-0 right-0 flex justify-around">
-                            {PLINKO_MULTIPLIERS.map((mult, i) => {
-                                const colorKey = mult;
-                                return (
-                                <div key={i} className="w-full text-center text-xs sm:text-sm font-bold text-white py-1.5 rounded-b-sm" style={{ backgroundColor: MULTIPLIER_COLORS[colorKey] || 'grey' }}>
-                                    x{mult}
-                                </div>
-                            )})}
-                        </div>
-                    </div>
-                    <div className="w-full px-4 space-y-4">
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground">Tu apuesta:</span>
-                            <span className="font-bold text-lg text-primary">{plinkoBetAmount[0]} Ficha(s)</span>
-                        </div>
-                        <Slider
-                            value={plinkoBetAmount}
-                            onValueChange={setPlinkoBetAmount}
-                            min={1}
-                            max={Math.max(1, casinoChips)}
-                            step={1}
-                            disabled={isLoading || casinoChips < 1}
-                        />
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button size="lg" className="w-full" onClick={dropPlinkoBall} disabled={isLoading || casinoChips < plinkoBetAmount[0]}>
-                        Lanzar ({plinkoBetAmount[0]} Ficha{plinkoBetAmount[0] > 1 ? 's' : ''})
-                    </Button>
-                </CardFooter>
-            </Card>
-
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
-                <CardHeader>
                     <CardTitle>Campo Minado de la Fortuna</CardTitle>
                     <CardDescription>Cuesta 5 fichas. Encuentra los 5 premios sin explotar las 20 bombas. ¡Cobra cuando quieras!</CardDescription>
                 </CardHeader>
@@ -897,3 +657,4 @@ export default function CasinoPage() {
     
 
     
+
