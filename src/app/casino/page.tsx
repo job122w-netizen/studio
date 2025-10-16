@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, Award, Trophy } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, Award, Trophy, CupSoda } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
@@ -11,6 +11,7 @@ import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -40,6 +41,12 @@ const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, i
 }
 // -------------------------
 
+// --- Shell Game Config ---
+type Cup = { id: number; hasPrize: boolean; isRevealed: boolean };
+type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
+// -------------------------
+
+
 export default function CasinoPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
@@ -63,6 +70,18 @@ export default function CasinoPage() {
     const [spinning, setSpinning] = useState(false);
     const [slotResultMessage, setSlotResultMessage] = useState('');
     const [reelsSpinning, setReelsSpinning] = useState([false, false, false]);
+
+    // Shell Game State
+    const [shellGamePhase, setShellGamePhase] = useState<ShellGamePhase>('betting');
+    const [cups, setCups] = useState<Cup[]>([
+        { id: 0, hasPrize: false, isRevealed: false },
+        { id: 1, hasPrize: false, isRevealed: false },
+        { id: 2, hasPrize: false, isRevealed: false },
+    ]);
+    const [betAmount, setBetAmount] = useState([1]);
+    const [shellResultMessage, setShellResultMessage] = useState('');
+    const [isShuffling, setIsShuffling] = useState(false);
+
 
     const rollDice = () => {
         if (!userProfileRef || (userProfile?.casinoChips ?? 0) < 1) {
@@ -203,6 +222,65 @@ export default function CasinoPage() {
         setSlotResultMessage('¡Mala suerte! Sigue intentando.');
     };
 
+    const startShellGame = () => {
+        const currentBet = betAmount[0];
+        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < currentBet) {
+            setShellResultMessage('¡No tienes suficientes fichas!');
+            return;
+        }
+        if (currentBet < 1) {
+            setShellResultMessage('La apuesta mínima es 1 ficha.');
+            return;
+        }
+
+        updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
+        setShellGamePhase('shuffling');
+        setShellResultMessage('Observa con atención...');
+
+        const winningCupIndex = Math.floor(Math.random() * 3);
+        const initialCups = cups.map((cup, index) => ({
+            ...cup,
+            hasPrize: index === winningCupIndex,
+            isRevealed: true, // Briefly show the prize
+        }));
+        setCups(initialCups);
+
+        setTimeout(() => {
+             // Hide prize and start shuffling
+            setCups(initialCups.map(c => ({...c, isRevealed: false})));
+            setIsShuffling(true);
+            
+            setTimeout(() => {
+                 // Stop shuffling and wait for pick
+                setIsShuffling(false);
+                setShellGamePhase('picking');
+                setShellResultMessage('¿Dónde está la ficha?');
+            }, 2000); // Shuffle duration
+        }, 1500); // Time to see the prize
+    };
+
+    const handleCupPick = (pickedCup: Cup) => {
+        if (shellGamePhase !== 'picking' || !userProfileRef) return;
+
+        setShellGamePhase('result');
+        setCups(cups.map(cup => ({ ...cup, isRevealed: true })));
+
+        if (pickedCup.hasPrize) {
+            const winnings = betAmount[0] * 2;
+            setShellResultMessage(`¡Correcto! ¡Has ganado ${winnings} fichas!`);
+            updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
+        } else {
+            setShellResultMessage('¡Incorrecto! Mejor suerte la próxima vez.');
+        }
+    };
+    
+    const resetShellGame = () => {
+        setShellGamePhase('betting');
+        setShellResultMessage('');
+        setCups(cups.map(cup => ({...cup, hasPrize: false, isRevealed: false})));
+        setBetAmount([1]);
+    };
+
     const Dice1Icon = diceIcons[dice1];
     const Dice2Icon = diceIcons[dice2];
     
@@ -223,6 +301,73 @@ export default function CasinoPage() {
                     <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
                  )}
             </div>
+
+            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+                 <CardHeader>
+                    <CardTitle>Juego de los Vasos</CardTitle>
+                    <CardDescription>Apuesta tus fichas y adivina dónde está el premio. ¡Gana el doble de tu apuesta!</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-6">
+                    <div className="flex justify-around w-full h-24 items-center">
+                        {cups.map((cup) => (
+                             <div 
+                                key={cup.id}
+                                className={cn(
+                                    "relative transition-all duration-300",
+                                    isShuffling && 'animate-bounce',
+                                    shellGamePhase === 'picking' && 'cursor-pointer hover:scale-110'
+                                )}
+                                style={{ animationDelay: `${cup.id * 100}ms` }}
+                                onClick={() => handleCupPick(cup)}
+                              >
+                                <CupSoda 
+                                    className={cn(
+                                        "h-20 w-20 transition-colors",
+                                        shellGamePhase === 'betting' ? 'text-muted' : 'text-primary'
+                                    )}
+                                />
+                                {cup.isRevealed && cup.hasPrize && (
+                                     <Ticket className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-red-500 animate-fade-in" />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                     {shellResultMessage && <p className="text-foreground font-semibold text-center h-5">{shellResultMessage}</p>}
+                     {shellGamePhase === 'betting' && (
+                        <div className="w-full px-4 space-y-4">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Tu apuesta:</span>
+                                <span className="font-bold text-lg text-primary">{betAmount[0]} Ficha(s)</span>
+                            </div>
+                             <Slider 
+                                value={betAmount}
+                                onValueChange={setBetAmount}
+                                min={1}
+                                max={Math.max(1, casinoChips)}
+                                step={1}
+                                disabled={isLoading || casinoChips < 1}
+                             />
+                        </div>
+                     )}
+                </CardContent>
+                <CardFooter>
+                    {shellGamePhase === 'betting' && (
+                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || casinoChips < betAmount[0]}>
+                            Jugar ({betAmount[0]} Ficha{betAmount[0] > 1 ? 's' : ''})
+                        </Button>
+                    )}
+                     {(shellGamePhase === 'result') && (
+                        <Button size="lg" className="w-full" onClick={resetShellGame} >
+                            Jugar de Nuevo
+                        </Button>
+                     )}
+                     {(shellGamePhase === 'shuffling' || shellGamePhase === 'picking') && (
+                        <Button size="lg" className="w-full" disabled>
+                            {shellGamePhase === 'shuffling' ? 'Mezclando...' : 'Elige un vaso...'}
+                        </Button>
+                     )}
+                </CardFooter>
+            </Card>
 
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader>
@@ -305,4 +450,5 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
+
     
