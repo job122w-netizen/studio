@@ -50,7 +50,7 @@
     },
     {
       "id": "pixel-art-1",
-      "description": "Pixel art of a cozy room with a desk and computer.",
+      "description": "Pixel art de una acogedora habitación con un escritorio y un ordenador.",
       "imageUrl": "https://i.imgur.com/lBeNkKO.jpeg",
       "imageHint": "pixel art room"
     },
@@ -71,42 +71,6 @@
       "description": "Pixel art de pesas de gimnasio.",
       "imageUrl": "https://i.imgur.com/wyiFuyy.png",
       "imageHint": "pixel art gym"
-    },
-    {
-      "id": "pixel-art-5",
-      "description": "A small plant sprouting from the ground, symbolizing growth.",
-      "imageUrl": "https://picsum.photos/seed/growth/1280/720",
-      "imageHint": "plant sprout"
-    },
-    {
-      "id": "pixel-art-6",
-      "description": "A silhouette of a person lifting weights against a sunset.",
-      "imageUrl": "https://picsum.photos/seed/lifting/1280/720",
-      "imageHint": "weight lifting"
-    },
-    {
-      "id": "pixel-art-7",
-      "description": "A vibrant sunrise over a calm ocean.",
-      "imageUrl": "https://picsum.photos/seed/sunrise/1280/720",
-      "imageHint": "ocean sunrise"
-    },
-    {
-      "id": "pixel-art-8",
-      "description": "A perfectly balanced scale, representing harmony.",
-      "imageUrl": "https://picsum.photos/seed/balance/1280/720",
-      "imageHint": "balanced scale"
-    },
-    {
-      "id": "pixel-art-9",
-      "description": "A clear night sky full of stars and constellations.",
-      "imageUrl": "https://picsum.photos/seed/galaxy/1280/720",
-      "imageHint": "night sky"
-    },
-    {
-      "id": "pixel-art-10",
-      "description": "An old-fashioned key unlocking a glowing door.",
-      "imageUrl": "https://picsum.photos/seed/unlock/1280/720",
-      "imageHint": "glowing door"
     }
   ]
 }
