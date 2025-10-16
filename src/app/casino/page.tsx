@@ -4,14 +4,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
@@ -533,27 +532,11 @@ export default function CasinoPage() {
                         ))}
                     </div>
                      {shellResultMessage && <p className="text-foreground font-semibold text-center h-5">{shellResultMessage}</p>}
-                     {shellGamePhase === 'betting' && (
-                        <div className="w-full px-4 space-y-4">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Tu apuesta:</span>
-                                <span className="font-bold text-lg text-primary">{shellBetAmount[0]} Ficha(s)</span>
-                            </div>
-                             <Slider 
-                                value={shellBetAmount}
-                                onValueChange={setShellBetAmount}
-                                min={1}
-                                max={Math.max(1, casinoChips)}
-                                step={1}
-                                disabled={isLoading || casinoChips < 1}
-                             />
-                        </div>
-                     )}
                 </CardContent>
                 <CardFooter>
                     {shellGamePhase === 'betting' && (
                         <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || casinoChips < shellBetAmount[0]}>
-                            Jugar ({shellBetAmount[0]} Ficha{shellBetAmount[0] > 1 ? 's' : ''})
+                            Jugar (1 Ficha)
                         </Button>
                     )}
                      {(shellGamePhase === 'result') && (
@@ -651,10 +634,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
-
-    
-
-    
-
