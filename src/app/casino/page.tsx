@@ -132,7 +132,7 @@ export default function CasinoPage() {
     }, [firestore, user]);
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
-
+    
     // Dice Game State
     const [dice1, setDice1] = useState(5);
     const [dice2, setDice2] = useState(1);
@@ -159,13 +159,14 @@ export default function CasinoPage() {
     const [minePhase, setMinePhase] = useState<MineSweeperPhase>('betting');
     const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
     const [foundPrizes, setFoundPrizes] = useState<MineCellContent[]>([]);
-    const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
     
+    const isLoading = isUserLoading || isProfileLoading;
     const casinoChips = userProfile?.casinoChips ?? 0;
     const isChipCountInvalid = typeof casinoChips !== 'number' || isNaN(casinoChips);
+    const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
 
     const rollDice = async () => {
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < 1) {
+        if (!userProfileRef || casinoChips < 1) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
         }
@@ -197,7 +198,7 @@ export default function CasinoPage() {
 
      const spinSlots = async () => {
         const cost = 2;
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < cost) {
+        if (!userProfileRef || casinoChips < cost) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
         }
@@ -257,8 +258,6 @@ export default function CasinoPage() {
     
             switch (winningSymbol) {
                 case 'star':
-                    // This logic would need to read the profile inside the transaction if it were chip-related
-                    // For now, non-blocking update is fine for non-chip properties.
                     toastTitle = "¡¡¡PREMIO MAYOR!!!";
                     toastDescription = "¡Has ganado el Pase HV Premium!";
                     break;
@@ -293,7 +292,7 @@ export default function CasinoPage() {
 
     const startShellGame = async () => {
         const currentBet = shellBetAmount[0];
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < currentBet) {
+        if (!userProfileRef || casinoChips < currentBet) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
         }
@@ -350,7 +349,7 @@ export default function CasinoPage() {
 
     const startMineSweeper = async () => {
         const cost = 5;
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < cost) {
+        if (!userProfileRef || casinoChips < cost) {
             toast({ variant: 'destructive', title: 'Fichas insuficientes' });
             return;
         }
@@ -384,8 +383,6 @@ export default function CasinoPage() {
         if (cell.content === 'bomb') {
             setMinePhase('gameOver');
             toast({ variant: 'destructive', title: '¡BOOM!', description: 'Has encontrado una bomba. El multiplicador se ha reiniciado.' });
-            // This update is not chip-related, so non-blocking is fine.
-            // updateDocumentNonBlocking(userProfileRef, { mineSweeperMultiplier: 1 });
             
             // Reveal all bombs
             setTimeout(() => {
@@ -421,7 +418,6 @@ export default function CasinoPage() {
         setMinePhase('betting');
     };
 
-    const isLoading = isUserLoading || isProfileLoading;
     
     return (
         <div className="space-y-8 animate-fade-in pb-16">
@@ -434,7 +430,7 @@ export default function CasinoPage() {
                  {isLoading ? (
                     <Skeleton className="h-8 w-48 mx-auto" />
                  ) : (
-                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{(casinoChips).toLocaleString('es-ES')}</span> Fichas</p>
+                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
                  )}
             </div>
 
