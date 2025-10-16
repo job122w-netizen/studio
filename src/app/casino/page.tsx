@@ -250,11 +250,21 @@ export default function CasinoPage() {
             setCups(initialCups.map(c => ({...c, isRevealed: false})));
             setIsShuffling(true);
             
+            // Randomly shuffle cup positions for the animation
+            const cupElements = Array.from(document.querySelectorAll('.cup-container'));
+            const shuffledPositions = [0, 1, 2].sort(() => Math.random() - 0.5);
+            cupElements.forEach((cup, index) => {
+                 (cup as HTMLElement).style.transform = `translateX(${(shuffledPositions[index] - index) * 110}%)`;
+            });
+            
             setTimeout(() => {
                  // Stop shuffling and wait for pick
                 setIsShuffling(false);
                 setShellGamePhase('picking');
                 setShellResultMessage('¿Dónde está la ficha?');
+                 cupElements.forEach((cup) => {
+                     (cup as HTMLElement).style.transform = 'translateX(0)';
+                });
             }, 2000); // Shuffle duration
         }, 1500); // Time to see the prize
     };
@@ -313,11 +323,9 @@ export default function CasinoPage() {
                              <div 
                                 key={cup.id}
                                 className={cn(
-                                    "relative transition-all duration-300",
-                                    isShuffling && 'animate-bounce',
+                                    "relative transition-transform duration-500 ease-out cup-container",
                                     shellGamePhase === 'picking' && 'cursor-pointer hover:scale-110'
                                 )}
-                                style={{ animationDelay: `${cup.id * 100}ms` }}
                                 onClick={() => handleCupPick(cup)}
                               >
                                 <CupSoda 
@@ -450,5 +458,7 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
+
+    
 
     
