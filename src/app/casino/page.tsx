@@ -252,7 +252,7 @@ export default function CasinoPage() {
     
         if (reel1.id === reel2.id && reel2.id === reel3.id) {
             const winningSymbol = reel1.id;
-            let updates = {};
+            let updates: { [key: string]: any } = {};
             let toastTitle = "¡Has Ganado!";
             let toastDescription = "";
     
@@ -454,7 +454,7 @@ export default function CasinoPage() {
                  {isLoading ? (
                     <Skeleton className="h-8 w-48 mx-auto" />
                  ) : (
-                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{isChipCountInvalid ? 0 : casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
+                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
                  )}
             </div>
 
