@@ -4,54 +4,40 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user's profile within the Desafío HV app.",
+      "description": "Represents a user's profile in the Desafío HV app.",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user profile."
+        },
         "username": {
           "type": "string",
-          "description": "The username of the user."
+          "description": "The user's display name."
         },
         "email": {
           "type": "string",
-          "description": "The email address of the user.",
+          "description": "The user's email address.",
           "format": "email"
         },
-        "level": {
-          "type": "number",
-          "description": "The user's current level in the app."
-        },
-        "experiencePoints": {
-          "type": "number",
-          "description": "The user's current experience points."
-        },
-        "goldLingots": {
-          "type": "number",
-          "description": "The number of gold lingots the user has."
-        },
-        "casinoChips": {
-          "type": "number",
-          "description": "The number of casino chips the user has."
-        },
-        "imageUrl": {
+        "joinDate": {
           "type": "string",
-          "description": "URL of the user's profile picture."
+          "description": "The date the user joined the app.",
+          "format": "date-time"
         },
-        "currentStreak": {
+        "totalPoints": {
           "type": "number",
-          "description": "The user's current daily streak of completing activities."
+          "description": "The user's total points accumulated in the app."
         },
-        "lastActivityDate": {
+        "paseHVId": {
           "type": "string",
-          "description": "The date of the last recorded activity (YYYY-MM-DD).",
-          "format": "date"
+          "description": "Reference to PaseHV. (Relationship: UserProfile 1:1 PaseHV)"
         }
       },
       "required": [
+        "id",
         "username",
         "email",
-        "level",
-        "experiencePoints",
-        "goldLingots",
-        "casinoChips"
+        "joinDate"
       ]
     },
     "StudySession": {
@@ -60,13 +46,13 @@
       "type": "object",
       "description": "Represents a study session recorded by a user.",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the study session."
+        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile."
-        },
-        "subject": {
-          "type": "string",
-          "description": "The subject of the study session."
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N StudySession)"
         },
         "startTime": {
           "type": "string",
@@ -84,61 +70,60 @@
         }
       },
       "required": [
+        "id",
         "userId",
-        "subject",
         "startTime",
         "endTime",
         "durationMinutes"
       ]
     },
-    "WeeklyRoutine": {
+    "Exercise": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "WeeklyRoutine",
+      "title": "Exercise",
       "type": "object",
-      "description": "Represents a user's weekly exercise routine for a specific day.",
+      "description": "Represents an exercise or activity for personal development.",
       "properties": {
-        "dayOfWeek": {
+        "id": {
           "type": "string",
-          "description": "The day of the week (e.g., lunes, martes)."
+          "description": "Unique identifier for the exercise."
         },
-        "exercises": {
-          "type": "array",
-          "description": "List of exercises for the day.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "Unique identifier for the exercise."
-              },
-              "name": {
-                "type": "string",
-                "description": "Name of the exercise."
-              },
-              "completed": {
-                "type": "boolean",
-                "description": "Whether the exercise has been completed for the day."
-              }
-            },
-            "required": ["id", "name", "completed"]
-          }
+        "title": {
+          "type": "string",
+          "description": "The title of the exercise."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the exercise and its purpose."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the exercise (e.g., mindfulness, productivity)."
         }
       },
-      "required": ["dayOfWeek", "exercises"]
+      "required": [
+        "id",
+        "title",
+        "description",
+        "category"
+      ]
     },
     "UserExercise": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserExercise",
       "type": "object",
-      "description": "Represents a user's completion of an exercise.",
+      "description": "Represents a user's interaction with an exercise.",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user exercise record."
+        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile."
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N UserExercise)"
         },
         "exerciseId": {
           "type": "string",
-          "description": "Reference to Exercise."
+          "description": "Reference to Exercise. (Relationship: Exercise 1:N UserExercise)"
         },
         "completionDate": {
           "type": "string",
@@ -147,162 +132,216 @@
         },
         "notes": {
           "type": "string",
-          "description": "Optional notes from the user about the exercise."
+          "description": "Optional notes or reflections on the exercise."
         }
       },
       "required": [
+        "id",
         "userId",
         "exerciseId",
         "completionDate"
       ]
     },
-    "StoreItem": {
+    "Product": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "StoreItem",
+      "title": "Product",
       "type": "object",
-      "description": "Represents an item available for purchase in the virtual store.",
+      "description": "Represents a product available in the virtual store.",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
         "name": {
           "type": "string",
-          "description": "The name of the item."
+          "description": "The name of the product."
         },
         "description": {
           "type": "string",
-          "description": "A description of the item."
+          "description": "A description of the product."
         },
         "price": {
           "type": "number",
-          "description": "The price of the item in gold lingots."
+          "description": "The price of the product in points."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the product's image.",
+          "format": "uri"
         }
       },
       "required": [
+        "id",
         "name",
         "description",
         "price"
       ]
     },
-    "UserItem": {
+    "Purchase": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserItem",
+      "title": "Purchase",
       "type": "object",
-      "description": "Represents an item owned by a user.",
+      "description": "Represents a user's purchase of a product.",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the purchase."
+        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile."
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Purchase)"
         },
-        "itemId": {
+        "productId": {
           "type": "string",
-          "description": "Reference to StoreItem."
+          "description": "Reference to Product. (Relationship: Product 1:N Purchase)"
         },
         "purchaseDate": {
           "type": "string",
-          "description": "The date the item was purchased.",
+          "description": "The date of the purchase.",
           "format": "date-time"
         }
       },
       "required": [
+        "id",
         "userId",
-        "itemId",
+        "productId",
         "purchaseDate"
       ]
     },
-    "HvPass": {
+    "PaseHV": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "HvPass",
+      "title": "PaseHV",
       "type": "object",
-      "description": "Represents the HV Pass subscription for a user.",
+      "description": "Represents the PaseHV subscription.",
       "properties": {
-        "userId": {
+        "id": {
           "type": "string",
-          "description": "Reference to UserProfile."
+          "description": "Unique identifier for the PaseHV subscription."
         },
-        "startDate": {
+        "name": {
           "type": "string",
-          "description": "The start date of the HV Pass subscription.",
-          "format": "date-time"
+          "description": "The name of the subscription tier."
         },
-        "endDate": {
+        "description": {
           "type": "string",
-          "description": "The end date of the HV Pass subscription.",
-          "format": "date-time"
+          "description": "A description of the benefits of the subscription."
         },
-        "active": {
-          "type": "boolean",
-          "description": "Indicates whether the HV Pass is currently active."
+        "price": {
+          "type": "number",
+          "description": "The price of the subscription."
+        },
+        "durationDays": {
+          "type": "number",
+          "description": "The duration of the subscription in days."
         }
       },
       "required": [
-        "userId",
-        "startDate",
-        "endDate",
-        "active"
+        "id",
+        "name",
+        "description",
+        "price",
+        "durationDays"
       ]
     },
     "CasinoGame": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "CasinoGame",
       "type": "object",
-      "description": "Represents a casino game record.",
+      "description": "Represents a game in the casino section.",
       "properties": {
-        "userId": {
+        "id": {
           "type": "string",
-          "description": "Reference to UserProfile."
+          "description": "Unique identifier for the casino game."
         },
-        "gameType": {
+        "name": {
           "type": "string",
-          "description": "The type of casino game played."
+          "description": "The name of the casino game."
         },
-        "betAmount": {
-          "type": "number",
-          "description": "The amount of casino chips bet."
-        },
-        "winAmount": {
-          "type": "number",
-          "description": "The amount of casino chips won."
-        },
-        "gameDate": {
+        "description": {
           "type": "string",
-          "description": "The date and time the game was played.",
-          "format": "date-time"
+          "description": "A description of how to play the game."
         }
       },
       "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "GamePlay": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GamePlay",
+      "type": "object",
+      "description": "Represents a user's game play record in the casino.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the game play record."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N GamePlay)"
+        },
+        "gameId": {
+          "type": "string",
+          "description": "Reference to CasinoGame. (Relationship: CasinoGame 1:N GamePlay)"
+        },
+        "playDate": {
+          "type": "string",
+          "description": "The date and time the game was played.",
+          "format": "date-time"
+        },
+        "pointsBet": {
+          "type": "number",
+          "description": "The number of points the user bet on the game."
+        },
+        "pointsWon": {
+          "type": "number",
+          "description": "The number of points the user won in the game."
+        }
+      },
+      "required": [
+        "id",
         "userId",
-        "gameType",
-        "betAmount",
-        "winAmount",
-        "gameDate"
+        "gameId",
+        "playDate",
+        "pointsBet",
+        "pointsWon"
       ]
     },
     "Ranking": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Ranking",
       "type": "object",
-      "description": "Represents a user's ranking in the global leaderboard.",
+      "description": "Represents the ranking of users based on their total points.",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ranking entry."
+        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile."
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 Ranking)"
         },
         "rank": {
           "type": "number",
-          "description": "The user's current rank in the leaderboard."
+          "description": "The user's rank in the ranking."
         },
-        "score": {
+        "totalPoints": {
           "type": "number",
-          "description": "The user's score used for ranking."
+          "description": "The user's total points used for ranking."
         },
         "lastUpdated": {
           "type": "string",
-          "description": "The date and time the ranking was last updated.",
+          "description": "The last time the ranking was updated.",
           "format": "date-time"
         }
       },
       "required": [
+        "id",
         "userId",
         "rank",
-        "score",
+        "totalPoints",
         "lastUpdated"
       ]
     }
@@ -314,59 +353,184 @@
     ]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/UserProfile"
+    "structure": [
+      {
+        "path": "/users/{userId}/userProfile",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile data. Uses path-based ownership; only the authenticated user can access their profile (userId is derived from request.auth.uid).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
       },
-      "description": "Stores user profile data. The 'userId' parameter is the Firebase Authentication UID."
-    },
-    "/users/{userId}/studySessions/{studySessionId}": {
-      "schema": {
-        "$ref": "#/entities/StudySession"
+      {
+        "path": "/users/{userId}/studySessions/{studySessionId}",
+        "definition": {
+          "entityName": "StudySession",
+          "schema": {
+            "$ref": "#/backend/entities/StudySession"
+          },
+          "description": "Stores study session data. Uses path-based ownership; only the user can create, read, update, and delete their own study sessions (userId is derived from request.auth.uid).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "studySessionId",
+              "description": "The unique identifier of the study session."
+            }
+          ]
+        }
       },
-      "description": "Stores study session data for a specific user."
-    },
-    "/users/{userId}/weeklyRoutine/{dayId}": {
-      "schema": {
-        "$ref": "#/entities/WeeklyRoutine"
+      {
+        "path": "/exercises/{exerciseId}",
+        "definition": {
+          "entityName": "Exercise",
+          "schema": {
+            "$ref": "#/backend/entities/Exercise"
+          },
+          "description": "Stores exercise data available to all users. This collection is separate from user-specific data.",
+          "params": [
+            {
+              "name": "exerciseId",
+              "description": "The unique identifier of the exercise."
+            }
+          ]
+        }
       },
-      "description": "Stores a user's exercise routine for a specific day of the week."
-    },
-    "/users/{userId}/userExercises/{userExerciseId}": {
-      "schema": {
-        "$ref": "#/entities/UserExercise"
+      {
+        "path": "/users/{userId}/userExercises/{userExerciseId}",
+        "definition": {
+          "entityName": "UserExercise",
+          "schema": {
+            "$ref": "#/backend/entities/UserExercise"
+          },
+          "description": "Stores user-specific exercise data, indicating which exercises a user has completed. Uses path-based ownership (userId is derived from request.auth.uid).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "userExerciseId",
+              "description": "The unique identifier of the user exercise."
+            }
+          ]
+        }
       },
-      "description": "Stores information about a user's completion of an exercise."
-    },
-    "/storeItems/{storeItemId}": {
-      "schema": {
-        "$ref": "#/entities/StoreItem"
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product data for the virtual store. This collection is separate from user-specific data.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier of the product."
+            }
+          ]
+        }
       },
-      "description": "Stores a list of available store items."
-    },
-    "/users/{userId}/userItems/{userItemId}": {
-      "schema": {
-        "$ref": "#/entities/UserItem"
+      {
+        "path": "/users/{userId}/purchases/{purchaseId}",
+        "definition": {
+          "entityName": "Purchase",
+          "schema": {
+            "$ref": "#/backend/entities/Purchase"
+          },
+          "description": "Stores purchase history for each user, linking to products. Uses path-based ownership (userId is derived from request.auth.uid).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "purchaseId",
+              "description": "The unique identifier of the purchase."
+            }
+          ]
+        }
       },
-      "description": "Stores information about items owned by a user."
-    },
-    "/users/{userId}/hvPass": {
-      "schema": {
-        "$ref": "#/entities/HvPass"
+      {
+        "path": "/paseHV/{paseHVId}",
+        "definition": {
+          "entityName": "PaseHV",
+          "schema": {
+            "$ref": "#/backend/entities/PaseHV"
+          },
+          "description": "Stores the different PaseHV subscription tiers. This collection is separate from user-specific data.",
+          "params": [
+            {
+              "name": "paseHVId",
+              "description": "The unique identifier of the PaseHV subscription."
+            }
+          ]
+        }
       },
-      "description": "Stores HV Pass subscription information for a user."
-    },
-    "/users/{userId}/casinoGames/{casinoGameId}": {
-      "schema": {
-        "$ref": "#/entities/CasinoGame"
+      {
+        "path": "/casinoGames/{casinoGameId}",
+        "definition": {
+          "entityName": "CasinoGame",
+          "schema": {
+            "$ref": "#/backend/entities/CasinoGame"
+          },
+          "description": "Stores information about the casino games. This collection is separate from user-specific data.",
+          "params": [
+            {
+              "name": "casinoGameId",
+              "description": "The unique identifier of the casino game."
+            }
+          ]
+        }
       },
-      "description": "Stores casino game history for a user."
-    },
-    "/rankings/{rankingId}": {
-      "schema": {
-        "$ref": "#/entities/Ranking"
+      {
+        "path": "/users/{userId}/gamePlays/{gamePlayId}",
+        "definition": {
+          "entityName": "GamePlay",
+          "schema": {
+            "$ref": "#/backend/entities/GamePlay"
+          },
+          "description": "Stores the gameplay history for each user. Uses path-based ownership (userId is derived from request.auth.uid).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "gamePlayId",
+              "description": "The unique identifier of the game play."
+            }
+          ]
+        }
       },
-      "description": "Stores global ranking information."
-    }
+      {
+        "path": "/rankings/{rankingId}",
+        "definition": {
+          "entityName": "Ranking",
+          "schema": {
+            "$ref": "#/backend/entities/Ranking"
+          },
+          "description": "Stores the ranking of users based on their total points. Each document represents the ranking for a single user (1:1 relationship).",
+          "params": [
+            {
+              "name": "rankingId",
+              "description": "The unique identifier of the ranking."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to reflect the core features of the 'Desafío HV' app, focusing on user profiles, study sessions, exercises, a virtual store, a subscription service (PaseHV), casino games, and a ranking system. The structure emphasizes authorization independence and supports the required QAPs by using path-based ownership for user-specific data and structural segregation for different data access needs.\n\n*   **/users/{userId}/userProfile:** Stores user profile data. This uses path-based ownership. It enables simple security rules where only the authenticated user can access their own profile. This also supports QAPs by ensuring that list operations are always scoped to a single user. The `userId` is derived from `request.auth.uid`.\n*   **/users/{userId}/studySessions/{studySessionId}**: Stores study session data. This uses path-based ownership. Only the user can create, read, update, and delete their own study sessions. This structure supports QAPs by ensuring list operations are scoped to a single user.  The `userId` is derived from `request.auth.uid`.\n*   **/exercises/{exerciseId}**: Stores exercise data available to all users. This collection is separate from user-specific data, enabling different security rules. This supports QAPs because listing exercises doesn't require filtering based on user-specific permissions. The `exercises` collection can be made publicly readable.\n*   **/users/{userId}/userExercises/{userExerciseId}**: Stores user-specific exercise data, indicating which exercises a user has completed. This uses path-based ownership and ensures that only the user can access their own exercise records. This structure supports QAPs by ensuring that list operations are scoped to a single user. The `userId` is derived from `request.auth.uid`.\n*   **/products/{productId}**: Stores product data for the virtual store. This collection is separate from user-specific data. It can be made publicly readable.\n*   **/users/{userId}/purchases/{purchaseId}**: Stores purchase history for each user, linking to products. This uses path-based ownership. This structure supports QAPs because listing purchases is scoped to a single user. The `userId` is derived from `request.auth.uid`.\n*   **/paseHV/{paseHVId}**: Stores the different PaseHV subscription tiers. This collection can be made publicly readable. This structure supports QAPs because listing PaseHV subscriptions doesn't require user-specific permissions.\n*   **/casinoGames/{casinoGameId}**: Stores information about the casino games. This collection is separate from user-specific data, enabling different security rules. This supports QAPs because listing casino games doesn't require filtering based on user-specific permissions. The `casinoGames` collection can be made publicly readable.\n*   **/users/{userId}/gamePlays/{gamePlayId}**: Stores the gameplay history for each user. This uses path-based ownership, ensuring only the user can access their own gameplay records. This structure supports QAPs because listing gamePlays is scoped to a single user. The `userId` is derived from `request.auth.uid`.\n*   **/rankings/{rankingId}**: Stores the ranking of users based on their total points.  Each document in the `rankings` collection represents the ranking for a single user (1:1 relationship). It can be made publicly readable."
   }
 }
