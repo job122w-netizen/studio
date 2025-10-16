@@ -43,5 +43,3 @@ export const updateCasinoChips = async (userProfileRef: DocumentReference, amoun
         }
     }
 };
-
-    
