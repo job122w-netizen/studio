@@ -9,7 +9,6 @@ const db = getFirestore();
 // Function to update or create a user's ranking document
 const updateUserRanking = async (userId: string, userData: any) => {
     // Extract the necessary data for the ranking
-    // Use the data passed to the function, which is more efficient
     const experiencePoints = userData?.experiencePoints || 0;
     const username = userData?.username || 'Usuario Anónimo';
     const imageUrl = userData?.imageUrl || `https://i.pravatar.cc/150?u=${userId}`;
