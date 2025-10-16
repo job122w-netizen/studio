@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, Award, Trophy, CupSoda } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
@@ -42,11 +42,42 @@ const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, i
 // -------------------------
 
 // --- Shell Game Config ---
+type PlayingCardProps = {
+    isRevealed: boolean;
+    hasPrize: boolean;
+    isShuffling: boolean;
+    onClick: () => void;
+    phase: ShellGamePhase;
+};
+
+const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: PlayingCardProps) => {
+    return (
+        <div
+            className={cn(
+                "relative transition-transform duration-300 ease-out",
+                phase === 'picking' && 'cursor-pointer hover:scale-110',
+                isShuffling && 'animate-pulse'
+            )}
+            onClick={onClick}
+            style={{ width: '72px', height: '100px' }}
+        >
+            <div className={cn(
+                "w-full h-full rounded-lg border-2 flex items-center justify-center transition-all duration-300",
+                (isRevealed || phase === 'betting' || phase === 'shuffling') ? 'bg-muted border-muted-foreground' : 'bg-primary/20 border-primary'
+            )}>
+                {isRevealed && hasPrize && (
+                    <Ticket className="h-8 w-8 text-red-500 animate-fade-in" />
+                )}
+            </div>
+        </div>
+    );
+};
+
 type Cup = { id: number; hasPrize: boolean; isRevealed: boolean };
 type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
 
 // Fisher-Yates shuffle algorithm
-const shuffleArray = <T>(array: T[]): T[] => {
+const shuffleArray = <T,>(array: T[]): T[] => {
     let currentIndex = array.length, randomIndex;
     const newArray = [...array]; // Create a copy
   
@@ -325,31 +356,20 @@ export default function CasinoPage() {
 
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                  <CardHeader>
-                    <CardTitle>Juego de los Vasos</CardTitle>
+                    <CardTitle>Juego de las Cartas</CardTitle>
                     <CardDescription>Apuesta tus fichas y adivina dónde está el premio. ¡Gana el doble de tu apuesta!</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
-                    <div className="flex justify-around w-full h-24 items-center">
+                    <div className="flex justify-around w-full h-[100px] items-center">
                         {cups.map((cup) => (
-                             <div 
+                             <PlayingCard
                                 key={cup.id}
-                                className={cn(
-                                    "relative transition-transform duration-300 ease-out",
-                                    shellGamePhase === 'picking' && 'cursor-pointer hover:scale-110',
-                                    shellGamePhase === 'shuffling' && 'animate-pulse'
-                                )}
+                                isRevealed={cup.isRevealed}
+                                hasPrize={cup.hasPrize}
+                                isShuffling={shellGamePhase === 'shuffling'}
                                 onClick={() => handleCupPick(cup)}
-                              >
-                                <CupSoda 
-                                    className={cn(
-                                        "h-20 w-20 transition-colors",
-                                        (shellGamePhase === 'betting' || shellGamePhase === 'shuffling') ? 'text-muted' : 'text-primary'
-                                    )}
-                                />
-                                {cup.isRevealed && cup.hasPrize && (
-                                     <Ticket className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-red-500 animate-fade-in" />
-                                )}
-                            </div>
+                                phase={shellGamePhase}
+                            />
                         ))}
                     </div>
                      {shellResultMessage && <p className="text-foreground font-semibold text-center h-5">{shellResultMessage}</p>}
@@ -383,7 +403,7 @@ export default function CasinoPage() {
                      )}
                      {(shellGamePhase === 'shuffling' || shellGamePhase === 'picking') && (
                         <Button size="lg" className="w-full" disabled>
-                            {shellGamePhase === 'shuffling' ? 'Mezclando...' : 'Elige un vaso...'}
+                            {shellGamePhase === 'shuffling' ? 'Mezclando...' : 'Elige una carta...'}
                         </Button>
                      )}
                 </CardFooter>
@@ -470,13 +490,6 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
-
-    
-
-    
-
-    
-
-    
+}
 
     
