@@ -56,8 +56,6 @@ type PlayingCardProps = {
 };
 
 const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: PlayingCardProps) => {
-    // The front face of the card will show the winning image if it's the prize card, otherwise it will just be another back.
-    // This way, when non-prize cards are revealed, they don't show a blank space.
     const frontImage = (hasPrize && cardWinnerImg) ? cardWinnerImg : cardBackImg;
 
     return (
@@ -68,20 +66,24 @@ const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: Play
                 isShuffling && 'animate-pulse'
             )}
             onClick={onClick}
-            style={{ width: '80px', height: '112px' }} // Aspect ratio of a poker card
+            style={{ width: '80px', height: '112px' }}
         >
-            <div className={cn(
-                "relative w-full h-full rounded-lg transition-all duration-500 [transform-style:preserve-3d]",
-                isRevealed && '[transform:rotateY(180deg)]'
-            )}>
-                 {/* Card Back */}
-                <div className="absolute w-full h-full [backface-visibility:hidden]">
-                    {cardBackImg && <Image src={cardBackImg.imageUrl} alt="Card Back" fill className="object-cover rounded-lg" />}
-                </div>
-                 {/* Card Front */}
-                <div className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                    {frontImage && <Image src={frontImage.imageUrl} alt={frontImage.description} fill className="object-cover rounded-lg" />}
-                </div>
+            {/* Base container for images */}
+            <div className="relative w-full h-full rounded-lg shadow-md">
+                 {/* Card Back - always visible underneath */}
+                {cardBackImg && <Image src={cardBackImg.imageUrl} alt="Card Back" fill className="object-cover rounded-lg" />}
+
+                 {/* Card Front - fades in on top when revealed */}
+                {frontImage && (
+                    <div
+                        className={cn(
+                            "absolute inset-0 w-full h-full transition-opacity duration-500",
+                            isRevealed ? "opacity-100" : "opacity-0"
+                        )}
+                    >
+                        <Image src={frontImage.imageUrl} alt={frontImage.description} fill className="object-cover rounded-lg" />
+                    </div>
+                )}
             </div>
         </div>
     );
