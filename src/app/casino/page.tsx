@@ -181,17 +181,22 @@ export default function CasinoPage() {
         render: Matter.Render;
         runner: Matter.Runner;
     } | null>(null);
+    const matterJsRef = useRef<typeof Matter | null>(null);
     const [plinkoBetAmount, setPlinkoBetAmount] = useState([1]);
 
 
      useEffect(() => {
-        const initPlinko = async () => {
+        let render: Matter.Render, runner: Matter.Runner;
+
+        const init = async () => {
             const Matter = (await import('matter-js')).default;
-            if (!plinkoContainerRef.current || matterInstance.current) return;
+            matterJsRef.current = Matter;
+
+            if (!plinkoContainerRef.current) return;
 
             const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
-            const render = Matter.Render.create({
+            render = Matter.Render.create({
                 element: container,
                 engine: engine,
                 options: {
@@ -201,7 +206,7 @@ export default function CasinoPage() {
                     wireframes: false,
                 },
             });
-            const runner = Matter.Runner.create();
+            runner = Matter.Runner.create();
             matterInstance.current = { engine, render, runner };
 
             const world = engine.world;
@@ -305,10 +310,11 @@ export default function CasinoPage() {
             Matter.Render.run(render);
         };
         
-        initPlinko();
+        init();
     
         return () => {
-             if (matterInstance.current) {
+             if (matterInstance.current && matterJsRef.current) {
+                const Matter = matterJsRef.current;
                 const { render, runner, engine } = matterInstance.current;
                 Matter.Render.stop(render);
                 Matter.Runner.stop(runner);
@@ -316,12 +322,14 @@ export default function CasinoPage() {
                 Matter.Engine.clear(engine);
                 render.canvas.remove();
                 matterInstance.current = null;
+                matterJsRef.current = null;
             }
         };
     }, [userProfileRef]);
 
     const dropPlinkoBall = () => {
-        if (!userProfileRef || !matterInstance.current) return;
+        if (!userProfileRef || !matterInstance.current || !matterJsRef.current) return;
+        const Matter = matterJsRef.current;
         const currentBet = plinkoBetAmount[0];
         if ((userProfile?.casinoChips ?? 0) < currentBet) {
             toast({ variant: 'destructive', title: 'Fichas insuficientes' });
@@ -331,9 +339,6 @@ export default function CasinoPage() {
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
 
         const { engine } = matterInstance.current;
-        const Matter = (window as any).Matter;
-        if (!Matter) return;
-
         const world = engine.world;
         const container = plinkoContainerRef.current;
         if (!container) return;
@@ -885,6 +890,8 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
 
     
 
