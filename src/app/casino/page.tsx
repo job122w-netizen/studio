@@ -126,6 +126,31 @@ export default function CasinoPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
 
+    // Game States
+    const [dice1, setDice1] = useState(5);
+    const [dice2, setDice2] = useState(1);
+    const [rolling, setRolling] = useState(false);
+    const [diceResultMessage, setDiceResultMessage] = useState('');
+
+    const [reels, setReels] = useState([slotSymbols[0], slotSymbols[1], slotSymbols[2]]);
+    const [spinning, setSpinning] = useState(false);
+    const [slotResultMessage, setSlotResultMessage] = useState('');
+    const [reelsSpinning, setReelsSpinning] = useState([false, false, false]);
+
+    const [shellGamePhase, setShellGamePhase] = useState<ShellGamePhase>('betting');
+    const [cups, setCups] = useState<CupState[]>([
+        { id: 0, hasPrize: false, isRevealed: false },
+        { id: 1, hasPrize: false, isRevealed: false },
+        { id: 2, hasPrize: false, isRevealed: false },
+    ]);
+    const [shellResultMessage, setShellResultMessage] = useState('');
+    const shellBetAmount = 1; // Simplified bet amount
+
+    const [minePhase, setMinePhase] = useState<MineSweeperPhase>('betting');
+    const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
+    const [foundPrizes, setFoundPrizes] = useState<MineCellContent[]>([]);
+    
+    // User Profile Data
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
         return doc(firestore, 'users', user.uid);
@@ -133,38 +158,13 @@ export default function CasinoPage() {
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
     
-    // Dice Game State
-    const [dice1, setDice1] = useState(5);
-    const [dice2, setDice2] = useState(1);
-    const [rolling, setRolling] = useState(false);
-    const [diceResultMessage, setDiceResultMessage] = useState('');
-
-    // Slot Machine State
-    const [reels, setReels] = useState([slotSymbols[0], slotSymbols[1], slotSymbols[2]]);
-    const [spinning, setSpinning] = useState(false);
-    const [slotResultMessage, setSlotResultMessage] = useState('');
-    const [reelsSpinning, setReelsSpinning] = useState([false, false, false]);
-
-    // Shell Game State
-    const [shellGamePhase, setShellGamePhase] = useState<ShellGamePhase>('betting');
-    const [cups, setCups] = useState<CupState[]>([
-        { id: 0, hasPrize: false, isRevealed: false },
-        { id: 1, hasPrize: false, isRevealed: false },
-        { id: 2, hasPrize: false, isRevealed: false },
-    ]);
-    const [shellBetAmount, setShellBetAmount] = useState([1]);
-    const [shellResultMessage, setShellResultMessage] = useState('');
-
-    // Minesweeper State
-    const [minePhase, setMinePhase] = useState<MineSweeperPhase>('betting');
-    const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
-    const [foundPrizes, setFoundPrizes] = useState<MineCellContent[]>([]);
-    
+    // Derived State
     const isLoading = isUserLoading || isProfileLoading;
     const casinoChips = userProfile?.casinoChips ?? 0;
     const isChipCountInvalid = typeof casinoChips !== 'number' || isNaN(casinoChips);
     const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
 
+    // Game Logic Functions
     const rollDice = async () => {
         if (!userProfileRef || casinoChips < 1) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
@@ -174,7 +174,6 @@ export default function CasinoPage() {
         setRolling(true);
         setDiceResultMessage('');
         await updateCasinoChips(userProfileRef, -1);
-
 
         let rollCount = 0;
         const interval = setInterval(() => {
@@ -291,17 +290,16 @@ export default function CasinoPage() {
     };
 
     const startShellGame = async () => {
-        const currentBet = shellBetAmount[0];
-        if (!userProfileRef || casinoChips < currentBet) {
+        if (!userProfileRef || casinoChips < shellBetAmount) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
         }
-        if (currentBet < 1) {
+        if (shellBetAmount < 1) {
             setShellResultMessage('La apuesta mínima es 1 ficha.');
             return;
         }
 
-        await updateCasinoChips(userProfileRef, -currentBet);
+        await updateCasinoChips(userProfileRef, -shellBetAmount);
         setShellGamePhase('shuffling');
         setShellResultMessage('Observa con atención...');
 
@@ -332,7 +330,7 @@ export default function CasinoPage() {
         setCups(cups.map(cup => ({ ...cup, isRevealed: true })));
 
         if (pickedCup.hasPrize) {
-            const winnings = shellBetAmount[0] * 2;
+            const winnings = shellBetAmount * 2;
             setShellResultMessage(`¡Correcto! ¡Has ganado ${winnings} fichas!`);
             await updateCasinoChips(userProfileRef, winnings);
         } else {
@@ -344,7 +342,6 @@ export default function CasinoPage() {
         setShellGamePhase('betting');
         setShellResultMessage('');
         setCups(cups.map(cup => ({...cup, hasPrize: false, isRevealed: false})));
-        setShellBetAmount([1]);
     };
 
     const startMineSweeper = async () => {
@@ -399,14 +396,14 @@ export default function CasinoPage() {
             return;
         };
 
-        const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
+        const currentMultiplier = userProfile?.mineSweeperMultiplier ?? 1;
         let chipWinnings = 0;
         let description = 'Has cobrado tus premios: ';
 
         foundPrizes.forEach(prize => {
             if (prize === 'casinoChip') {
-                chipWinnings += multiplier;
-                description += `${multiplier} fichas, `;
+                chipWinnings += currentMultiplier;
+                description += `${currentMultiplier} fichas, `;
             }
         });
 
@@ -414,10 +411,9 @@ export default function CasinoPage() {
             await updateCasinoChips(userProfileRef, chipWinnings);
         }
 
-        toast({ title: `¡Premios cobrados! (x${multiplier})`, description: description.slice(0, -2) });
+        toast({ title: `¡Premios cobrados! (x${currentMultiplier})`, description: description.slice(0, -2) });
         setMinePhase('betting');
     };
-
     
     return (
         <div className="space-y-8 animate-fade-in pb-16">
@@ -494,7 +490,7 @@ export default function CasinoPage() {
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                  <CardHeader>
                     <CardTitle>Juego de los Vasos</CardTitle>
-                    <CardDescription>Apuesta tus fichas y adivina dónde está la ficha ganadora. ¡Gana el doble de tu apuesta!</CardDescription>
+                    <CardDescription>Apuesta 1 ficha y adivina dónde está la ficha ganadora. ¡Gana el doble de tu apuesta!</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
                     <div className="flex justify-around w-full min-h-[120px] items-center">
@@ -513,7 +509,7 @@ export default function CasinoPage() {
                 </CardContent>
                 <CardFooter>
                     {shellGamePhase === 'betting' && (
-                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || casinoChips < (shellBetAmount[0] ?? 1) || isChipCountInvalid}>
+                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || (casinoChips < shellBetAmount) || isChipCountInvalid}>
                             Jugar (1 Ficha)
                         </Button>
                     )}
