@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift, Minus, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from "firebase/firestore";
+import { useUser, useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { doc, increment } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -375,20 +375,35 @@ export default function CasinoPage() {
         setMineGrid(shuffledContent.map((c, i) => ({ id: i, state: 'hidden', content: c })));
     };
 
-    const handleCellClick = (cell: MineCell) => {
+    const handleCellClick = async (cell: MineCell) => {
         if (minePhase !== 'playing' || cell.state === 'revealed' || !userProfileRef) return;
-
+    
         const newGrid = [...mineGrid];
         newGrid[cell.id] = { ...cell, state: 'revealed' };
         setMineGrid(newGrid);
-
+    
         if (cell.content === 'bomb') {
             setMinePhase('gameOver');
-            toast({ variant: 'destructive', title: '¡BOOM!', description: 'Has encontrado una bomba. El multiplicador se ha reiniciado.' });
-            
+    
+            const currentBombStreak = userProfile?.bombStreak ?? 0;
+            const newBombStreak = currentBombStreak + 1;
+    
+            if (newBombStreak >= 3) {
+                toast({ variant: 'destructive', title: '¡BOOM!', description: 'Tercera bomba consecutiva. ¡El multiplicador se ha reiniciado!' });
+                updateDocumentNonBlocking(userProfileRef, {
+                    bombStreak: 0,
+                    mineSweeperMultiplier: 1,
+                });
+            } else {
+                toast({ variant: 'destructive', title: '¡BOOM!', description: `Has encontrado una bomba. Racha de bombas: ${newBombStreak}/3.` });
+                updateDocumentNonBlocking(userProfileRef, {
+                    bombStreak: increment(1),
+                });
+            }
+    
             // Reveal all bombs
             setTimeout(() => {
-                 setMineGrid(currentGrid => currentGrid.map(c => c.content === 'bomb' ? { ...c, state: 'revealed' } : c));
+                setMineGrid(currentGrid => currentGrid.map(c => c.content === 'bomb' ? { ...c, state: 'revealed' } : c));
             }, 1000);
         } else if (cell.content !== 'empty') {
             setFoundPrizes(prev => [...prev, cell.content]);
@@ -396,27 +411,40 @@ export default function CasinoPage() {
     };
 
     const cashOutMines = async () => {
-        if (!userProfileRef || foundPrizes.length === 0) {
+        if (!userProfileRef) {
             setMinePhase('betting');
             return;
         };
-
+    
         const currentMultiplier = userProfile?.mineSweeperMultiplier ?? 1;
         let chipWinnings = 0;
         let description = 'Has cobrado tus premios: ';
-
-        foundPrizes.forEach(prize => {
-            if (prize === 'casinoChip') {
-                chipWinnings += currentMultiplier;
-                description += `${currentMultiplier} fichas, `;
+        let hasPrizes = foundPrizes.length > 0;
+    
+        if (hasPrizes) {
+            foundPrizes.forEach(prize => {
+                if (prize === 'casinoChip') {
+                    chipWinnings += currentMultiplier;
+                    description += `${currentMultiplier} fichas, `;
+                }
+                // Here you could add logic for other prizes like gems or goldLingots
+            });
+    
+            if (chipWinnings > 0) {
+                await updateCasinoChips(userProfileRef, chipWinnings);
             }
-        });
-
-        if (chipWinnings > 0) {
-            await updateCasinoChips(userProfileRef, chipWinnings);
+    
+            toast({ title: `¡Premios cobrados! (x${currentMultiplier})`, description: description.slice(0, -2) });
+        } else {
+            toast({ title: "Partida finalizada", description: "No encontraste premios esta vez."});
         }
-
-        toast({ title: `¡Premios cobrados! (x${multiplier})`, description: description.slice(0, -2) });
+    
+        // Increase multiplier and reset bomb streak on successful cash out
+        updateDocumentNonBlocking(userProfileRef, {
+            mineSweeperMultiplier: increment(1),
+            bombStreak: 0
+        });
+    
         setMinePhase('betting');
     };
     
@@ -480,7 +508,7 @@ export default function CasinoPage() {
                         </Button>
                     )}
                     {minePhase === 'playing' && (
-                        <Button size="lg" className="w-full" onClick={cashOutMines} disabled={foundPrizes.length === 0}>
+                        <Button size="lg" className="w-full" onClick={cashOutMines}>
                             Cobrar Premios y Salir
                         </Button>
                     )}
@@ -642,4 +670,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
     

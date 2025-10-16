@@ -72,6 +72,10 @@
         "mineSweeperMultiplier": {
             "type": "number",
             "description": "The current prize multiplier for the Minesweeper game."
+        },
+        "bombStreak": {
+            "type": "number",
+            "description": "The number of consecutive times the user has hit a bomb in Minesweeper."
         }
       },
       "required": [
@@ -424,3 +428,5 @@
     }
   }
 }
+
+    
