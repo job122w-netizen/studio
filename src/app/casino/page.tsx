@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -197,7 +198,7 @@ export default function CasinoPage() {
             },
         });
         
-        matterInstance.current = { engine, render, world, Bodies, Events };
+        matterInstance.current = { engine, render, world, Bodies, Events, World };
 
         // --- Board Creation ---
         const width = container.clientWidth;
@@ -280,7 +281,7 @@ export default function CasinoPage() {
         setIsPlayingPlinko(true);
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
 
-        const { engine, world, Bodies, Events } = matterInstance.current;
+        const { engine, world, Bodies, Events, World } = matterInstance.current;
         const container = plinkoContainerRef.current;
         if (!container) return;
         
@@ -502,7 +503,6 @@ export default function CasinoPage() {
 
         setTimeout(() => {
             const hiddenPrizeCups = initialCups.map(c => ({...c, isRevealed: false}));
-            setCups(hiddenPrizeCups);
             
             setTimeout(() => {
                  const shuffledCups = shuffleArray(hiddenPrizeCups);
@@ -868,3 +868,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
