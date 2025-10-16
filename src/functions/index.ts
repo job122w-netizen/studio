@@ -27,7 +27,7 @@ const updateUserRanking = async (userId: string, userData: any) => {
 };
 
 // Trigger when a user document in the 'users' collection is updated
-export const onUserUpdateSyncRanking = onDocumentUpdated("/users/{userId}", async (event) => {
+exports.onUserUpdateSyncRanking = onDocumentUpdated("/users/{userId}", async (event) => {
     try {
         const userId = event.params.userId;
         const newData = event.data?.after.data();
@@ -40,7 +40,7 @@ export const onUserUpdateSyncRanking = onDocumentUpdated("/users/{userId}", asyn
 });
 
 // Trigger when a new user document is created in the 'users' collection
-export const onUserCreateSyncRanking = onDocumentCreated("/users/{userId}", async (event) => {
+exports.onUserCreateSyncRanking = onDocumentCreated("/users/{userId}", async (event) => {
      try {
         const userId = event.params.userId;
         const newData = event.data?.data();
@@ -51,3 +51,4 @@ export const onUserCreateSyncRanking = onDocumentCreated("/users/{userId}", asyn
         console.error("Error in onUserCreateSyncRanking:", error);
     }
 });
+
