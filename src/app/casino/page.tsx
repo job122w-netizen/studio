@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -159,8 +158,13 @@ export default function CasinoPage() {
     
     // Derived State
     const isLoading = isUserLoading || isProfileLoading;
-    const casinoChips = userProfile?.casinoChips ?? 0;
-    const isChipCountInvalid = typeof casinoChips !== 'number' || isNaN(casinoChips);
+    
+    // Sanitize casinoChips to prevent NaN issues on display and in logic
+    const rawChips = userProfile?.casinoChips;
+    const casinoChips = typeof rawChips === 'number' && !isNaN(rawChips) ? rawChips : 0;
+    
+    const isChipCountInvalid = casinoChips === 0 && rawChips !== 0; // Catches NaN, null, undefined
+    
     const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
 
     // Game Logic Functions
@@ -613,5 +617,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
