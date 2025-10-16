@@ -1,7 +1,7 @@
 'use client';
 
-import { doc, DocumentReference, getDoc, increment, serverTimestamp, writeBatch } from "firebase/firestore";
-import { firestore } from "@/firebase/client-provider"; // Assuming client provider exports firestore
+import { doc, DocumentReference, getDoc, increment, writeBatch } from "firebase/firestore";
+import { firestore } from "@/firebase/client"; // Corrected import
 import { format, subDays, isSameDay } from 'date-fns';
 
 /**

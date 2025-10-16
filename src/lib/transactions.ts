@@ -1,7 +1,7 @@
 'use client';
 
 import { doc, runTransaction, DocumentReference, FirestoreError } from 'firebase/firestore';
-import { firestore } from '@/firebase/client-provider';
+import { firestore } from '@/firebase/client'; // Corrected import
 
 /**
  * Atomically updates the casino chips for a user using a Firestore transaction.
