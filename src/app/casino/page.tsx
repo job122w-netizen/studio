@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, Award } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, Award, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
@@ -19,6 +19,13 @@ const slotSymbols = [
     { icon: Ticket, id: 'ticket', label: 'Fichas' },
     { icon: Gem, id: 'gem', label: 'Gemas' },
     { icon: Star, id: 'star', label: 'Pase Premium' },
+];
+
+const prizeTable = [
+    { icon: Star, label: 'Pase HV Premium', combo: [Star, Star, Star] },
+    { icon: Gem, label: '20 Gemas', combo: [Gem, Gem, Gem] },
+    { icon: Coins, label: '80 Lingotes de Oro', combo: [Coins, Coins, Coins] },
+    { icon: Ticket, label: '100 Fichas de Casino', combo: [Ticket, Ticket, Ticket] },
 ];
 
 const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, id: string }, isSpinning: boolean }) => {
@@ -87,7 +94,7 @@ export default function CasinoPage() {
     };
 
      const spinSlots = () => {
-        const cost = 5;
+        const cost = 2;
         if (!userProfileRef || (userProfile?.casinoChips ?? 0) < cost) {
             setSlotResultMessage('¡No tienes suficientes fichas!');
             return;
@@ -196,7 +203,7 @@ export default function CasinoPage() {
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader>
                     <CardTitle>Tragamonedas HV</CardTitle>
-                    <CardDescription>¡Alinea 3 símbolos para ganar! Cuesta 5 fichas por tirada.</CardDescription>
+                    <CardDescription>¡Alinea 3 símbolos para ganar! Cuesta 2 fichas por tirada.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
                     <div className="w-full bg-muted/30 p-2 rounded-lg border">
@@ -214,10 +221,26 @@ export default function CasinoPage() {
                         </div>
                     </div>
                      {slotResultMessage && <p className="text-foreground font-semibold text-center h-5">{slotResultMessage}</p>}
+                    <div className="w-full p-4 border rounded-lg bg-card">
+                         <h4 className="text-center font-bold mb-3 text-muted-foreground">Tabla de Premios</h4>
+                         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                            {prizeTable.map((prize) => {
+                                const PrizeIcon = prize.icon;
+                                return (
+                                <div key={prize.label} className="flex items-center gap-2">
+                                     <div className="flex items-center gap-0.5">
+                                        {prize.combo.map((Icon, i) => <Icon key={i} className="h-4 w-4 text-yellow-400"/>)}
+                                     </div>
+                                     <span className="font-semibold">{prize.label}</span>
+                                </div>
+                                )
+                            })}
+                         </div>
+                    </div>
                 </CardContent>
                 <CardFooter>
-                    <Button size="lg" className="w-full" onClick={spinSlots} disabled={spinning || isLoading || casinoChips < 5}>
-                        {spinning ? 'Girando...' : 'Girar (5 Fichas)'}
+                    <Button size="lg" className="w-full" onClick={spinSlots} disabled={spinning || isLoading || casinoChips < 2}>
+                        {spinning ? 'Girando...' : 'Girar (2 Fichas)'}
                     </Button>
                 </CardFooter>
             </Card>
@@ -258,3 +281,4 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
+    
