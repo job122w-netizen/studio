@@ -1,5 +1,4 @@
 
-
 import { onDocumentUpdated, onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase-admin/app';
@@ -7,9 +6,10 @@ import { initializeApp } from 'firebase-admin/app';
 initializeApp();
 const db = getFirestore();
 
-// Function to update or create a user's ranking document
+// This function is no longer the primary mechanism for ranking,
+// but can be kept for future administrative tasks or a separate, more complex ranking system.
+// For now, the client reads directly from the 'users' collection.
 const updateUserRanking = async (userId: string, userData: any) => {
-    // Extract the necessary data for the ranking
     const experiencePoints = userData?.experiencePoints || 0;
     const username = userData?.username || 'Usuario Anónimo';
     const imageUrl = userData?.imageUrl || `https://i.pravatar.cc/150?u=${userId}`;
@@ -18,7 +18,6 @@ const updateUserRanking = async (userId: string, userData: any) => {
 
     console.log(`Updating ranking for user ${userId} with ${experiencePoints} XP.`);
 
-    // Set the data in the rankings collection
     return rankingRef.set({
         userId: userId,
         username: username,
@@ -27,7 +26,6 @@ const updateUserRanking = async (userId: string, userData: any) => {
     }, { merge: true });
 };
 
-// Trigger when a user document in the 'users' collection is updated
 export const onUserUpdateSyncRanking = onDocumentUpdated("/users/{userId}", async (event) => {
     try {
         const userId = event.params.userId;
@@ -40,7 +38,6 @@ export const onUserUpdateSyncRanking = onDocumentUpdated("/users/{userId}", asyn
     }
 });
 
-// Trigger when a new user document is created in the 'users' collection
 export const onUserCreateSyncRanking = onDocumentCreated("/users/{userId}", async (event) => {
      try {
         const userId = event.params.userId;

@@ -15,14 +15,12 @@ type RankingPlayer = {
   username: string;
   experiencePoints: number;
   imageUrl?: string;
-  userId: string;
 };
 
 export default function RankingPage() {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
 
-  // Query the 'users' collection directly
   const usersCollectionRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'users');
@@ -30,11 +28,9 @@ export default function RankingPage() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!usersCollectionRef) return null;
-    // Order by experiencePoints and take the top 100
     return query(usersCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
   }, [usersCollectionRef]);
 
-  // Use the useCollection hook to get real-time user data
   const { data: rankedList, isLoading } = useCollection<RankingPlayer>(usersQuery);
   
   const getInitials = (name: string) => {
