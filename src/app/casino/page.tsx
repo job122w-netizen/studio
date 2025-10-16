@@ -56,7 +56,9 @@ type PlayingCardProps = {
 };
 
 const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: PlayingCardProps) => {
-    const cardToShow = (hasPrize && cardWinnerImg) ? cardWinnerImg : cardBackImg;
+    // The front face of the card will show the winning image if it's the prize card, otherwise it will just be another back.
+    // This way, when non-prize cards are revealed, they don't show a blank space.
+    const frontImage = (hasPrize && cardWinnerImg) ? cardWinnerImg : cardBackImg;
 
     return (
         <div
@@ -78,7 +80,7 @@ const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: Play
                 </div>
                  {/* Card Front */}
                 <div className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                    {cardToShow && <Image src={cardToShow.imageUrl} alt={cardToShow.description} fill className="object-cover rounded-lg" />}
+                    {frontImage && <Image src={frontImage.imageUrl} alt={frontImage.description} fill className="object-cover rounded-lg" />}
                 </div>
             </div>
         </div>
@@ -504,9 +506,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
-
-    
-
-    
