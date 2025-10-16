@@ -45,7 +45,7 @@ export const tiendaItems = [
 ];
 
 export type HvPassReward = {
-    type: 'goldLingots' | 'casinoChips' | 'chest' | 'profileBackground';
+    type: 'goldLingots' | 'casinoChips' | 'chest' | 'profileBackground' | 'gem';
     quantity?: number;
     itemId?: string; // For backgrounds
 };
@@ -62,17 +62,19 @@ export const hvPassLevels: HvPassLevel[] = Array.from({ length: 100 }, (_, i) =>
     let freeReward: HvPassReward;
 
     // Logic for more varied free rewards
-    if (level % 10 === 0) {
-        freeReward = { type: 'chest', quantity: 1 }; // Chest every 10 levels
+    if (level % 20 === 0) {
+        freeReward = { type: 'gem', quantity: 1 }; // Special gem every 20 levels
+    } else if (level % 10 === 0) {
+        freeReward = { type: 'chest', quantity: 1 }; // Chest every 10 levels (but not 20, 40, etc.)
     } else if (level % 5 === 0) {
-        freeReward = { type: 'casinoChips', quantity: 5 }; // Casino chips every 5 levels (but not 10)
+        freeReward = { type: 'casinoChips', quantity: 5 }; // Casino chips every 5 levels
     } else {
         freeReward = { type: 'goldLingots', quantity: 10 }; // Gold lingots for other levels
     }
     
     let premiumReward: HvPassReward | undefined;
 
-    // Premium rewards logic (remains more exclusive)
+    // Premium rewards logic
     if (level % 10 === 0 && level !== 100) {
         premiumReward = { type: 'chest', quantity: 1 };
     } else if (level % 5 === 0) {

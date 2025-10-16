@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, CheckCircle, Gem, Lock, Star, Ticket, Zap, Box } from "lucide-react";
+import { Award, CheckCircle, Coins, Lock, Star, Ticket, Zap, Box, Gem } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Progress } from "@/components/ui/progress";
@@ -16,13 +16,15 @@ const XP_PER_LEVEL = 2000;
 const RewardIcon = ({ reward }: { reward: HvPassReward }) => {
     switch (reward.type) {
         case 'goldLingots':
-            return <Gem className="h-6 w-6 text-yellow-400" />;
+            return <Coins className="h-6 w-6 text-yellow-500" />;
         case 'casinoChips':
             return <Ticket className="h-6 w-6 text-red-400" />;
         case 'chest':
             return <Box className="h-6 w-6 text-orange-400" />;
         case 'profileBackground':
             return <div className="h-6 w-6 rounded-sm border-2 border-purple-400 bg-gray-600" />;
+        case 'gem':
+            return <Gem className="h-6 w-6 text-purple-400" />;
         default:
             return <Star className="h-6 w-6 text-gray-400" />;
     }

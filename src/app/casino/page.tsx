@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Gem, Ticket } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
@@ -99,7 +99,7 @@ export default function CasinoPage() {
                     <CardDescription>Compra un boleto y participa por un premio mayor.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-center text-3xl font-bold text-primary">Premio Mayor: 50,000 <span className="inline-block align-middle"><Gem className="h-6 w-6"/></span></p>
+                    <p className="text-center text-3xl font-bold text-primary">Premio Mayor: 50,000 <span className="inline-block align-middle"><Coins className="h-6 w-6"/></span></p>
                 </CardContent>
                 <CardFooter>
                     <Button variant="outline" className="w-full">

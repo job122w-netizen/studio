@@ -55,6 +55,7 @@ export default function AuthPage() {
             experiencePoints: 0,
             goldLingots: 0,
             casinoChips: 0,
+            gems: 0,
             createdAt: serverTimestamp(),
             imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
             currentStreak: 0,

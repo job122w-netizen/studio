@@ -31,6 +31,10 @@
           "type": "number",
           "description": "The number of casino chips the user has."
         },
+        "gems": {
+          "type": "number",
+          "description": "The number of special gems the user has."
+        },
         "imageUrl": {
           "type": "string",
           "description": "URL of the user's profile picture."
@@ -69,6 +73,7 @@
         "experiencePoints",
         "goldLingots",
         "casinoChips",
+        "gems",
         "hvPassLevel",
         "hvPassXp",
         "hasPremiumPass"
@@ -255,7 +260,7 @@
         "properties": {
             "type": {
                 "type": "string",
-                "enum": ["goldLingots", "casinoChips", "chest", "profileBackground"]
+                "enum": ["goldLingots", "casinoChips", "chest", "profileBackground", "gem"]
             },
             "quantity": { "type": "number" },
             "itemId": { "type": "string", "description": "ID of the specific item, e.g., a background ID." }

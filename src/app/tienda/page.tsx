@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { tiendaItems as placeholderItems } from "@/lib/placeholder-data";
-import { Gem, ShoppingCart } from "lucide-react";
+import { Coins, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from "firebase/firestore";
@@ -27,7 +27,7 @@ export default function TiendaPage() {
           <p className="text-muted-foreground mt-2">Potencia tu progreso.</p>
         </div>
         <div className="flex items-center gap-2 bg-muted p-2 rounded-lg">
-           <Gem className="h-5 w-5 text-primary"/>
+           <Coins className="h-5 w-5 text-primary"/>
            <span className="font-bold text-lg">{userProfile?.goldLingots ?? 0}</span>
         </div>
       </section>
@@ -54,7 +54,7 @@ export default function TiendaPage() {
               <Button size="sm" className="w-full">
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 <span className="mr-1">{item.price}</span>
-                <Gem className="h-3 w-3" />
+                <Coins className="h-3 w-3" />
               </Button>
             </CardFooter>
           </Card>
