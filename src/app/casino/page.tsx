@@ -125,11 +125,11 @@ const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => voi
 // --- Plinko Game Config ---
 const PLINKO_MULTIPLIERS = [0.5, 1, 1.5, 0.5, 2, 0.5, 1.5, 1, 0.5];
 const MULTIPLIER_COLORS: { [key: number]: string } = {
-    0.5: 'bg-red-500',
-    1: 'bg-blue-500',
-    1.5: 'bg-green-500',
-    2: 'bg-purple-500',
-    10: 'bg-yellow-500',
+    0.5: 'from-red-500/70 to-red-600/70',
+    1: 'from-blue-500/70 to-blue-600/70',
+    1.5: 'from-green-500/70 to-green-600/70',
+    2: 'from-purple-500/70 to-purple-600/70',
+    10: 'from-yellow-400/70 to-yellow-500/70',
 };
 // ------------------------
 
@@ -180,8 +180,8 @@ export default function CasinoPage() {
     const [isPlayingPlinko, setIsPlayingPlinko] = useState(false);
 
     useEffect(() => {
-        const { Engine, Render, World, Bodies, Events } = Matter;
-
+        const { Engine, Render, Runner, World, Bodies, Events } = Matter;
+    
         if (!plinkoContainerRef.current) return;
         
         const container = plinkoContainerRef.current;
@@ -198,48 +198,43 @@ export default function CasinoPage() {
             },
         });
         
-        matterInstance.current = { engine, render, world, Bodies, Events, World };
-
-        // --- Board Creation ---
+        matterInstance.current = { engine, render, world, Bodies, Events, World, Runner };
+    
         const width = container.clientWidth;
         const height = 400;
-
-        // Walls
+    
         World.add(world, [
-            Bodies.rectangle(width / 2, height, width, 20, { isStatic: true, render: { fillStyle: 'transparent' } }),
-            Bodies.rectangle(0, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
-            Bodies.rectangle(width, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
+            Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { fillStyle: 'transparent' } }),
+            Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
+            Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
         ]);
-
-        // Pegs
+    
         const pegRadius = 5;
         const rows = 8;
         const cols = 10;
         for (let i = 0; i < rows; i++) {
-            for (let j = 0; j < cols + 1; j++) {
-                if (i % 2 === 0 && j === cols) continue;
-                let x = (width / cols) * j;
-                if (i % 2 !== 0) {
-                    x += (width / cols) / 2;
+            const isOddRow = i % 2 !== 0;
+            const numCols = isOddRow ? cols - 1 : cols;
+            for (let j = 0; j < numCols; j++) {
+                let x = (width / (cols -1)) * j;
+                if (isOddRow) {
+                    x += width / (cols-1) / 2;
                 }
-                const y = height * 0.15 + i * 35;
+                const y = height * 0.2 + i * 35;
                 const peg = Bodies.circle(x, y, pegRadius, {
                     isStatic: true,
                     restitution: 0.5,
-                    friction: 0.1,
+                    friction: 0.01,
                     render: { fillStyle: 'hsl(var(--primary))' },
                 });
                 World.add(world, peg);
             }
         }
         
-        // Multipliers
         const prizeCount = PLINKO_MULTIPLIERS.length;
         const prizeSlotWidth = width / prizeCount;
         for (let i = 0; i < prizeCount; i++) {
-            const colorKey = PLINKO_MULTIPLIERS[i] === 2 ? 10 : PLINKO_MULTIPLIERS[i];
-            const colorClass = MULTIPLIER_COLORS[colorKey] ?? 'bg-gray-500';
-             const prizeSlot = Bodies.rectangle(
+            const prizeSlot = Bodies.rectangle(
                 prizeSlotWidth / 2 + i * prizeSlotWidth,
                 height - 15,
                 prizeSlotWidth,
@@ -248,22 +243,22 @@ export default function CasinoPage() {
                     isStatic: true,
                     isSensor: true,
                     label: `multiplier-${PLINKO_MULTIPLIERS[i]}`,
-                    render: { fillStyle: `hsl(var(--${PLINKO_MULTIPLIERS[i] < 1 ? 'destructive' : 'primary'}))` },
+                    render: { fillStyle: 'transparent' }, // The div below will handle visuals
                 }
             );
             World.add(world, prizeSlot);
         }
         
-        // Dividers
         for (let i = 1; i < prizeCount; i++) {
-            World.add(world, Bodies.rectangle(i * prizeSlotWidth, height - 40, 5, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
+            World.add(world, Bodies.rectangle(i * prizeSlotWidth, height - 40, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
         }
-
-        Matter.Runner.run(engine);
+    
+        Runner.run(engine);
         Render.run(render);
-
+    
         return () => {
             Render.stop(render);
+            Runner.stop(engine);
             World.clear(world, false);
             Engine.clear(engine);
             render.canvas.remove();
@@ -278,17 +273,16 @@ export default function CasinoPage() {
             return;
         }
 
-        setIsPlayingPlinko(true);
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
 
         const { engine, world, Bodies, Events, World } = matterInstance.current;
         const container = plinkoContainerRef.current;
         if (!container) return;
         
-        const ball = Bodies.circle(container.clientWidth / 2 + (Math.random() * 20 - 10), 20, 10, {
+        const ball = Bodies.circle(container.clientWidth / 2 + (Math.random() * 40 - 20), 20, 10, {
             restitution: 0.8,
-            friction: 0.2,
-            render: { fillStyle: '#FFFFFF' }
+            friction: 0.05,
+            render: { fillStyle: 'hsl(var(--primary))' }
         });
         
         World.add(world, ball);
@@ -300,8 +294,8 @@ export default function CasinoPage() {
                 let prizeBody = null;
                 let ballBody = null;
 
-                if (pair.bodyA.id === ball.id) ballBody = pair.bodyA;
-                if (pair.bodyB.id === ball.id) ballBody = pair.bodyB;
+                if (pair.bodyA.id === ball.id && !pair.bodyA.isSensor) ballBody = pair.bodyA;
+                if (pair.bodyB.id === ball.id && !pair.bodyB.isSensor) ballBody = pair.bodyB;
                 if (pair.bodyA.label.startsWith('multiplier-')) prizeBody = pair.bodyA;
                 if (pair.bodyB.label.startsWith('multiplier-')) prizeBody = pair.bodyB;
                 
@@ -321,25 +315,22 @@ export default function CasinoPage() {
                             description: `No has ganado nada esta vez. (x${multiplier})`,
                         });
                     }
-
+                    
                     World.remove(world, ballBody);
-                    Events.off(engine, 'collisionStart', collisionListener);
-                    setTimeout(() => setIsPlayingPlinko(false), 1000);
-                    break;
+                    // No longer need to remove the listener, it will handle other balls
+                    break; 
                 }
             }
         };
 
         Events.on(engine, 'collisionStart', collisionListener);
 
-        // Failsafe to remove ball after some time
         setTimeout(() => {
-            if (ball.world) {
+            // Check if the ball is still in the world before removing
+            if (world.bodies.some(body => body.id === ball.id)) {
                  World.remove(world, ball);
-                 Events.off(engine, 'collisionStart', collisionListener);
-                 setIsPlayingPlinko(false);
             }
-        }, 8000);
+        }, 8000); // Failsafe removal
     };
 
 
@@ -640,13 +631,13 @@ export default function CasinoPage() {
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader>
                     <CardTitle>Plinko de la Suerte</CardTitle>
-                    <CardDescription>Deja caer la ficha y mira cómo la suerte multiplica tu apuesta. ¡Puedes ganar hasta 10 veces lo apostado!</CardDescription>
+                    <CardDescription>Deja caer la ficha y mira cómo la suerte multiplica tu apuesta.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
                     <div ref={plinkoContainerRef} className="w-full h-[400px] relative">
                          <div className="absolute bottom-0 left-0 right-0 flex justify-around">
                             {PLINKO_MULTIPLIERS.map((mult, i) => (
-                                <div key={i} className={cn("w-full text-center text-xs sm:text-sm font-bold text-white py-1", MULTIPLIER_COLORS[mult === 2 ? 10 : mult])}>
+                                <div key={i} className={cn("w-full text-center text-xs sm:text-sm font-bold text-white py-1 rounded-sm bg-gradient-to-t", MULTIPLIER_COLORS[mult === 2 ? 10 : mult])}>
                                     x{mult}
                                 </div>
                             ))}
@@ -663,13 +654,13 @@ export default function CasinoPage() {
                             min={1}
                             max={Math.max(1, casinoChips)}
                             step={1}
-                            disabled={isLoading || isPlayingPlinko || casinoChips < 1}
+                            disabled={isLoading || casinoChips < 1}
                         />
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button size="lg" className="w-full" onClick={dropPlinkoBall} disabled={isLoading || isPlayingPlinko || casinoChips < plinkoBetAmount[0]}>
-                        {isPlayingPlinko ? 'En juego...' : `Lanzar (${plinkoBetAmount[0]} Ficha${plinkoBetAmount[0] > 1 ? 's' : ''})`}
+                    <Button size="lg" className="w-full" onClick={dropPlinkoBall} disabled={isLoading || casinoChips < plinkoBetAmount[0]}>
+                        Lanzar ({plinkoBetAmount[0]} Ficha{plinkoBetAmount[0] > 1 ? 's' : ''})
                     </Button>
                 </CardFooter>
             </Card>
@@ -868,5 +859,7 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
 
     
