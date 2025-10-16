@@ -80,7 +80,6 @@ export default function CasinoPage() {
     ]);
     const [betAmount, setBetAmount] = useState([1]);
     const [shellResultMessage, setShellResultMessage] = useState('');
-    const [isShuffling, setIsShuffling] = useState(false);
 
 
     const rollDice = () => {
@@ -248,24 +247,12 @@ export default function CasinoPage() {
         setTimeout(() => {
              // Hide prize and start shuffling
             setCups(initialCups.map(c => ({...c, isRevealed: false})));
-            setIsShuffling(true);
-            
-            // Randomly shuffle cup positions for the animation
-            const cupElements = Array.from(document.querySelectorAll('.cup-container'));
-            const shuffledPositions = [0, 1, 2].sort(() => Math.random() - 0.5);
-            cupElements.forEach((cup, index) => {
-                 (cup as HTMLElement).style.transform = `translateX(${(shuffledPositions[index] - index) * 110}%)`;
-            });
             
             setTimeout(() => {
                  // Stop shuffling and wait for pick
-                setIsShuffling(false);
                 setShellGamePhase('picking');
                 setShellResultMessage('¿Dónde está la ficha?');
-                 cupElements.forEach((cup) => {
-                     (cup as HTMLElement).style.transform = 'translateX(0)';
-                });
-            }, 2000); // Shuffle duration
+            }, 2500); // Shuffle duration
         }, 1500); // Time to see the prize
     };
 
@@ -323,15 +310,16 @@ export default function CasinoPage() {
                              <div 
                                 key={cup.id}
                                 className={cn(
-                                    "relative transition-transform duration-500 ease-out cup-container",
-                                    shellGamePhase === 'picking' && 'cursor-pointer hover:scale-110'
+                                    "relative transition-transform duration-300 ease-out",
+                                    shellGamePhase === 'picking' && 'cursor-pointer hover:scale-110',
+                                    shellGamePhase === 'shuffling' && 'animate-pulse'
                                 )}
                                 onClick={() => handleCupPick(cup)}
                               >
                                 <CupSoda 
                                     className={cn(
                                         "h-20 w-20 transition-colors",
-                                        shellGamePhase === 'betting' ? 'text-muted' : 'text-primary'
+                                        (shellGamePhase === 'betting' || shellGamePhase === 'shuffling') ? 'text-muted' : 'text-primary'
                                     )}
                                 />
                                 {cup.isRevealed && cup.hasPrize && (
@@ -458,6 +446,8 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
+
+    
 
     
 
