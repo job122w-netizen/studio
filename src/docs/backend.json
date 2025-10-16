@@ -64,6 +64,10 @@
             "type": "array",
             "description": "List of unlocked profile background IDs.",
             "items": { "type": "string" }
+        },
+        "selectedBackgroundId": {
+            "type": "string",
+            "description": "The ID of the currently selected profile background."
         }
       },
       "required": [

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { PlaceHolderImages, type ImagePlaceholder } from "@/lib/placeholder-images";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -92,6 +92,8 @@ export default function PerfilPage() {
   ];
   
   const isLoading = isUserLoading || isProfileLoading;
+  
+  const selectedBg = pixelArtBackgrounds.find(bg => bg.id === userProfile?.selectedBackgroundId);
 
   const handleEdit = () => {
     setEditingUsername(userProfile?.username || '');
@@ -139,6 +141,15 @@ export default function PerfilPage() {
     }
   }
 
+  const handleSelectBackground = (backgroundId: string) => {
+    if (!userProfileRef) return;
+    updateDocumentNonBlocking(userProfileRef, { selectedBackgroundId: backgroundId });
+    toast({
+        title: "Fondo actualizado",
+        description: "Tu nuevo fondo de perfil ha sido guardado."
+    });
+  };
+
   const unlockAllBackgroundsForTesting = () => {
     if (!userProfileRef) return;
     const allBackgroundIds = pixelArtBackgrounds.map(bg => bg.id);
@@ -174,37 +185,41 @@ export default function PerfilPage() {
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
-      <Card className="overflow-hidden">
-        <CardContent className="p-6 flex flex-col items-center text-center">
+      <Card className="overflow-hidden relative text-primary-foreground">
+        {selectedBg && (
             <>
+                <Image src={selectedBg.imageUrl} alt={selectedBg.description} fill className="object-cover z-0" />
+                <div className="absolute inset-0 bg-black/50 z-10"></div>
+            </>
+        )}
+        <CardContent className="p-6 flex flex-col items-center text-center relative z-20">
               <div className="relative">
-                <Avatar className="w-24 h-24 mb-4 border-4 border-card shadow-lg cursor-pointer" onClick={handleAvatarClick}>
+                <Avatar className="w-24 h-24 mb-4 border-4 border-card/50 shadow-lg cursor-pointer" onClick={handleAvatarClick}>
                   <AvatarImage src={userProfile?.imageUrl} alt="Avatar de usuario" />
                   <AvatarFallback>{getInitials(userProfile?.username)}</AvatarFallback>
                 </Avatar>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                 <Button variant="outline" size="icon" className="absolute bottom-2 -right-1 w-8 h-8 rounded-full" onClick={handleAvatarClick}>
+                 <Button variant="outline" size="icon" className="absolute bottom-2 -right-1 w-8 h-8 rounded-full text-foreground" onClick={handleAvatarClick}>
                   <Camera className="w-4 h-4" />
                 </Button>
               </div>
 
               {isEditing ? (
                  <div className="flex items-center gap-2 mt-2">
-                   <Input value={editingUsername} onChange={(e) => setEditingUsername(e.target.value)} className="text-center text-2xl font-bold font-headline h-10" />
+                   <Input value={editingUsername} onChange={(e) => setEditingUsername(e.target.value)} className="text-center text-2xl font-bold font-headline h-10 text-foreground" />
                    <Button size="icon" onClick={handleSave}><Save className="w-4 h-4"/></Button>
                  </div>
               ) : (
                 <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold font-headline">{userProfile?.username}</h1>
-                    <Button variant="ghost" size="icon" onClick={handleEdit} className="h-8 w-8">
+                    <h1 className="text-2xl font-bold font-headline drop-shadow-md">{userProfile?.username}</h1>
+                    <Button variant="ghost" size="icon" onClick={handleEdit} className="h-8 w-8 hover:bg-white/20">
                       <Edit className="w-4 h-4" />
                     </Button>
                 </div>
               )}
 
-              <p className="text-muted-foreground">{user?.email}</p>
+              <p className="text-muted-foreground drop-shadow-sm text-white/80">{user?.email}</p>
               {userProfile.hasPremiumPass && <Badge variant="secondary" className="mt-2 bg-yellow-400 text-yellow-900">Pase HV Premium</Badge>}
-            </>
         </CardContent>
       </Card>
 
@@ -281,8 +296,17 @@ export default function PerfilPage() {
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {pixelArtBackgrounds.map(bg => {
                     const isUnlocked = userProfile.unlockedBackgrounds.includes(bg.id);
+                    const isSelected = userProfile.selectedBackgroundId === bg.id;
                     return (
-                        <div key={bg.id} className={cn("relative aspect-video rounded-md overflow-hidden border-2", isUnlocked ? "border-primary" : "border-transparent")}>
+                        <div 
+                            key={bg.id} 
+                            className={cn(
+                                "relative aspect-video rounded-md overflow-hidden border-4 transition-all cursor-pointer",
+                                isSelected ? "border-primary shadow-lg" : "border-transparent",
+                                isUnlocked ? "hover:border-primary/50" : "cursor-not-allowed"
+                            )}
+                            onClick={() => isUnlocked && handleSelectBackground(bg.id)}
+                        >
                             <Image src={bg.imageUrl} alt={bg.description} fill className="object-cover"/>
                              {!isUnlocked && (
                                 <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
