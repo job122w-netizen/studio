@@ -92,7 +92,7 @@ export default function CasinoPage() {
 
     // Shell Game State
     const [shellGamePhase, setShellGamePhase] = useState<ShellGamePhase>('betting');
-    const [cups, setCups] useState<Cup[]>([
+    const [cups, setCups] = useState<Cup[]>([
         { id: 0, hasPrize: false, isRevealed: false },
         { id: 1, hasPrize: false, isRevealed: false },
         { id: 2, hasPrize: false, isRevealed: false },
@@ -470,6 +470,8 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
+
+    
 
     
 
