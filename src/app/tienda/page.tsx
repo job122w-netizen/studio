@@ -46,6 +46,9 @@ export default function TiendaPage() {
     } else {
         updates.goldLingots = increment(-item.price);
     }
+    
+    let purchaseDescription = `Has comprado ${item.name}.`;
+    let purchaseTitle = "¡Compra realizada!";
 
     // Add item effect
     switch (item.id) {
@@ -56,9 +59,33 @@ export default function TiendaPage() {
             updates.casinoChips = increment(10);
             break;
         case 7: // Cofre épico
-        case 8: // Cofre legendario
-            updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
+        case 8: { // Cofre legendario
+            const isLegendary = item.id === 8;
+            const lingotsWon = isLegendary ? Math.floor(Math.random() * 251) + 250 : Math.floor(Math.random() * 101) + 100; // 250-500 or 100-200
+            const chipsWon = isLegendary ? Math.floor(Math.random() * 11) + 10 : Math.floor(Math.random() * 6) + 5; // 10-20 or 5-10
+            
+            updates.goldLingots = increment(lingotsWon - (item.currency === 'goldLingots' ? item.price : 0));
+            updates.casinoChips = increment(chipsWon);
+
+            let rewardsDescription = `¡Ganaste ${lingotsWon} lingotes y ${chipsWon} fichas!`;
+            
+            const premiumChance = isLegendary ? 0.05 : 0.01; // 5% for legendary, 1% for epic
+            if (Math.random() < premiumChance) {
+                 if (!userProfile.hasPremiumPass) {
+                    updates.hasPremiumPass = true;
+                    purchaseTitle = "¡Premio Mayor!";
+                    rewardsDescription += " ¡Y el Pase HV Premium!";
+                 } else {
+                    updates.gems = increment((updates.gems?.value || 0) + 5);
+                    rewardsDescription += " ¡Y 5 gemas de consolación!";
+                 }
+            }
+            
+            purchaseDescription = rewardsDescription;
+            purchaseTitle = isLegendary ? "Cofre Legendario Abierto" : "Cofre Épico Abierto";
+
             break;
+        }
         default: // Items genéricos (no implementado en este ejemplo)
              updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
              break;
@@ -67,8 +94,8 @@ export default function TiendaPage() {
     updateDocumentNonBlocking(userProfileRef, updates);
 
     toast({
-        title: "¡Compra realizada!",
-        description: `Has comprado ${item.name}.`,
+        title: purchaseTitle,
+        description: purchaseDescription,
     });
   };
   
