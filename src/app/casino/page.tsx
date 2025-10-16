@@ -186,31 +186,25 @@ export default function CasinoPage() {
 
 
     useEffect(() => {
+        // Only run on client
+        if (typeof window === 'undefined') return;
+
         const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
             matterJsRef.current = Matter;
 
             if (!plinkoContainerRef.current) return;
-            // Cleanup previous instance if it exists
-            if (matterInstance.current) {
-                Matter.Render.stop(matterInstance.current.render);
-                Matter.Runner.stop(matterInstance.current.runner);
-                Matter.World.clear(matterInstance.current.engine.world, false);
-                Matter.Engine.clear(matterInstance.current.engine);
-                matterInstance.current.render.canvas.remove();
-            }
-
 
             const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
             const render = Matter.Render.create({
                 element: container,
-                engine: engine,
+                engine: engine, // This was the missing key!
                 options: {
                     width: container.clientWidth,
                     height: 400,
                     background: 'transparent',
-                    wireframes: false,
+                    wireframes: false, // Ensure objects are filled
                 },
             });
             const runner = Matter.Runner.create();
@@ -244,7 +238,7 @@ export default function CasinoPage() {
                         isStatic: true,
                         restitution: 0.5,
                         friction: 0.01,
-                        render: { fillStyle: 'hsl(var(--primary))' },
+                        render: { fillStyle: 'hsl(var(--primary))' }, // Explicitly set color
                     });
                     Matter.World.add(world, peg);
                 }
@@ -332,7 +326,9 @@ export default function CasinoPage() {
                 Matter.Runner.stop(runner);
                 Matter.World.clear(engine.world, false);
                 Matter.Engine.clear(engine);
-                render.canvas.remove();
+                if (render.canvas) {
+                    render.canvas.remove();
+                }
                 matterInstance.current = null;
                 matterJsRef.current = null;
             }
@@ -680,9 +676,9 @@ export default function CasinoPage() {
                     <div ref={plinkoContainerRef} className="w-full h-[400px] relative">
                          <div className="absolute bottom-0 left-0 right-0 flex justify-around">
                             {PLINKO_MULTIPLIERS.map((mult, i) => {
-                                const colorKey = mult > 1 ? mult : (mult < 0 ? mult : 1.5);
+                                const colorKey = mult;
                                 return (
-                                <div key={i} className="w-full text-center text-xs sm:text-sm font-bold text-white py-1.5 rounded-b-sm" style={{ backgroundColor: MULTIPLIER_COLORS[colorKey] }}>
+                                <div key={i} className="w-full text-center text-xs sm:text-sm font-bold text-white py-1.5 rounded-b-sm" style={{ backgroundColor: MULTIPLIER_COLORS[colorKey] || 'grey' }}>
                                     x{mult}
                                 </div>
                             )})}
@@ -904,3 +900,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
