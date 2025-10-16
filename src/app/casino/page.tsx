@@ -181,25 +181,23 @@ export default function CasinoPage() {
         render: Matter.Render;
         runner: Matter.Runner;
         world: Matter.World;
+        Matter: typeof Matter;
     } | null>(null);
     const [plinkoBetAmount, setPlinkoBetAmount] = useState([1]);
 
 
     useEffect(() => {
-        let Matter: typeof import('matter-js');
-        let engine: Matter.Engine;
-        let render: Matter.Render;
-        let runner: Matter.Runner;
+        let localMatterInstance: typeof Matter;
 
         const init = async () => {
-            Matter = (await import('matter-js')).default;
+            localMatterInstance = (await import('matter-js')).default;
             if (!plinkoContainerRef.current) return;
             const container = plinkoContainerRef.current;
             
-            engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
+            const engine = localMatterInstance.Engine.create({ gravity: { x: 0, y: 1 } });
             const world = engine.world;
 
-            render = Matter.Render.create({
+            const render = localMatterInstance.Render.create({
                 element: container,
                 engine: engine,
                 options: {
@@ -210,15 +208,15 @@ export default function CasinoPage() {
                 },
             });
 
-            matterInstance.current = { engine, render, runner, world };
+            matterInstance.current = { engine, render, runner: localMatterInstance.Runner.create(), world, Matter: localMatterInstance };
 
             const width = container.clientWidth;
             const height = 400;
         
-            Matter.World.add(world, [
-                Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { fillStyle: 'transparent' } }),
-                Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
-                Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
+            localMatterInstance.World.add(world, [
+                localMatterInstance.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { fillStyle: 'transparent' } }),
+                localMatterInstance.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
+                localMatterInstance.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
             ]);
         
             const pegRadius = 5;
@@ -233,13 +231,13 @@ export default function CasinoPage() {
                         x += width / (cols-1) / 2;
                     }
                     const y = height * 0.2 + i * 35;
-                    const peg = Matter.Bodies.circle(x, y, pegRadius, {
+                    const peg = localMatterInstance.Bodies.circle(x, y, pegRadius, {
                         isStatic: true,
                         restitution: 0.5,
                         friction: 0.01,
                         render: { fillStyle: 'hsl(var(--primary))' },
                     });
-                    Matter.World.add(world, peg);
+                    localMatterInstance.World.add(world, peg);
                 }
             }
             
@@ -248,7 +246,7 @@ export default function CasinoPage() {
             for (let i = 0; i < prizeCount; i++) {
                 const multiplier = PLINKO_MULTIPLIERS[i];
                 const colorKey = multiplier === 2 ? 10 : multiplier;
-                const prizeSlot = Matter.Bodies.rectangle(
+                const prizeSlot = localMatterInstance.Bodies.rectangle(
                     prizeSlotWidth / 2 + i * prizeSlotWidth,
                     height - 15,
                     prizeSlotWidth,
@@ -262,32 +260,30 @@ export default function CasinoPage() {
                         },
                     }
                 );
-                Matter.World.add(world, prizeSlot);
+                localMatterInstance.World.add(world, prizeSlot);
             }
             
             for (let i = 1; i < prizeCount; i++) {
-                Matter.World.add(world, Matter.Bodies.rectangle(i * prizeSlotWidth, height - 30, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
+                localMatterInstance.World.add(world, localMatterInstance.Bodies.rectangle(i * prizeSlotWidth, height - 30, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
             }
         
-            Matter.Events.on(engine, 'collisionStart', (event) => {
+            localMatterInstance.Events.on(engine, 'collisionStart', (event) => {
                  if (!userProfileRef) return;
                  const pairs = event.pairs;
                  for (let i = 0; i < pairs.length; i++) {
                     const pair = pairs[i];
-                    let prizeBody: Matter.Body | null = null;
-                    let ballBody: Matter.Body | null = null;
-
+                    
                     const ballInPair = pair.bodyA.label === 'ball' ? pair.bodyA : pair.bodyB.label === 'ball' ? pair.bodyB : null;
                     const prizeInPair = pair.bodyA.label.startsWith('multiplier-') ? pair.bodyA : pair.bodyB.label.startsWith('multiplier-') ? pair.bodyB : null;
 
                     if(ballInPair && prizeInPair){
-                        ballBody = ballInPair;
-                        prizeBody = prizeInPair;
-                    }
+                        // Check if the ball still exists in the world before processing
+                        if (!world.bodies.includes(ballInPair)) {
+                            continue;
+                        }
 
-                    if (ballBody && prizeBody && ballBody.plugin.bet) {
-                        const multiplier = parseFloat(prizeBody.label.split('-')[1]);
-                        const winnings = Math.floor(ballBody.plugin.bet * multiplier);
+                        const multiplier = parseFloat(prizeInPair.label.split('-')[1]);
+                        const winnings = Math.floor(ballInPair.plugin.bet * multiplier);
                         
                         if (winnings > 0) {
                             updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
@@ -302,31 +298,31 @@ export default function CasinoPage() {
                             });
                         }
                         
-                        Matter.World.remove(world, ballBody);
+                        localMatterInstance.World.remove(world, ballInPair);
                     }
                 }
             });
 
-            runner = Matter.Runner.run(engine);
-            Matter.Render.run(render);
+            localMatterInstance.Runner.run(engine);
+            localMatterInstance.Render.run(render);
         }
 
         init();
     
         return () => {
              if (matterInstance.current) {
-                const { render: matterRender, runner: matterRunner, engine: matterEngine } = matterInstance.current;
-                Matter.Render.stop(matterRender);
-                Matter.Runner.stop(matterRunner);
-                Matter.World.clear(matterEngine.world, false);
-                Matter.Engine.clear(matterEngine);
-                matterRender.canvas.remove();
+                const { render, runner, engine, Matter } = matterInstance.current;
+                Matter.Render.stop(render);
+                Matter.Runner.stop(runner);
+                Matter.World.clear(engine.world, false);
+                Matter.Engine.clear(engine);
+                render.canvas.remove();
                 matterInstance.current = null;
             }
         };
     }, []);
 
-    const dropPlinkoBall = async () => {
+    const dropPlinkoBall = () => {
         if (!userProfileRef || !matterInstance.current) return;
         const currentBet = plinkoBetAmount[0];
         if ((userProfile?.casinoChips ?? 0) < currentBet) {
@@ -336,8 +332,7 @@ export default function CasinoPage() {
 
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
 
-        const Matter = (await import('matter-js')).default;
-        const { world } = matterInstance.current;
+        const { Matter, world } = matterInstance.current;
         const container = plinkoContainerRef.current;
         if (!container) return;
         
@@ -354,7 +349,8 @@ export default function CasinoPage() {
         Matter.World.add(world, ball);
 
         setTimeout(() => {
-            if (world.bodies.some(body => body.id === ball.id)) {
+            // Check if the ball still exists before trying to remove it
+            if (world.bodies.includes(ball)) {
                  Matter.World.remove(world, ball);
             }
         }, 8000);
