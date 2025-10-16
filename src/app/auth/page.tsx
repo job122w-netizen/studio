@@ -64,6 +64,7 @@ export default function AuthPage() {
             hvPassXp: 0,
             hasPremiumPass: false,
             unlockedBackgrounds: [],
+            mineSweeperMultiplier: 1,
         };
         setDocumentNonBlocking(userProfileRef, newUserProfile, {});
     }
@@ -167,7 +168,7 @@ export default function AuthPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contraseña</FormLabel>
+                    <FormLabel>Contraseña</-FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>

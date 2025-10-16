@@ -160,10 +160,14 @@ export default function CasinoPage() {
     const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
     const [foundPrizes, setFoundPrizes] = useState<MineCellContent[]>([]);
     const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
+    
+    // Fallback to 0 if casinoChips is NaN, null, or undefined
+    const casinoChips = userProfile?.casinoChips ?? 0;
+    const isChipCountInvalid = isNaN(casinoChips);
 
     const rollDice = () => {
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < 1) {
-            setDiceResultMessage('¡No tienes suficientes fichas!');
+        if (!userProfileRef || (casinoChips < 1 || isChipCountInvalid)) {
+            toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
         }
 
@@ -193,8 +197,8 @@ export default function CasinoPage() {
 
      const spinSlots = () => {
         const cost = 2;
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < cost) {
-            setSlotResultMessage('¡No tienes suficientes fichas!');
+        if (!userProfileRef || (casinoChips < cost || isChipCountInvalid)) {
+            toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
         }
 
@@ -298,8 +302,8 @@ export default function CasinoPage() {
 
     const startShellGame = () => {
         const currentBet = shellBetAmount[0];
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < currentBet) {
-            setShellResultMessage('¡No tienes suficientes fichas!');
+        if (!userProfileRef || (casinoChips < currentBet || isChipCountInvalid)) {
+            toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
         }
         if (currentBet < 1) {
@@ -355,7 +359,7 @@ export default function CasinoPage() {
 
     const startMineSweeper = () => {
         const cost = 5;
-        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < cost) {
+        if (!userProfileRef || (casinoChips < cost || isChipCountInvalid)) {
             toast({ variant: 'destructive', title: 'Fichas insuficientes' });
             return;
         }
@@ -438,7 +442,6 @@ export default function CasinoPage() {
     const Dice2Icon = diceIcons[dice2];
     
     const isLoading = isUserLoading || isProfileLoading;
-    const casinoChips = userProfile?.casinoChips ?? 0;
 
     return (
         <div className="space-y-8 animate-fade-in pb-16">
@@ -451,7 +454,7 @@ export default function CasinoPage() {
                  {isLoading ? (
                     <Skeleton className="h-8 w-48 mx-auto" />
                  ) : (
-                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
+                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{isChipCountInvalid ? 0 : casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
                  )}
             </div>
 
@@ -495,7 +498,7 @@ export default function CasinoPage() {
                 </CardContent>
                 <CardFooter>
                     {minePhase === 'betting' && (
-                        <Button size="lg" className="w-full" onClick={startMineSweeper} disabled={isLoading || casinoChips < 5}>
+                        <Button size="lg" className="w-full" onClick={startMineSweeper} disabled={isLoading || casinoChips < 5 || isChipCountInvalid}>
                             Jugar (5 Fichas)
                         </Button>
                     )}
@@ -534,7 +537,7 @@ export default function CasinoPage() {
                 </CardContent>
                 <CardFooter>
                     {shellGamePhase === 'betting' && (
-                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || casinoChips < shellBetAmount[0]}>
+                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || casinoChips < shellBetAmount[0] || isChipCountInvalid}>
                             Jugar (1 Ficha)
                         </Button>
                     )}
@@ -590,7 +593,7 @@ export default function CasinoPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button size="lg" className="w-full" onClick={spinSlots} disabled={spinning || isLoading || casinoChips < 2}>
+                    <Button size="lg" className="w-full" onClick={spinSlots} disabled={spinning || isLoading || casinoChips < 2 || isChipCountInvalid}>
                         {spinning ? 'Girando...' : 'Girar (2 Fichas)'}
                     </Button>
                 </CardFooter>
@@ -609,7 +612,7 @@ export default function CasinoPage() {
                      {diceResultMessage && <p className="text-foreground font-semibold">{diceResultMessage}</p>}
                 </CardContent>
                 <CardFooter>
-                    <Button size="lg" className="w-full" onClick={rollDice} disabled={rolling || isLoading || casinoChips < 1}>
+                    <Button size="lg" className="w-full" onClick={rollDice} disabled={rolling || isLoading || casinoChips < 1 || isChipCountInvalid}>
                         {rolling ? 'Lanzando...' : 'Lanzar Dados (1 Ficha)'}
                     </Button>
                 </CardFooter>

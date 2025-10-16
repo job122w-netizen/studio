@@ -166,15 +166,6 @@ export default function PerfilPage() {
     });
   };
 
-  const unlockAllBackgroundsForTesting = () => {
-    if (!userProfileRef) return;
-    const allBackgroundIds = pixelArtBackgrounds.map(bg => bg.id);
-    updateDocumentNonBlocking(userProfileRef, { unlockedBackgrounds: allBackgroundIds });
-    toast({
-        title: "¡Modo desarrollador!",
-        description: "Todos los fondos de perfil han sido desbloqueados para pruebas."
-    });
-  }
 
   if (isLoading || !userProfile) {
     return (
@@ -307,10 +298,7 @@ export default function PerfilPage() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary"/> Fondos de Perfil</div>
-             <div className="flex items-center gap-2">
-                 <Button variant="outline" size="sm" onClick={unlockAllBackgroundsForTesting}>Desbloquear (Test)</Button>
-                 <Button variant="ghost" size="sm" onClick={handleResetBackground}>Restablecer</Button>
-            </div>
+             <Button variant="ghost" size="sm" onClick={handleResetBackground}>Restablecer</Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
