@@ -68,6 +68,10 @@
         "selectedBackgroundId": {
             "type": "string",
             "description": "The ID of the currently selected profile background."
+        },
+        "mineSweeperMultiplier": {
+            "type": "number",
+            "description": "The current prize multiplier for the Minesweeper game."
         }
       },
       "required": [

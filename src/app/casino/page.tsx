@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
@@ -12,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -61,24 +61,62 @@ const Cup = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: { isRevealed
 
 type CupState = { id: number; hasPrize: boolean; isRevealed: boolean };
 type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
+// -------------------------
 
-// Fisher-Yates shuffle algorithm
+
+// --- Minesweeper Game Config ---
+const GRID_SIZE = 25;
+const BOMB_COUNT = 20;
+const PRIZE_COUNT = 5;
+
+type MineCellContent = 'bomb' | 'gem' | 'goldLingot' | 'casinoChip' | 'premiumPass' | 'empty';
+type MineCell = {
+    id: number;
+    state: 'hidden' | 'revealed';
+    content: MineCellContent;
+};
+type MineSweeperPhase = 'betting' | 'playing' | 'gameOver';
+
 const shuffleArray = <T,>(array: T[]): T[] => {
     let currentIndex = array.length, randomIndex;
-    const newArray = [...array]; // Create a copy
-  
-    // While there remain elements to shuffle.
+    const newArray = [...array];
     while (currentIndex !== 0) {
-      // Pick a remaining element.
       randomIndex = Math.floor(Math.random() * currentIndex);
       currentIndex--;
-  
-      // And swap it with the current element.
-      [newArray[currentIndex], newArray[randomIndex]] = [
-        newArray[randomIndex], newArray[currentIndex]];
+      [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
     }
-  
     return newArray;
+};
+
+const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => void }) => {
+    const renderContent = () => {
+        if (cell.state === 'hidden') {
+            return <HelpCircle className="h-6 w-6 text-muted-foreground" />;
+        }
+        switch (cell.content) {
+            case 'bomb': return <Bomb className="h-6 w-6 text-destructive animate-fade-in" />;
+            case 'gem': return <Gem className="h-6 w-6 text-purple-400 animate-fade-in" />;
+            case 'goldLingot': return <Coins className="h-6 w-6 text-yellow-500 animate-fade-in" />;
+            case 'casinoChip': return <Ticket className="h-6 w-6 text-red-400 animate-fade-in" />;
+            case 'premiumPass': return <Star className="h-6 w-6 text-yellow-400 animate-fade-in" />;
+            default: return null;
+        }
+    };
+
+    return (
+        <button
+            onClick={onClick}
+            disabled={cell.state === 'revealed'}
+            className={cn(
+                "w-full aspect-square flex items-center justify-center rounded-md transition-all duration-200",
+                cell.state === 'hidden' ? "bg-muted hover:bg-muted/80" : "bg-card",
+                cell.content === 'bomb' && cell.state === 'revealed' && "bg-destructive/20",
+                cell.content.startsWith('prize') && cell.state === 'revealed' && "bg-primary/20",
+            )}
+        >
+            {renderContent()}
+        </button>
+    );
 };
 // -------------------------
 
@@ -116,6 +154,12 @@ export default function CasinoPage() {
     ]);
     const [betAmount, setBetAmount] = useState([1]);
     const [shellResultMessage, setShellResultMessage] = useState('');
+
+    // Minesweeper State
+    const [minePhase, setMinePhase] = useState<MineSweeperPhase>('betting');
+    const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
+    const [foundPrizes, setFoundPrizes] = useState<MineCellContent[]>([]);
+    const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
 
 
     const rollDice = () => {
@@ -203,7 +247,6 @@ export default function CasinoPage() {
     
         const [reel1, reel2, reel3] = finalReels;
     
-        // Check for three of a kind (Jackpot)
         if (reel1.id === reel2.id && reel2.id === reel3.id) {
             const winningSymbol = reel1.id;
             let updates = {};
@@ -245,14 +288,12 @@ export default function CasinoPage() {
             return;
         }
     
-        // Check for a pair (two of a kind)
         if (reel1.id === reel2.id || reel1.id === reel3.id || reel2.id === reel3.id) {
             updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(2) });
             setSlotResultMessage("¡Casi! Recuperas tus 2 fichas.");
             return;
         }
     
-        // No win
         setSlotResultMessage('¡Mala suerte! Sigue intentando.');
     };
 
@@ -275,25 +316,21 @@ export default function CasinoPage() {
         const initialCups = cups.map((cup, index) => ({
             ...cup,
             hasPrize: index === winningCupIndex,
-            isRevealed: true, // Briefly show the prize
+            isRevealed: true,
         }));
         setCups(initialCups);
 
         setTimeout(() => {
-             // Hide prize and start shuffling
             const hiddenPrizeCups = initialCups.map(c => ({...c, isRevealed: false}));
             setCups(hiddenPrizeCups);
             
             setTimeout(() => {
-                 // Actually shuffle the array internally now
                  const shuffledCups = shuffleArray(hiddenPrizeCups);
                  setCups(shuffledCups);
-
-                 // Stop shuffling and wait for pick
                 setShellGamePhase('picking');
                 setShellResultMessage('¿Dónde está la ficha?');
-            }, 2500); // Shuffle duration
-        }, 1500); // Time to see the prize
+            }, 2500); 
+        }, 1500);
     };
 
     const handleCupPick = (pickedCup: CupState) => {
@@ -318,6 +355,87 @@ export default function CasinoPage() {
         setBetAmount([1]);
     };
 
+    const startMineSweeper = () => {
+        const cost = 5;
+        if (!userProfileRef || (userProfile?.casinoChips ?? 0) < cost) {
+            toast({ variant: 'destructive', title: 'Fichas insuficientes' });
+            return;
+        }
+
+        updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-cost) });
+        setMinePhase('playing');
+        setFoundPrizes([]);
+
+        const content: MineCellContent[] = Array(BOMB_COUNT).fill('bomb');
+        let prizes: MineCellContent[] = ['gem', 'goldLingot', 'casinoChip', 'empty', 'empty'];
+        if ((userProfile?.mineSweeperMultiplier ?? 1) >= 20 && Math.random() < 0.1) { // 10% chance for premium pass at max multiplier
+            prizes[Math.floor(Math.random() * prizes.length)] = 'premiumPass';
+        }
+        content.push(...prizes);
+        while (content.length < GRID_SIZE) {
+            content.push('empty');
+        }
+
+        const shuffledContent = shuffleArray(content);
+
+        setMineGrid(shuffledContent.map((c, i) => ({ id: i, state: 'hidden', content: c })));
+    };
+
+    const handleCellClick = (cell: MineCell) => {
+        if (minePhase !== 'playing' || cell.state === 'revealed') return;
+
+        const newGrid = [...mineGrid];
+        newGrid[cell.id] = { ...cell, state: 'revealed' };
+        setMineGrid(newGrid);
+
+        if (cell.content === 'bomb') {
+            setMinePhase('gameOver');
+            toast({ variant: 'destructive', title: '¡BOOM!', description: 'Has encontrado una bomba. El multiplicador se ha reiniciado.' });
+            if (userProfileRef) {
+                updateDocumentNonBlocking(userProfileRef, { mineSweeperMultiplier: 1 });
+            }
+            // Reveal all bombs
+            setTimeout(() => {
+                 setMineGrid(currentGrid => currentGrid.map(c => c.content === 'bomb' ? { ...c, state: 'revealed' } : c));
+            }, 1000);
+        } else if (cell.content !== 'empty') {
+            setFoundPrizes(prev => [...prev, cell.content]);
+        }
+    };
+
+    const cashOutMines = () => {
+        if (!userProfileRef || foundPrizes.length === 0) {
+            setMinePhase('betting');
+            return;
+        };
+
+        const updates: { [key: string]: any } = {
+            mineSweeperMultiplier: increment(1)
+        };
+        let description = 'Has cobrado tus premios: ';
+        const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
+
+        foundPrizes.forEach(prize => {
+            if (prize === 'gem') {
+                updates.gems = increment((updates.gems?.value || 0) + multiplier);
+                description += `${multiplier} gemas, `;
+            } else if (prize === 'goldLingot') {
+                updates.goldLingots = increment((updates.goldLingots?.value || 0) + multiplier);
+                description += `${multiplier} lingotes, `;
+            } else if (prize === 'casinoChip') {
+                updates.casinoChips = increment((updates.casinoChips?.value || 0) + multiplier);
+                description += `${multiplier} fichas, `;
+            } else if (prize === 'premiumPass') {
+                updates.hasPremiumPass = true;
+                description += `¡EL PASE PREMIUM!, `;
+            }
+        });
+
+        updateDocumentNonBlocking(userProfileRef, updates);
+        toast({ title: `¡Premios cobrados! (x${multiplier})`, description: description.slice(0, -2) });
+        setMinePhase('betting');
+    };
+
     const Dice1Icon = diceIcons[dice1];
     const Dice2Icon = diceIcons[dice2];
     
@@ -338,6 +456,63 @@ export default function CasinoPage() {
                     <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
                  )}
             </div>
+
+            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader>
+                    <CardTitle>Campo Minado de la Fortuna</CardTitle>
+                    <CardDescription>Cuesta 5 fichas. Encuentra los 5 premios sin explotar las 20 bombas. ¡Cobra cuando quieras!</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-4">
+                    {minePhase !== 'betting' && (
+                        <>
+                            <div className="grid grid-cols-5 gap-2 w-full">
+                                {mineGrid.map(cell => (
+                                    <MineCellDisplay key={cell.id} cell={cell} onClick={() => handleCellClick(cell)} />
+                                ))}
+                            </div>
+                            <Alert>
+                                <Gift className="h-4 w-4" />
+                                <AlertTitle className="flex justify-between items-center">
+                                    Premios Encontrados (x{multiplier})
+                                    <span className="text-xs text-muted-foreground">Bombas: {BOMB_COUNT} | Premios: {PRIZE_COUNT}</span>
+                                </AlertTitle>
+                                <AlertDescription>
+                                    {foundPrizes.length > 0 ? (
+                                        <div className="flex gap-4 mt-2">
+                                            {foundPrizes.map((prize, i) => {
+                                                if (prize === 'gem') return <Gem key={i} className="h-5 w-5 text-purple-400" />;
+                                                if (prize === 'goldLingot') return <Coins key={i} className="h-5 w-5 text-yellow-500" />;
+                                                if (prize === 'casinoChip') return <Ticket key={i} className="h-5 w-5 text-red-400" />;
+                                                if (prize === 'premiumPass') return <Star key={i} className="h-5 w-5 text-yellow-400" />;
+                                                return null;
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p>Aún no has encontrado premios.</p>
+                                    )}
+                                </AlertDescription>
+                            </Alert>
+                        </>
+                    )}
+                </CardContent>
+                <CardFooter>
+                    {minePhase === 'betting' && (
+                        <Button size="lg" className="w-full" onClick={startMineSweeper} disabled={isLoading || casinoChips < 5}>
+                            Jugar (5 Fichas)
+                        </Button>
+                    )}
+                    {minePhase === 'playing' && (
+                        <Button size="lg" className="w-full" onClick={cashOutMines} disabled={foundPrizes.length === 0}>
+                            Cobrar Premios y Salir
+                        </Button>
+                    )}
+                    {minePhase === 'gameOver' && (
+                         <Button size="lg" className="w-full" onClick={() => setMinePhase('betting')}>
+                            Jugar de Nuevo
+                        </Button>
+                    )}
+                </CardFooter>
+            </Card>
 
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                  <CardHeader>
@@ -476,5 +651,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
