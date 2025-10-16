@@ -189,22 +189,24 @@ export default function CasinoPage() {
         // Only run on client
         if (typeof window === 'undefined') return;
 
+        let isMounted = true;
+
         const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
             matterJsRef.current = Matter;
 
-            if (!plinkoContainerRef.current) return;
+            if (!plinkoContainerRef.current || !isMounted) return;
 
             const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
             const render = Matter.Render.create({
                 element: container,
-                engine: engine, // This was the missing key!
+                engine: engine,
                 options: {
                     width: container.clientWidth,
                     height: 400,
                     background: 'transparent',
-                    wireframes: false, // Ensure objects are filled
+                    wireframes: false, 
                 },
             });
             const runner = Matter.Runner.create();
@@ -238,7 +240,7 @@ export default function CasinoPage() {
                         isStatic: true,
                         restitution: 0.5,
                         friction: 0.01,
-                        render: { fillStyle: 'hsl(var(--primary))' }, // Explicitly set color
+                        render: { fillStyle: 'hsl(var(--primary))' },
                     });
                     Matter.World.add(world, peg);
                 }
@@ -319,6 +321,7 @@ export default function CasinoPage() {
         initPlinko();
     
         return () => {
+             isMounted = false;
              if (matterInstance.current && matterJsRef.current) {
                 const Matter = matterJsRef.current;
                 const { render, runner, engine } = matterInstance.current;
@@ -900,5 +903,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
