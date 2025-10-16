@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { ShareButton } from "@/components/ShareButton";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -146,7 +147,7 @@ export default function PerfilPage() {
         await signOut(auth);
         router.push('/auth');
     }
-  }
+  };
 
   const handleSelectBackground = (backgroundId: string) => {
     if (!userProfileRef) return;
@@ -232,6 +233,8 @@ export default function PerfilPage() {
               {userProfile.hasPremiumPass && <Badge variant="secondary" className="mt-2 bg-yellow-400 text-yellow-900">Pase HV Premium</Badge>}
         </CardContent>
       </Card>
+      
+      <ShareButton />
 
       <Card>
         <CardHeader>
