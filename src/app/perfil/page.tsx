@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { doc } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
@@ -112,6 +112,13 @@ export default function PerfilPage() {
     fileInputRef.current?.click();
   };
 
+  const handleResetAvatar = () => {
+      if (userProfileRef) {
+          updateDocumentNonBlocking(userProfileRef, { imageUrl: null });
+          toast({ title: "Avatar restablecido", description: "Tu foto de perfil ha sido eliminada." });
+      }
+  };
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && userProfileRef) {
@@ -147,6 +154,15 @@ export default function PerfilPage() {
     toast({
         title: "Fondo actualizado",
         description: "Tu nuevo fondo de perfil ha sido guardado."
+    });
+  };
+
+  const handleResetBackground = () => {
+    if (!userProfileRef) return;
+    updateDocumentNonBlocking(userProfileRef, { selectedBackgroundId: null });
+    toast({
+        title: "Fondo restablecido",
+        description: "Se ha restaurado el fondo predeterminado."
     });
   };
 
@@ -199,8 +215,11 @@ export default function PerfilPage() {
                   <AvatarFallback>{getInitials(userProfile?.username)}</AvatarFallback>
                 </Avatar>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                 <Button variant="outline" size="icon" className="absolute bottom-2 -right-1 w-8 h-8 rounded-full text-foreground" onClick={handleAvatarClick}>
+                 <Button variant="outline" size="icon" className="absolute bottom-2 right-8 w-8 h-8 rounded-full text-foreground" onClick={handleAvatarClick}>
                   <Camera className="w-4 h-4" />
+                </Button>
+                <Button variant="destructive" size="icon" className="absolute bottom-2 -right-1 w-8 h-8 rounded-full" onClick={handleResetAvatar}>
+                  <Trash2 className="w-4 h-4"/>
                 </Button>
               </div>
 
@@ -211,7 +230,7 @@ export default function PerfilPage() {
                  </div>
               ) : (
                 <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold font-headline drop-shadow-md">{userProfile?.username}</h1>
+                    <h1 className="text-2xl font-bold font-headline text-primary-foreground drop-shadow-md">{userProfile?.username}</h1>
                     <Button variant="ghost" size="icon" onClick={handleEdit} className="h-8 w-8 hover:bg-white/20">
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -288,7 +307,10 @@ export default function PerfilPage() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary"/> Fondos de Perfil</div>
-            <Button variant="outline" size="sm" onClick={unlockAllBackgroundsForTesting}>Desbloquear todos (Test)</Button>
+             <div className="flex items-center gap-2">
+                 <Button variant="outline" size="sm" onClick={unlockAllBackgroundsForTesting}>Desbloquear (Test)</Button>
+                 <Button variant="ghost" size="sm" onClick={handleResetBackground}>Restablecer</Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
