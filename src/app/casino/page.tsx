@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment } from "firebase/firestore";
@@ -12,8 +12,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
-import Image from "next/image";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -44,53 +42,24 @@ const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, i
 // -------------------------
 
 // --- Shell Game Config ---
-const cardBackImg = PlaceHolderImages.find(img => img.id === 'card-back');
-const cardWinnerImg = PlaceHolderImages.find(img => img.id === 'card-winner');
-
-type PlayingCardProps = {
-    isRevealed: boolean;
-    hasPrize: boolean;
-    isShuffling: boolean;
-    onClick: () => void;
-    phase: ShellGamePhase;
-};
-
-const PlayingCard = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: PlayingCardProps) => {
-    const frontImage = (hasPrize && cardWinnerImg) ? cardWinnerImg : cardBackImg;
-
-    return (
-        <div
-            className={cn(
-                "relative transition-transform duration-500",
-                phase === 'picking' && 'cursor-pointer hover:scale-110',
-                isShuffling && 'animate-pulse'
-            )}
-            onClick={onClick}
-            style={{ width: '80px', height: '112px' }}
-        >
-            {/* Base container for images */}
-            <div className="relative w-full h-full rounded-lg shadow-md">
-                 {/* Card Back - always visible underneath */}
-                {cardBackImg && <Image src={cardBackImg.imageUrl} alt="Card Back" fill className="object-cover rounded-lg" />}
-
-                 {/* Card Front - fades in on top when revealed */}
-                {frontImage && (
-                    <div
-                        className={cn(
-                            "absolute inset-0 w-full h-full transition-opacity duration-500",
-                            isRevealed ? "opacity-100" : "opacity-0"
-                        )}
-                    >
-                        <Image src={frontImage.imageUrl} alt={frontImage.description} fill className="object-cover rounded-lg" />
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
+const Cup = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: { isRevealed: boolean, hasPrize: boolean, isShuffling: boolean, onClick: () => void, phase: ShellGamePhase }) => (
+    <div 
+        className={cn(
+            "relative transition-transform duration-300", 
+            phase === 'picking' && "cursor-pointer hover:scale-110",
+            isShuffling && "animate-pulse"
+        )} 
+        onClick={onClick}
+    >
+        <CupSoda className="h-24 w-24 text-primary" />
+        {isRevealed && hasPrize && (
+            <Ticket className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-red-500 animate-fade-in" />
+        )}
+    </div>
+);
 
 
-type Cup = { id: number; hasPrize: boolean; isRevealed: boolean };
+type CupState = { id: number; hasPrize: boolean; isRevealed: boolean };
 type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
 
 // Fisher-Yates shuffle algorithm
@@ -140,7 +109,7 @@ export default function CasinoPage() {
 
     // Shell Game State
     const [shellGamePhase, setShellGamePhase] = useState<ShellGamePhase>('betting');
-    const [cups, setCups] = useState<Cup[]>([
+    const [cups, setCups] = useState<CupState[]>([
         { id: 0, hasPrize: false, isRevealed: false },
         { id: 1, hasPrize: false, isRevealed: false },
         { id: 2, hasPrize: false, isRevealed: false },
@@ -189,44 +158,44 @@ export default function CasinoPage() {
         setSpinning(true);
         setSlotResultMessage('');
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-cost) });
+        
+        let finalReelsResult: typeof slotSymbols = [...reels];
         setReelsSpinning([true, true, true]);
 
-        let finalReelsResult: typeof slotSymbols = [...reels];
+        const spinIntervals = finalReelsResult.map((_, index) => {
+            return setInterval(() => {
+                setReels(currentReels => {
+                    const newReels = [...currentReels];
+                    newReels[index] = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+                    return newReels;
+                });
+            }, 100);
+        });
 
-        // Start the spinning animation
-        const spinInterval = setInterval(() => {
-            setReels(currentReels => 
-                currentReels.map((reel, i) => 
-                    reelsSpinning[i] ? slotSymbols[Math.floor(Math.random() * slotSymbols.length)] : reel
-                )
-            );
-        }, 100);
+        const stopReel = (index: number) => {
+            clearInterval(spinIntervals[index]);
+            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+            finalReelsResult[index] = finalSymbol;
+            setReels(current => {
+                const newReels = [...current];
+                newReels[index] = finalSymbol;
+                return newReels;
+            });
+            setReelsSpinning(s => {
+                const newSpinning = [...s];
+                newSpinning[index] = false;
+                return newSpinning;
+            });
 
-        // Stagger the stopping of reels
-        setTimeout(() => {
-            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
-            finalReelsResult[0] = finalSymbol;
-            setReels(current => [finalSymbol, current[1], current[2]]);
-            setReelsSpinning(s => [false, s[1], s[2]]);
-        }, 1000); // Stop reel 1
+            if (index === finalReelsResult.length - 1) {
+                setSpinning(false);
+                checkWin(finalReelsResult);
+            }
+        };
 
-        setTimeout(() => {
-            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
-            finalReelsResult[1] = finalSymbol;
-            setReels(current => [current[0], finalSymbol, current[2]]);
-            setReelsSpinning(s => [s[0], false, s[2]]);
-        }, 2000); // Stop reel 2
-        
-        setTimeout(() => {
-            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
-            finalReelsResult[2] = finalSymbol;
-            setReels(current => [current[0], current[1], finalSymbol]);
-            setReelsSpinning(s => [s[0], s[1], false]); // Stop reel 3
-            
-            clearInterval(spinInterval);
-            setSpinning(false);
-            checkWin(finalReelsResult);
-        }, 3000);
+        setTimeout(() => stopReel(0), 1000);
+        setTimeout(() => stopReel(1), 2000);
+        setTimeout(() => stopReel(2), 3000);
     };
 
     const checkWin = (finalReels: typeof slotSymbols) => {
@@ -266,7 +235,6 @@ export default function CasinoPage() {
                     toastDescription = "¡Has ganado 100 Fichas de Casino!";
                     break;
                 default:
-                    // Should not happen with the current setup
                     setSlotResultMessage('¡Mala suerte! Sigue intentando.');
                     return;
             }
@@ -323,12 +291,12 @@ export default function CasinoPage() {
 
                  // Stop shuffling and wait for pick
                 setShellGamePhase('picking');
-                setShellResultMessage('¿Dónde está la carta ganadora?');
+                setShellResultMessage('¿Dónde está la ficha?');
             }, 2500); // Shuffle duration
         }, 1500); // Time to see the prize
     };
 
-    const handleCupPick = (pickedCup: Cup) => {
+    const handleCupPick = (pickedCup: CupState) => {
         if (shellGamePhase !== 'picking' || !userProfileRef) return;
 
         setShellGamePhase('result');
@@ -373,13 +341,13 @@ export default function CasinoPage() {
 
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
                  <CardHeader>
-                    <CardTitle>Juego de las Cartas</CardTitle>
-                    <CardDescription>Apuesta tus fichas y adivina dónde está la carta ganadora. ¡Gana el doble de tu apuesta!</CardDescription>
+                    <CardTitle>Juego de los Vasos</CardTitle>
+                    <CardDescription>Apuesta tus fichas y adivina dónde está la ficha ganadora. ¡Gana el doble de tu apuesta!</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
                     <div className="flex justify-around w-full min-h-[120px] items-center">
                         {cups.map((cup) => (
-                             <PlayingCard
+                             <Cup
                                 key={cup.id}
                                 isRevealed={cup.isRevealed}
                                 hasPrize={cup.hasPrize}
@@ -420,7 +388,7 @@ export default function CasinoPage() {
                      )}
                      {(shellGamePhase === 'shuffling' || shellGamePhase === 'picking') && (
                         <Button size="lg" className="w-full" disabled>
-                            {shellGamePhase === 'shuffling' ? 'Mezclando...' : 'Elige una carta...'}
+                            {shellGamePhase === 'shuffling' ? 'Mezclando...' : 'Elige un vaso...'}
                         </Button>
                      )}
                 </CardFooter>
@@ -508,3 +476,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
