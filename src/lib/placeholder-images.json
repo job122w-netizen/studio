@@ -50,63 +50,63 @@
     },
     {
       "id": "pixel-art-1",
-      "description": "Pixel art of a brain with a lightbulb",
-      "imageUrl": "https://picsum.photos/seed/pixel1/300/200",
-      "imageHint": "pixel art brain"
+      "description": "A brain with a glowing lightbulb, representing new ideas.",
+      "imageUrl": "https://picsum.photos/seed/idea/300/200",
+      "imageHint": "glowing brain"
     },
     {
       "id": "pixel-art-2",
-      "description": "Pixel art of a person meditating under a tree",
-      "imageUrl": "https://picsum.photos/seed/pixel2/300/200",
-      "imageHint": "pixel art meditation"
+      "description": "A person meditating peacefully under a large tree.",
+      "imageUrl": "https://picsum.photos/seed/meditate/300/200",
+      "imageHint": "calm meditation"
     },
     {
       "id": "pixel-art-3",
-      "description": "Pixel art of a stack of glowing books",
-      "imageUrl": "https://picsum.photos/seed/pixel3/300/200",
-      "imageHint": "pixel art books"
+      "description": "A stack of ancient books on a wooden table.",
+      "imageUrl": "https://picsum.photos/seed/books/300/200",
+      "imageHint": "old books"
     },
     {
       "id": "pixel-art-4",
-      "description": "Pixel art of a path up a mountain",
-      "imageUrl": "https://picsum.photos/seed/pixel4/300/200",
-      "imageHint": "pixel art mountain"
+      "description": "A winding path leading to a mountain summit at sunrise.",
+      "imageUrl": "https://picsum.photos/seed/summit/300/200",
+      "imageHint": "mountain path"
     },
     {
       "id": "pixel-art-5",
-      "description": "Pixel art of a growing plant",
-      "imageUrl": "https://picsum.photos/seed/pixel5/300/200",
-      "imageHint": "pixel art plant"
+      "description": "A small plant sprouting from the ground, symbolizing growth.",
+      "imageUrl": "https://picsum.photos/seed/growth/300/200",
+      "imageHint": "plant sprout"
     },
     {
       "id": "pixel-art-6",
-      "description": "Pixel art of a person lifting weights",
-      "imageUrl": "https://picsum.photos/seed/pixel6/300/200",
-      "imageHint": "pixel art weights"
+      "description": "A silhouette of a person lifting weights against a sunset.",
+      "imageUrl": "https://picsum.photos/seed/lifting/300/200",
+      "imageHint": "weight lifting"
     },
     {
       "id": "pixel-art-7",
-      "description": "Pixel art of a sunrise",
-      "imageUrl": "https://picsum.photos/seed/pixel7/300/200",
-      "imageHint": "pixel art sunrise"
+      "description": "A vibrant sunrise over a calm ocean.",
+      "imageUrl": "https://picsum.photos/seed/sunrise/300/200",
+      "imageHint": "ocean sunrise"
     },
     {
       "id": "pixel-art-8",
-      "description": "Pixel art of a balanced scale",
-      "imageUrl": "https://picsum.photos/seed/pixel8/300/200",
-      "imageHint": "pixel art scale"
+      "description": "A perfectly balanced scale, representing harmony.",
+      "imageUrl": "https://picsum.photos/seed/balance/300/200",
+      "imageHint": "balanced scale"
     },
     {
       "id": "pixel-art-9",
-      "description": "Pixel art of a constellation",
-      "imageUrl": "https://picsum.photos/seed/pixel9/300/200",
-      "imageHint": "pixel art constellation"
+      "description": "A clear night sky full of stars and constellations.",
+      "imageUrl": "https://picsum.photos/seed/galaxy/300/200",
+      "imageHint": "night sky"
     },
     {
       "id": "pixel-art-10",
-      "description": "Pixel art of a key unlocking a door",
-      "imageUrl": "https://picsum.photos/seed/pixel10/300/200",
-      "imageHint": "pixel art key"
+      "description": "An old-fashioned key unlocking a glowing door.",
+      "imageUrl": "https://picsum.photos/seed/unlock/300/200",
+      "imageHint": "glowing door"
     }
   ]
 }
