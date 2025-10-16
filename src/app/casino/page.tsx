@@ -133,50 +133,61 @@ export default function CasinoPage() {
 
     const checkWin = (finalReels: typeof slotSymbols) => {
         if (!userProfileRef) return;
-
-        const allSame = finalReels.every(reel => reel.id === finalReels[0].id);
-        if (!allSame) {
-            setSlotResultMessage('¡Mala suerte! Sigue intentando.');
+    
+        const [reel1, reel2, reel3] = finalReels;
+    
+        // Check for three of a kind (Jackpot)
+        if (reel1.id === reel2.id && reel2.id === reel3.id) {
+            const winningSymbol = reel1.id;
+            let updates = {};
+            let toastTitle = "¡Has Ganado!";
+            let toastDescription = "";
+    
+            switch (winningSymbol) {
+                case 'star':
+                    if (userProfile?.hasPremiumPass) {
+                        updates = { gems: increment(20) };
+                        toastTitle = "¡PREMIO MAYOR, OTRA VEZ!";
+                        toastDescription = "Ya tienes el Pase Premium, ¡así que recibes 20 gemas!";
+                    } else {
+                        updates = { hasPremiumPass: true };
+                        toastTitle = "¡¡¡PREMIO MAYOR!!!";
+                        toastDescription = "¡Has ganado el Pase HV Premium!";
+                    }
+                    break;
+                case 'gem':
+                    updates = { gems: increment(20) };
+                    toastDescription = "¡Has ganado 20 Gemas!";
+                    break;
+                case 'coins':
+                    updates = { goldLingots: increment(80) };
+                    toastDescription = "¡Has ganado 80 Lingotes de Oro!";
+                    break;
+                case 'ticket':
+                    updates = { casinoChips: increment(100) };
+                    toastDescription = "¡Has ganado 100 Fichas de Casino!";
+                    break;
+                default:
+                    // Should not happen with the current setup
+                    setSlotResultMessage('¡Mala suerte! Sigue intentando.');
+                    return;
+            }
+    
+            updateDocumentNonBlocking(userProfileRef, updates);
+            setSlotResultMessage(toastDescription);
+            toast({ title: toastTitle, description: toastDescription });
             return;
         }
-
-        const winningSymbol = finalReels[0].id;
-        let updates = {};
-        let toastTitle = "¡Has Ganado!";
-        let toastDescription = "";
-
-        switch (winningSymbol) {
-            case 'star':
-                if (userProfile?.hasPremiumPass) {
-                    updates = { gems: increment(20) };
-                    toastTitle = "¡PREMIO MAYOR, OTRA VEZ!";
-                    toastDescription = "Ya tienes el Pase Premium, ¡así que recibes 20 gemas!";
-                } else {
-                    updates = { hasPremiumPass: true };
-                    toastTitle = "¡¡¡PREMIO MAYOR!!!";
-                    toastDescription = "¡Has ganado el Pase HV Premium!";
-                }
-                break;
-            case 'gem':
-                updates = { gems: increment(20) };
-                toastDescription = "¡Has ganado 20 Gemas!";
-                break;
-            case 'coins':
-                updates = { goldLingots: increment(80) };
-                toastDescription = "¡Has ganado 80 Lingotes de Oro!";
-                break;
-            case 'ticket':
-                updates = { casinoChips: increment(100) };
-                toastDescription = "¡Has ganado 100 Fichas de Casino!";
-                break;
-            default:
-                setSlotResultMessage('¡Mala suerte! Sigue intentando.');
-                return;
+    
+        // Check for a pair (two of a kind)
+        if (reel1.id === reel2.id || reel1.id === reel3.id || reel2.id === reel3.id) {
+            updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(2) });
+            setSlotResultMessage("¡Casi! Recuperas tus 2 fichas.");
+            return;
         }
-
-        updateDocumentNonBlocking(userProfileRef, updates);
-        setSlotResultMessage(toastDescription);
-        toast({ title: toastTitle, description: toastDescription });
+    
+        // No win
+        setSlotResultMessage('¡Mala suerte! Sigue intentando.');
     };
 
     const Dice1Icon = diceIcons[dice1];
