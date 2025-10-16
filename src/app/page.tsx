@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, query, orderBy, limit, serverTimestamp } from "firebase/firestore";
+import { doc, collection, addDoc, query, orderBy, limit, serverTimestamp, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
+import { updateCasinoChips } from "@/lib/transactions";
 
 
 export default function Home() {
@@ -65,10 +66,10 @@ export default function Home() {
             lastRewardTimeRef.current = thirtyMinuteMark;
             if (userProfileRef) {
                updateDocumentNonBlocking(userProfileRef, {
-                experiencePoints: 1250,
-                goldLingots: 1,
-                casinoChips: 1,
+                experiencePoints: increment(1250),
+                goldLingots: increment(1),
               });
+              updateCasinoChips(userProfileRef, 1);
                toast({
                 title: "¡Recompensa de estudio!",
                 description: "¡Has ganado 1250 Puntos, 1 Lingote y 1 Ficha!",

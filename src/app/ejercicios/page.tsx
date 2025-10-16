@@ -14,6 +14,7 @@ import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/no
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { updateUserStreak } from '@/lib/streaks';
+import { updateCasinoChips } from '@/lib/transactions';
 
 type Exercise = {
   id: string;
@@ -171,9 +172,9 @@ export default function EjerciciosPage() {
 
       if (isDayNowCompleted && !wasDayAlreadyCompleted) {
         updateDocumentNonBlocking(userProfileRef, {
-            goldLingots: increment(3),
-            casinoChips: increment(3)
+            goldLingots: increment(3)
         });
+        updateCasinoChips(userProfileRef, 3);
         toast({
             title: "¡Rutina del día completada!",
             description: "¡Has ganado 3 lingotes de oro y 3 fichas de casino por tu disciplina!",
