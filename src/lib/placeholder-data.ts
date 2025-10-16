@@ -1,3 +1,4 @@
+
 import type { ImagePlaceholder } from './placeholder-images';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -58,11 +59,21 @@ export type HvPassLevel = {
 // Generate 100 levels for the pass
 export const hvPassLevels: HvPassLevel[] = Array.from({ length: 100 }, (_, i) => {
     const level = i + 1;
-    const freeReward: HvPassReward = { type: 'goldLingots', quantity: (level % 5 === 0) ? 25 : 10 };
+    let freeReward: HvPassReward;
+
+    // Logic for more varied free rewards
+    if (level % 10 === 0) {
+        freeReward = { type: 'chest', quantity: 1 }; // Chest every 10 levels
+    } else if (level % 5 === 0) {
+        freeReward = { type: 'casinoChips', quantity: 5 }; // Casino chips every 5 levels (but not 10)
+    } else {
+        freeReward = { type: 'goldLingots', quantity: 10 }; // Gold lingots for other levels
+    }
     
     let premiumReward: HvPassReward | undefined;
 
-    if (level % 10 === 0) {
+    // Premium rewards logic (remains more exclusive)
+    if (level % 10 === 0 && level !== 100) {
         premiumReward = { type: 'chest', quantity: 1 };
     } else if (level % 5 === 0) {
         premiumReward = { type: 'casinoChips', quantity: 10 };
@@ -70,18 +81,17 @@ export const hvPassLevels: HvPassLevel[] = Array.from({ length: 100 }, (_, i) =>
         premiumReward = { type: 'goldLingots', quantity: 50 };
     }
     
-    // Assign one of the 10 profile backgrounds at specific premium levels
-    if (level === 20) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-1' };
-    if (level === 30) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-2' };
-    if (level === 40) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-3' };
-    if (level === 50) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-4' };
-    if (level === 60) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-5' };
-    if (level === 70) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-6' };
-    if (level === 80) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-7' };
-    if (level === 90) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-8' };
-    if (level === 95) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-9' };
-    if (level === 100) premiumReward = { type: 'profileBackground', itemId: 'pixel-art-10' };
+    // Specific premium rewards for profile backgrounds, overriding previous logic
+    const backgroundLevels: { [key: number]: string } = {
+        20: 'pixel-art-1', 30: 'pixel-art-2', 40: 'pixel-art-3',
+        50: 'pixel-art-4', 60: 'pixel-art-5', 70: 'pixel-art-6',
+        80: 'pixel-art-7', 90: 'pixel-art-8', 95: 'pixel-art-9',
+        100: 'pixel-art-10'
+    };
 
+    if (backgroundLevels[level]) {
+        premiumReward = { type: 'profileBackground', itemId: backgroundLevels[level] };
+    }
 
     return {
         level,
