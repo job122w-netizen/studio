@@ -144,7 +144,7 @@ export default function CasinoPage() {
         { id: 2, hasPrize: false, isRevealed: false },
     ]);
     const [shellResultMessage, setShellResultMessage] = useState('');
-    const shellBetAmount = 1; // Simplified bet amount
+    const shellBetAmount = 1;
 
     const [minePhase, setMinePhase] = useState<MineSweeperPhase>('betting');
     const [mineGrid, setMineGrid] = useState<MineCell[]>([]);
