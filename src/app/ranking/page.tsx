@@ -1,11 +1,91 @@
+
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { rankingData } from "@/lib/placeholder-data";
 import { Trophy } from "lucide-react";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { collection, query, orderBy } from "firebase/firestore";
+import { useMemo } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+type UserProfile = {
+  id: string;
+  username: string;
+  experiencePoints: number;
+  imageUrl?: string;
+  isBot?: boolean;
+};
+
+const botNames = [
+  "Sombra", "Relámpago", "Titán", "Espectro", "Nova", "Fénix", 
+  "Oráculo", "Vortex", "Lince", "Cometa", "Zenith", "Abismo"
+];
+
+// Function to generate bots based on the user's score
+const generateBots = (userScore: number): UserProfile[] => {
+    const bots: UserProfile[] = [];
+    const botCount = 12;
+
+    for (let i = 0; i < botCount; i++) {
+        const scoreFluctuation = (Math.random() - 0.5) * userScore * 0.8; // Bots are +/- 40% of user score
+        const botScore = Math.max(0, Math.floor(userScore + scoreFluctuation + (i * 150)));
+        bots.push({
+            id: `bot-${i}`,
+            username: botNames[i % botNames.length],
+            experiencePoints: botScore,
+            imageUrl: `https://i.pravatar.cc/40?u=bot${i}`,
+            isBot: true,
+        });
+    }
+    return bots;
+};
+
 
 export default function RankingPage() {
+  const { user: currentUser } = useUser();
+  const firestore = useFirestore();
+
+  const usersCollectionRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'users');
+  }, [firestore]);
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!usersCollectionRef) return null;
+    return query(usersCollectionRef, orderBy("experiencePoints", "desc"));
+  }, [usersCollectionRef]);
+
+  const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
+  
+  const currentUserData = useMemo(() => {
+      return users?.find(u => u.id === currentUser?.uid);
+  }, [users, currentUser]);
+  
+  const rankedList = useMemo(() => {
+    if (!users) return [];
+
+    const currentUserScore = currentUserData?.experiencePoints ?? 0;
+    const bots = generateBots(currentUserScore);
+    
+    // Filter out the current user if they exist to avoid duplication
+    const otherUsers = users.filter(u => u.id !== currentUser?.uid);
+    const combinedList = [...otherUsers, ...bots];
+
+    // Add the current user back if they exist, to ensure they are in the list
+    if (currentUserData) {
+        combinedList.push(currentUserData);
+    }
+
+    return combinedList
+        .sort((a, b) => b.experiencePoints - a.experiencePoints)
+        .map((player, index) => ({ ...player, rank: index + 1 }));
+
+  }, [users, currentUserData, currentUser?.uid]);
+
+
   return (
     <div className="space-y-8 animate-fade-in">
       <section className="text-center">
@@ -17,47 +97,61 @@ export default function RankingPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-yellow-500" />
-            Top 100 - General
+            Clasificación General
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Rango</TableHead>
-                <TableHead>Usuario</TableHead>
-                <TableHead className="text-right">Puntos</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rankingData.map((user) => (
-                <TableRow key={user.rank} className={user.user === 'Tú' ? 'bg-primary/10' : ''}>
-                  <TableCell className="font-bold text-lg text-center">
-                    {user.rank <= 3 ? (
-                      <span className={
-                        user.rank === 1 ? "text-yellow-500" :
-                        user.rank === 2 ? "text-gray-400" :
-                        "text-orange-400"
-                      }>{user.rank}</span>
-                    ) : (
-                      user.rank
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback>{user.user.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{user.user}</span>
-                      {user.user === 'Tú' && <Badge variant="default">Tú</Badge>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">{user.points.toLocaleString('es-ES')}</TableCell>
-                </TableRow>
+           {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-2">
+                    <Skeleton className="h-8 w-12" />
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-6 w-24 ml-auto" />
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+           ) : (
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead className="w-16">Rango</TableHead>
+                    <TableHead>Usuario</TableHead>
+                    <TableHead className="text-right">Puntos</TableHead>
+                </TableRow>
+                </TableHeader>
+                <TableBody>
+                {rankedList.map((player) => (
+                    <TableRow key={player.id} className={player.id === currentUser?.uid ? 'bg-primary/10' : ''}>
+                    <TableCell className="font-bold text-lg text-center">
+                        {player.rank && player.rank <= 3 ? (
+                        <span className={
+                            player.rank === 1 ? "text-yellow-500" :
+                            player.rank === 2 ? "text-gray-400" :
+                            "text-orange-400"
+                        }>{player.rank}</span>
+                        ) : (
+                        player.rank
+                        )}
+                    </TableCell>
+                    <TableCell>
+                        <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={player.imageUrl} />
+                            <AvatarFallback>{player.username.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{player.username}</span>
+                        {player.id === currentUser?.uid && <Badge variant="default">Tú</Badge>}
+                        {player.isBot && <Badge variant="outline">Bot</Badge>}
+                        </div>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{player.experiencePoints.toLocaleString('es-ES')}</TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+           )}
         </CardContent>
       </Card>
     </div>
