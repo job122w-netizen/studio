@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -105,29 +106,41 @@ export default function CasinoPage() {
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-cost) });
         setReelsSpinning([true, true, true]);
 
+        let finalReelsResult: typeof slotSymbols = [...reels];
+
         // Start the spinning animation
         const spinInterval = setInterval(() => {
-            setReels(currentReels => currentReels.map((_, i) =>
-                reelsSpinning[i] ? slotSymbols[Math.floor(Math.random() * slotSymbols.length)] : currentReels[i]
-            ));
+            setReels(currentReels => 
+                currentReels.map((reel, i) => 
+                    reelsSpinning[i] ? slotSymbols[Math.floor(Math.random() * slotSymbols.length)] : reel
+                )
+            );
         }, 100);
 
-        // Determine final result
-        const finalReels = [
-            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
-        ];
-
         // Stagger the stopping of reels
-        setTimeout(() => setReelsSpinning(s => [false, s[1], s[2]]), 1000); // Stop reel 1
-        setTimeout(() => setReelsSpinning(s => [s[0], false, s[2]]), 2000); // Stop reel 2
         setTimeout(() => {
+            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+            finalReelsResult[0] = finalSymbol;
+            setReels(current => [finalSymbol, current[1], current[2]]);
+            setReelsSpinning(s => [false, s[1], s[2]]);
+        }, 1000); // Stop reel 1
+
+        setTimeout(() => {
+            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+            finalReelsResult[1] = finalSymbol;
+            setReels(current => [current[0], finalSymbol, current[2]]);
+            setReelsSpinning(s => [s[0], false, s[2]]);
+        }, 2000); // Stop reel 2
+        
+        setTimeout(() => {
+            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+            finalReelsResult[2] = finalSymbol;
+            setReels(current => [current[0], current[1], finalSymbol]);
             setReelsSpinning(s => [s[0], s[1], false]); // Stop reel 3
+            
             clearInterval(spinInterval);
-            setReels(finalReels);
             setSpinning(false);
-            checkWin(finalReels);
+            checkWin(finalReelsResult);
         }, 3000);
     };
 
