@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X, Coins } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc, increment } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
@@ -174,6 +174,15 @@ export default function PerfilPage() {
         title: "¡Modo desarrollador!",
         description: "Todos los fondos de perfil han sido desbloqueados para pruebas."
     });
+  }
+
+  const addTestChips = () => {
+      if (!userProfileRef) return;
+      updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(1000) });
+      toast({
+          title: "¡Fichas de prueba!",
+          description: "Has recibido 1000 fichas de casino para probar los juegos."
+      });
   }
 
   if (isLoading || !userProfile) {
@@ -345,24 +354,35 @@ export default function PerfilPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary"/> Logros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-4">
-            {achievements.map((ach, index) => (
-              <li key={index} className="flex items-center gap-4">
-                <ach.icon className="h-8 w-8 text-yellow-500" />
-                <div>
-                  <p className="font-semibold">{ach.name}</p>
-                  <p className="text-sm text-muted-foreground">{ach.description}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary"/> Logros</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ul className="space-y-4">
+                    {achievements.map((ach, index) => (
+                    <li key={index} className="flex items-center gap-4">
+                        <ach.icon className="h-8 w-8 text-yellow-500" />
+                        <div>
+                        <p className="font-semibold">{ach.name}</p>
+                        <p className="text-sm text-muted-foreground">{ach.description}</p>
+                        </div>
+                    </li>
+                    ))}
+                </ul>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Zona de Pruebas (Solo Desarrollo)</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={unlockAllBackgroundsForTesting}>Desbloquear Fondos</Button>
+                <Button variant="outline" size="sm" onClick={addTestChips}><Coins className="mr-2"/>Añadir 1000 Fichas</Button>
+            </CardContent>
+        </Card>
+
     </div>
   );
 }
