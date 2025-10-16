@@ -19,23 +19,14 @@ type UserProfile = {
   isBot?: boolean;
 };
 
-type Ranking = {
-    id: string;
-    userId: string;
-    username: string;
-    score: number;
-    imageUrl?: string;
-    isBot?: boolean;
-}
-
 const botNames = [
   "Sombra", "Relámpago", "Titán", "Espectro", "Nova", "Fénix", 
   "Oráculo", "Vortex", "Lince", "Cometa", "Zenith", "Abismo"
 ];
 
 // Function to generate bots based on the user's score
-const generateBots = (userScore: number): Ranking[] => {
-    const bots: Ranking[] = [];
+const generateBots = (userScore: number): UserProfile[] => {
+    const bots: UserProfile[] = [];
     const botCount = 12;
 
     for (let i = 0; i < botCount; i++) {
@@ -44,9 +35,8 @@ const generateBots = (userScore: number): Ranking[] => {
         const botId = `bot-${i}`;
         bots.push({
             id: botId,
-            userId: botId,
             username: botNames[i % botNames.length],
-            score: botScore,
+            experiencePoints: botScore,
             imageUrl: `https://i.pravatar.cc/40?u=bot${i}`,
             isBot: true,
         });
@@ -59,42 +49,47 @@ export default function RankingPage() {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
 
-  const rankingsCollectionRef = useMemoFirebase(() => {
+  const usersCollectionRef = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'rankings');
+    return collection(firestore, 'users');
   }, [firestore]);
 
-  const rankingsQuery = useMemoFirebase(() => {
-    if (!rankingsCollectionRef) return null;
-    return query(rankingsCollectionRef, orderBy("score", "desc"), limit(100));
-  }, [rankingsCollectionRef]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!usersCollectionRef) return null;
+    return query(usersCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
+  }, [usersCollectionRef]);
 
-  const { data: rankings, isLoading } = useCollection<Ranking>(rankingsQuery);
+  const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
   
   const currentUserData = useMemo(() => {
-      return rankings?.find(r => r.userId === currentUser?.uid);
-  }, [rankings, currentUser]);
+      return users?.find(u => u.id === currentUser?.uid);
+  }, [users, currentUser]);
   
   const rankedList = useMemo(() => {
-    if (!rankings) return [];
+    if (!users) return [];
 
-    const currentUserScore = currentUserData?.score ?? 0;
+    const currentUserScore = currentUserData?.experiencePoints ?? 0;
     const bots = generateBots(currentUserScore);
     
     // Filter out the current user if they exist to avoid duplication
-    const otherPlayers = rankings.filter(r => r.userId !== currentUser?.uid);
-    const combinedList = [...otherPlayers, ...bots];
+    const otherPlayers = users.filter(r => r.id !== currentUser?.uid);
+    
+    // Create a Set of real player IDs for quick lookup
+    const realPlayerIds = new Set(users.map(p => p.id));
+    
+    // Filter out bots that might have scores too close to real players to avoid weird clustering
+    const filteredBots = bots.filter(bot => 
+      !users.some(player => Math.abs(player.experiencePoints - bot.experiencePoints) < 100)
+    );
 
-    // Add the current user back if they exist, to ensure they are in the list
-    if (currentUserData) {
-        combinedList.push(currentUserData);
-    }
+    const combinedList = [...users, ...filteredBots];
 
     return combinedList
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => b.experiencePoints - a.experiencePoints)
+        .slice(0, 100) // Ensure the final list is not excessively long
         .map((player, index) => ({ ...player, rank: index + 1 }));
 
-  }, [rankings, currentUserData, currentUser?.uid]);
+  }, [users, currentUserData, currentUser?.uid]);
 
 
   return (
@@ -129,12 +124,12 @@ export default function RankingPage() {
                 <TableRow>
                     <TableHead className="w-16">Rango</TableHead>
                     <TableHead>Usuario</TableHead>
-                    <TableHead className="text-right">Puntos</TableHead>
+                    <TableHead className="text-right">Puntos HV</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {rankedList.map((player) => (
-                    <TableRow key={player.id} className={player.userId === currentUser?.uid ? 'bg-primary/10' : ''}>
+                    <TableRow key={player.id} className={player.id === currentUser?.uid ? 'bg-primary/10' : ''}>
                     <TableCell className="font-bold text-lg text-center">
                         {player.rank && player.rank <= 3 ? (
                         <span className={
@@ -150,14 +145,13 @@ export default function RankingPage() {
                         <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                             <AvatarImage src={player.imageUrl} />
-                            <AvatarFallback>{player.username.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{player.username?.charAt(0) ?? '?'}</AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{player.username}</span>
-                        {player.userId === currentUser?.uid && <Badge variant="default">Tú</Badge>}
-                        {player.isBot && <Badge variant="outline">Bot</Badge>}
+                        {player.id === currentUser?.uid && <Badge variant="default">Tú</Badge>}
                         </div>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{player.score.toLocaleString('es-ES')}</TableCell>
+                    <TableCell className="text-right font-mono">{player.experiencePoints.toLocaleString('es-ES')}</TableCell>
                     </TableRow>
                 ))}
                 </TableBody>
