@@ -44,6 +44,25 @@ const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, i
 // --- Shell Game Config ---
 type Cup = { id: number; hasPrize: boolean; isRevealed: boolean };
 type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
+
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T>(array: T[]): T[] => {
+    let currentIndex = array.length, randomIndex;
+    const newArray = [...array]; // Create a copy
+  
+    // While there remain elements to shuffle.
+    while (currentIndex !== 0) {
+      // Pick a remaining element.
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+  
+      // And swap it with the current element.
+      [newArray[currentIndex], newArray[randomIndex]] = [
+        newArray[randomIndex], newArray[currentIndex]];
+    }
+  
+    return newArray;
+};
 // -------------------------
 
 
@@ -73,7 +92,7 @@ export default function CasinoPage() {
 
     // Shell Game State
     const [shellGamePhase, setShellGamePhase] = useState<ShellGamePhase>('betting');
-    const [cups, setCups] = useState<Cup[]>([
+    const [cups, setCups] useState<Cup[]>([
         { id: 0, hasPrize: false, isRevealed: false },
         { id: 1, hasPrize: false, isRevealed: false },
         { id: 2, hasPrize: false, isRevealed: false },
@@ -246,9 +265,14 @@ export default function CasinoPage() {
 
         setTimeout(() => {
              // Hide prize and start shuffling
-            setCups(initialCups.map(c => ({...c, isRevealed: false})));
+            const hiddenPrizeCups = initialCups.map(c => ({...c, isRevealed: false}));
+            setCups(hiddenPrizeCups);
             
             setTimeout(() => {
+                 // Actually shuffle the array internally now
+                 const shuffledCups = shuffleArray(hiddenPrizeCups);
+                 setCups(shuffledCups);
+
                  // Stop shuffling and wait for pick
                 setShellGamePhase('picking');
                 setShellResultMessage('¿Dónde está la ficha?');
@@ -446,6 +470,8 @@ export default function CasinoPage() {
             </Card>
         </div>
     );
+
+    
 
     
 
