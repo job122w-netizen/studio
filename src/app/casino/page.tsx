@@ -198,7 +198,6 @@ export default function CasinoPage() {
                 Matter.World.clear(matterInstance.current.engine.world, false);
                 Matter.Engine.clear(matterInstance.current.engine);
                 matterInstance.current.render.canvas.remove();
-                matterInstance.current = null;
             }
 
 
@@ -211,7 +210,7 @@ export default function CasinoPage() {
                     width: container.clientWidth,
                     height: 400,
                     background: 'transparent',
-                    wireframes: false, // This is key to see filled shapes
+                    wireframes: false,
                 },
             });
             const runner = Matter.Runner.create();
@@ -245,7 +244,7 @@ export default function CasinoPage() {
                         isStatic: true,
                         restitution: 0.5,
                         friction: 0.01,
-                        render: { fillStyle: 'hsl(var(--primary))' }, // Make pegs visible
+                        render: { fillStyle: 'hsl(var(--primary))' },
                     });
                     Matter.World.add(world, peg);
                 }
@@ -325,7 +324,6 @@ export default function CasinoPage() {
         
         initPlinko();
     
-        // The main cleanup function in useEffect's return
         return () => {
              if (matterInstance.current && matterJsRef.current) {
                 const Matter = matterJsRef.current;
@@ -339,7 +337,7 @@ export default function CasinoPage() {
                 matterJsRef.current = null;
             }
         };
-    }, []); // Empty dependency array ensures this runs only ONCE
+    }, []); 
 
     const dropPlinkoBall = () => {
         if (!userProfileRef || !matterInstance.current || !matterJsRef.current) return;
@@ -371,7 +369,6 @@ export default function CasinoPage() {
         
         Matter.World.add(world, ball);
 
-        // Auto-remove ball after 8 seconds to prevent it getting stuck
         setTimeout(() => {
             if (world.bodies.includes(ball)) {
                  Matter.World.remove(world, ball);
@@ -907,11 +904,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
-
-    
-
-    
-
-    
