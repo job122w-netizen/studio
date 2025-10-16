@@ -12,7 +12,7 @@ import { useAuth, useUser, setDocumentNonBlocking, useFirestore } from '@/fireba
 import { initiateAnonymousSignIn, initiateEmailSignUp, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { AuthErrorCodes, UserCredential } from 'firebase/auth';
+import { Auth, AuthErrorCodes, User, UserCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -42,7 +42,7 @@ export default function AuthPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const createUserProfile = async (user: UserCredential['user']) => {
+  const createUserProfile = async (user: User) => {
     if (!firestore) return;
     const userProfileRef = doc(firestore, 'users', user.uid);
     const userProfileSnap = await getDoc(userProfileRef);
@@ -106,19 +106,18 @@ export default function AuthPage() {
     try {
       let userCredential: UserCredential;
       if (isSignUp) {
-        userCredential = await initiateEmailSignUp(auth, values.email, values.password);
+        userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         await createUserProfile(userCredential.user);
       } else {
-        await initiateEmailSignIn(auth, values.email, values.password);
+        await signInWithEmailAndPassword(auth, values.email, values.password);
       }
-      // onAuthStateChanged will handle redirect
     } catch (error: any) {
         handleAuthError(error.code);
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   const handleAnonymousSignIn = async () => {
     if (!auth) return;
     setIsSubmitting(true);
@@ -168,7 +167,7 @@ export default function AuthPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contraseña</-FormLabel>
+                    <FormLabel>Contraseña</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
