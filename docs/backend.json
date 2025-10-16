@@ -331,31 +331,29 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Ranking",
       "type": "object",
-      "description": "Represents a user's ranking in the global leaderboard.",
+      "description": "Represents a user's public-facing ranking data.",
       "properties": {
         "userId": {
           "type": "string",
           "description": "Reference to UserProfile."
         },
-        "rank": {
-          "type": "number",
-          "description": "The user's current rank in the leaderboard."
+        "username": {
+          "type": "string",
+          "description": "The user's public username."
         },
-        "score": {
+        "experiencePoints": {
           "type": "number",
           "description": "The user's score used for ranking."
         },
-        "lastUpdated": {
+        "imageUrl": {
           "type": "string",
-          "description": "The date and time the ranking was last updated.",
-          "format": "date-time"
+          "description": "URL of the user's profile picture."
         }
       },
       "required": [
         "userId",
-        "rank",
-        "score",
-        "lastUpdated"
+        "username",
+        "experiencePoints"
       ]
     }
   },
@@ -370,7 +368,7 @@
       "schema": {
         "$ref": "#/entities/UserProfile"
       },
-      "description": "Stores user profile data. The 'userId' parameter is the Firebase Authentication UID."
+      "description": "Stores private user profile data. The 'userId' parameter is the Firebase Authentication UID."
     },
     "/users/{userId}/studySessions/{studySessionId}": {
       "schema": {
@@ -420,13 +418,12 @@
       },
       "description": "Stores casino game history for a user."
     },
-    "/rankings/{rankingId}": {
+    "/rankings/{userId}": {
       "schema": {
         "$ref": "#/entities/Ranking"
       },
-      "description": "Stores global ranking information."
+      "description": "Stores public-facing ranking data for each user. The document ID is the user's UID."
     }
   }
 }
-
     

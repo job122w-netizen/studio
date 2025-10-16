@@ -21,17 +21,17 @@ export default function RankingPage() {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
 
-  const usersCollectionRef = useMemoFirebase(() => {
+  const rankingsCollectionRef = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'users');
+    return collection(firestore, 'rankings');
   }, [firestore]);
 
-  const usersQuery = useMemoFirebase(() => {
-    if (!usersCollectionRef) return null;
-    return query(usersCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
-  }, [usersCollectionRef]);
+  const rankingsQuery = useMemoFirebase(() => {
+    if (!rankingsCollectionRef) return null;
+    return query(rankingsCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
+  }, [rankingsCollectionRef]);
 
-  const { data: rankedList, isLoading } = useCollection<RankingPlayer>(usersQuery);
+  const { data: rankedList, isLoading } = useCollection<RankingPlayer>(rankingsQuery);
   
   const getInitials = (name: string) => {
     if (!name) return '?';
@@ -114,3 +114,5 @@ export default function RankingPage() {
     </div>
   );
 }
+
+    
