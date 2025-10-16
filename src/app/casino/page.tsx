@@ -130,6 +130,7 @@ export default function CasinoPage() {
     const [dice2, setDice2] = useState(1);
     const [rolling, setRolling] = useState(false);
     const [diceResultMessage, setDiceResultMessage] = useState('');
+    const [diceBetAmount, setDiceBetAmount] = useState(1);
 
     const [reels, setReels] = useState([slotSymbols[0], slotSymbols[1], slotSymbols[2]]);
     const [spinning, setSpinning] = useState(false);
@@ -160,24 +161,23 @@ export default function CasinoPage() {
     // Derived State
     const isLoading = isUserLoading || isProfileLoading;
     
-    // Sanitize casinoChips to prevent NaN issues on display and in logic
     const rawChips = userProfile?.casinoChips;
     const casinoChips = typeof rawChips === 'number' && !isNaN(rawChips) ? rawChips : 0;
     
-    const isChipCountInvalid = casinoChips === 0 && rawChips !== 0; // Catches NaN, null, undefined
+    const isChipCountInvalid = casinoChips === 0 && rawChips !== 0;
     
     const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
 
     // Game Logic Functions
     const rollDice = async () => {
-        if (!userProfileRef || casinoChips < 1) {
-            toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
+        if (!userProfileRef || casinoChips < diceBetAmount || diceBetAmount < 1) {
+            toast({ variant: 'destructive', title: 'Apuesta inválida', description: 'No tienes suficientes fichas para esa apuesta.' });
             return;
         }
 
         setRolling(true);
         setDiceResultMessage('');
-        await updateCasinoChips(userProfileRef, -1);
+        await updateCasinoChips(userProfileRef, -diceBetAmount);
 
         let rollCount = 0;
         const interval = setInterval(() => {
@@ -189,9 +189,10 @@ export default function CasinoPage() {
             if (rollCount > 10) {
                 clearInterval(interval);
                 setRolling(false);
+                const winnings = diceBetAmount * 2;
                 if (newDice1 === newDice2) {
-                    setDiceResultMessage('¡Ganaste 2 fichas!');
-                     updateCasinoChips(userProfileRef, 2);
+                    setDiceResultMessage(`¡Ganaste ${winnings} fichas!`);
+                     updateCasinoChips(userProfileRef, winnings);
                 } else {
                     setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
                 }
@@ -590,24 +591,35 @@ export default function CasinoPage() {
             <Card className="shadow-lg hover-shadow-xl transition-shadow">
                 <CardHeader>
                     <CardTitle>Lanzamiento de Dados</CardTitle>
-                    <CardDescription>Apuesta 1 ficha de casino y gana el doble si sacas pares.</CardDescription>
+                    <CardDescription>Apuesta para ganar el doble si sacas pares.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <Button size="icon" variant="outline" onClick={() => setDiceBetAmount(v => Math.max(1, v - 1))} disabled={rolling}><Minus /></Button>
+                        <Input
+                            type="number"
+                            value={diceBetAmount}
+                            onChange={(e) => setDiceBetAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-24 text-center text-lg font-bold"
+                            disabled={rolling}
+                        />
+                        <Button size="icon" variant="outline" onClick={() => setDiceBetAmount(v => Math.min(casinoChips, v + 1))} disabled={rolling}><Plus /></Button>
+                    </div>
                     <div className="flex gap-4">
                         {(() => {
                             const Dice1Icon = diceIcons[dice1];
                             const Dice2Icon = diceIcons[dice2];
                             return <>
-                                <Dice1Icon className={`h-24 w-24 text-primary ${rolling ? 'animate-spin' : ''}`} />
-                                <Dice2Icon className={`h-24 w-24 text-primary ${rolling ? 'animate-spin' : ''}`} />
+                                <Dice1Icon className={cn("h-24 w-24 text-primary", rolling && "animate-spin")} />
+                                <Dice2Icon className={cn("h-24 w-24 text-primary", rolling && "animate-spin")} />
                             </>
                         })()}
                     </div>
                      {diceResultMessage && <p className="text-foreground font-semibold">{diceResultMessage}</p>}
                 </CardContent>
                 <CardFooter>
-                    <Button size="lg" className="w-full" onClick={rollDice} disabled={rolling || isLoading || casinoChips < 1 || isChipCountInvalid}>
-                        {rolling ? 'Lanzando...' : 'Lanzar Dados (1 Ficha)'}
+                    <Button size="lg" className="w-full" onClick={rollDice} disabled={rolling || isLoading || casinoChips < diceBetAmount || diceBetAmount < 1 || isChipCountInvalid}>
+                        {rolling ? 'Lanzando...' : `Lanzar Dados (${diceBetAmount} ${diceBetAmount === 1 ? 'Ficha' : 'Fichas'})`}
                     </Button>
                 </CardFooter>
             </Card>
