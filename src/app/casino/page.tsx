@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { updateCasinoChips } from "@/lib/transactions";
-
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -42,13 +42,16 @@ const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, i
 // -------------------------
 
 // --- Shell Game Config ---
+type CupState = { id: number; hasPrize: boolean; isRevealed: boolean };
+type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
+
 const Cup = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: { isRevealed: boolean, hasPrize: boolean, isShuffling: boolean, onClick: () => void, phase: ShellGamePhase }) => (
-    <div 
+    <div
         className={cn(
-            "relative transition-transform duration-300", 
+            "relative transition-transform duration-300",
             phase === 'picking' && "cursor-pointer hover:scale-110",
             isShuffling && "animate-pulse"
-        )} 
+        )}
         onClick={onClick}
     >
         <CupSoda className="h-24 w-24 text-primary" />
@@ -57,10 +60,6 @@ const Cup = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: { isRevealed
         )}
     </div>
 );
-
-
-type CupState = { id: number; hasPrize: boolean; isRevealed: boolean };
-type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
 // -------------------------
 
 
@@ -530,7 +529,7 @@ export default function CasinoPage() {
                 <CardHeader>
                     <CardTitle>Tragamonedas HV</CardTitle>
                     <CardDescription>¡Alinea 3 símbolos para ganar! Cuesta 2 fichas por tirada.</CardDescription>
-                </Header>
+                </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
                     <div className="w-full bg-muted/30 p-2 rounded-lg border">
                         <div className="text-center mb-2">
@@ -614,3 +613,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
