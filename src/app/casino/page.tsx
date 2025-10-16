@@ -124,12 +124,13 @@ const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => voi
 // -------------------------
 
 // --- Plinko Game Config ---
-const PLINKO_MULTIPLIERS = [0.5, 1, 1.5, 0.5, 2, 0.5, 1.5, 1, 0.5];
+const PLINKO_MULTIPLIERS = [9, 0.5, 1, 1.5, 2, 1.5, 1, 0.5, 9];
 const MULTIPLIER_COLORS: { [key: number]: string } = {
     0.5: 'hsla(0, 84%, 60%, 0.7)',
     1: 'hsla(221, 83%, 53%, 0.7)',
     1.5: 'hsla(142, 71%, 45%, 0.7)',
     2: 'hsla(262, 83%, 60%, 0.7)',
+    9: 'hsla(280, 85%, 55%, 0.8)',
 };
 // ------------------------
 
@@ -188,9 +189,9 @@ export default function CasinoPage() {
         let isMounted = true;
         const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
-            if (!plinkoContainerRef.current || !isMounted) return;
-            const container = plinkoContainerRef.current;
+            if (!plinkoContainerRef.current || !isMounted || matterInstance.current) return;
 
+            const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
             const render = Matter.Render.create({
                 element: container,
@@ -210,9 +211,9 @@ export default function CasinoPage() {
             const height = 400;
 
             Matter.World.add(world, [
-                Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { fillStyle: 'transparent' } }),
-                Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
-                Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
+                Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { visible: false } }),
+                Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
+                Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
             ]);
 
             const pegRadius = 5;
