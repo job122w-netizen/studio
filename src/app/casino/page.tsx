@@ -13,7 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Matter from 'matter-js';
+import type Matter from 'matter-js';
+
 
 const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
@@ -125,11 +126,11 @@ const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => voi
 // --- Plinko Game Config ---
 const PLINKO_MULTIPLIERS = [0.5, 1, 1.5, 0.5, 2, 0.5, 1.5, 1, 0.5];
 const MULTIPLIER_COLORS: { [key: number]: string } = {
-    0.5: 'from-red-500/70 to-red-600/70',
-    1: 'from-blue-500/70 to-blue-600/70',
-    1.5: 'from-green-500/70 to-green-600/70',
-    2: 'from-purple-500/70 to-purple-600/70',
-    10: 'from-yellow-400/70 to-yellow-500/70',
+    0.5: 'hsla(0, 84%, 60%, 0.7)',
+    1: 'hsla(221, 83%, 53%, 0.7)',
+    1.5: 'hsla(142, 71%, 45%, 0.7)',
+    2: 'hsla(262, 83%, 60%, 0.7)',
+    10: 'hsla(48, 95%, 53%, 0.7)',
 };
 // ------------------------
 
@@ -175,97 +176,157 @@ export default function CasinoPage() {
 
     // Plinko State
     const plinkoContainerRef = useRef<HTMLDivElement>(null);
-    const matterInstance = useRef<any>();
+    const matterInstance = useRef<{
+        engine: Matter.Engine;
+        render: Matter.Render;
+        runner: Matter.Runner;
+        world: Matter.World;
+    } | null>(null);
     const [plinkoBetAmount, setPlinkoBetAmount] = useState([1]);
-    const [isPlayingPlinko, setIsPlayingPlinko] = useState(false);
+
 
     useEffect(() => {
-        const { Engine, Render, Runner, World, Bodies, Events } = Matter;
-    
-        if (!plinkoContainerRef.current) return;
+        let Matter: typeof import('matter-js');
+        let engine: Matter.Engine;
+        let render: Matter.Render;
+        let runner: Matter.Runner;
+
+        const init = async () => {
+            Matter = (await import('matter-js')).default;
+            if (!plinkoContainerRef.current) return;
+            const container = plinkoContainerRef.current;
+            
+            engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
+            const world = engine.world;
+
+            render = Matter.Render.create({
+                element: container,
+                engine: engine,
+                options: {
+                    width: container.clientWidth,
+                    height: 400,
+                    background: 'transparent',
+                    wireframes: false,
+                },
+            });
+
+            matterInstance.current = { engine, render, runner, world };
+
+            const width = container.clientWidth;
+            const height = 400;
         
-        const container = plinkoContainerRef.current;
-        const engine = Engine.create({ gravity: { x: 0, y: 1 } });
-        const world = engine.world;
-        const render = Render.create({
-            element: container,
-            engine: engine,
-            options: {
-                width: container.clientWidth,
-                height: 400,
-                background: 'transparent',
-                wireframes: false,
-            },
-        });
+            Matter.World.add(world, [
+                Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { fillStyle: 'transparent' } }),
+                Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
+                Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
+            ]);
         
-        matterInstance.current = { engine, render, world, Bodies, Events, World, Runner };
-    
-        const width = container.clientWidth;
-        const height = 400;
-    
-        World.add(world, [
-            Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { fillStyle: 'transparent' } }),
-            Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
-            Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { fillStyle: 'transparent' } }),
-        ]);
-    
-        const pegRadius = 5;
-        const rows = 8;
-        const cols = 10;
-        for (let i = 0; i < rows; i++) {
-            const isOddRow = i % 2 !== 0;
-            const numCols = isOddRow ? cols - 1 : cols;
-            for (let j = 0; j < numCols; j++) {
-                let x = (width / (cols -1)) * j;
-                if (isOddRow) {
-                    x += width / (cols-1) / 2;
+            const pegRadius = 5;
+            const rows = 8;
+            const cols = 10;
+            for (let i = 0; i < rows; i++) {
+                const isOddRow = i % 2 !== 0;
+                const numCols = isOddRow ? cols - 1 : cols;
+                for (let j = 0; j < numCols; j++) {
+                    let x = (width / (cols -1)) * j;
+                    if (isOddRow) {
+                        x += width / (cols-1) / 2;
+                    }
+                    const y = height * 0.2 + i * 35;
+                    const peg = Matter.Bodies.circle(x, y, pegRadius, {
+                        isStatic: true,
+                        restitution: 0.5,
+                        friction: 0.01,
+                        render: { fillStyle: 'hsl(var(--primary))' },
+                    });
+                    Matter.World.add(world, peg);
                 }
-                const y = height * 0.2 + i * 35;
-                const peg = Bodies.circle(x, y, pegRadius, {
-                    isStatic: true,
-                    restitution: 0.5,
-                    friction: 0.01,
-                    render: { fillStyle: 'hsl(var(--primary))' },
-                });
-                World.add(world, peg);
             }
-        }
+            
+            const prizeCount = PLINKO_MULTIPLIERS.length;
+            const prizeSlotWidth = width / prizeCount;
+            for (let i = 0; i < prizeCount; i++) {
+                const multiplier = PLINKO_MULTIPLIERS[i];
+                const colorKey = multiplier === 2 ? 10 : multiplier;
+                const prizeSlot = Matter.Bodies.rectangle(
+                    prizeSlotWidth / 2 + i * prizeSlotWidth,
+                    height - 15,
+                    prizeSlotWidth,
+                    30,
+                    {
+                        isStatic: true,
+                        isSensor: true,
+                        label: `multiplier-${multiplier}`,
+                        render: { 
+                            fillStyle: MULTIPLIER_COLORS[colorKey],
+                        },
+                    }
+                );
+                Matter.World.add(world, prizeSlot);
+            }
+            
+            for (let i = 1; i < prizeCount; i++) {
+                Matter.World.add(world, Matter.Bodies.rectangle(i * prizeSlotWidth, height - 30, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
+            }
         
-        const prizeCount = PLINKO_MULTIPLIERS.length;
-        const prizeSlotWidth = width / prizeCount;
-        for (let i = 0; i < prizeCount; i++) {
-            const prizeSlot = Bodies.rectangle(
-                prizeSlotWidth / 2 + i * prizeSlotWidth,
-                height - 15,
-                prizeSlotWidth,
-                30,
-                {
-                    isStatic: true,
-                    isSensor: true,
-                    label: `multiplier-${PLINKO_MULTIPLIERS[i]}`,
-                    render: { fillStyle: 'transparent' }, // The div below will handle visuals
+            Matter.Events.on(engine, 'collisionStart', (event) => {
+                 if (!userProfileRef) return;
+                 const pairs = event.pairs;
+                 for (let i = 0; i < pairs.length; i++) {
+                    const pair = pairs[i];
+                    let prizeBody: Matter.Body | null = null;
+                    let ballBody: Matter.Body | null = null;
+
+                    const ballInPair = pair.bodyA.label === 'ball' ? pair.bodyA : pair.bodyB.label === 'ball' ? pair.bodyB : null;
+                    const prizeInPair = pair.bodyA.label.startsWith('multiplier-') ? pair.bodyA : pair.bodyB.label.startsWith('multiplier-') ? pair.bodyB : null;
+
+                    if(ballInPair && prizeInPair){
+                        ballBody = ballInPair;
+                        prizeBody = prizeInPair;
+                    }
+
+                    if (ballBody && prizeBody && ballBody.plugin.bet) {
+                        const multiplier = parseFloat(prizeBody.label.split('-')[1]);
+                        const winnings = Math.floor(ballBody.plugin.bet * multiplier);
+                        
+                        if (winnings > 0) {
+                            updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
+                            toast({
+                                title: '¡Has Ganado!',
+                                description: `Recibes ${winnings} fichas. (x${multiplier})`,
+                            });
+                        } else {
+                            toast({
+                                title: '¡Mala suerte!',
+                                description: `No has ganado nada esta vez. (x${multiplier})`,
+                            });
+                        }
+                        
+                        Matter.World.remove(world, ballBody);
+                    }
                 }
-            );
-            World.add(world, prizeSlot);
+            });
+
+            runner = Matter.Runner.run(engine);
+            Matter.Render.run(render);
         }
-        
-        for (let i = 1; i < prizeCount; i++) {
-            World.add(world, Bodies.rectangle(i * prizeSlotWidth, height - 40, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
-        }
-    
-        Runner.run(engine);
-        Render.run(render);
+
+        init();
     
         return () => {
-            Render.stop(render);
-            Runner.stop(engine);
-            World.clear(world, false);
-            Engine.clear(engine);
-            render.canvas.remove();
+             if (matterInstance.current) {
+                const { render: matterRender, runner: matterRunner, engine: matterEngine } = matterInstance.current;
+                Matter.Render.stop(matterRender);
+                Matter.Runner.stop(matterRunner);
+                Matter.World.clear(matterEngine.world, false);
+                Matter.Engine.clear(matterEngine);
+                matterRender.canvas.remove();
+                matterInstance.current = null;
+            }
         };
     }, []);
 
-    const dropPlinkoBall = () => {
+    const dropPlinkoBall = async () => {
         if (!userProfileRef || !matterInstance.current) return;
         const currentBet = plinkoBetAmount[0];
         if ((userProfile?.casinoChips ?? 0) < currentBet) {
@@ -275,62 +336,28 @@ export default function CasinoPage() {
 
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
 
-        const { engine, world, Bodies, Events, World } = matterInstance.current;
+        const Matter = (await import('matter-js')).default;
+        const { world } = matterInstance.current;
         const container = plinkoContainerRef.current;
         if (!container) return;
         
-        const ball = Bodies.circle(container.clientWidth / 2 + (Math.random() * 40 - 20), 20, 10, {
+        const ball = Matter.Bodies.circle(container.clientWidth / 2 + (Math.random() * 40 - 20), 20, 10, {
             restitution: 0.8,
             friction: 0.05,
+            label: 'ball',
+            plugin: {
+                bet: currentBet
+            },
             render: { fillStyle: 'hsl(var(--primary))' }
         });
         
-        World.add(world, ball);
-
-        const collisionListener = (event: Matter.IEventCollision<Matter.Engine>) => {
-            const pairs = event.pairs;
-            for (let i = 0; i < pairs.length; i++) {
-                const pair = pairs[i];
-                let prizeBody = null;
-                let ballBody = null;
-
-                if (pair.bodyA.id === ball.id && !pair.bodyA.isSensor) ballBody = pair.bodyA;
-                if (pair.bodyB.id === ball.id && !pair.bodyB.isSensor) ballBody = pair.bodyB;
-                if (pair.bodyA.label.startsWith('multiplier-')) prizeBody = pair.bodyA;
-                if (pair.bodyB.label.startsWith('multiplier-')) prizeBody = pair.bodyB;
-                
-                if (ballBody && prizeBody) {
-                    const multiplier = parseFloat(prizeBody.label.split('-')[1]);
-                    const winnings = Math.floor(currentBet * multiplier);
-                    
-                    if (winnings > 0) {
-                        updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
-                         toast({
-                            title: '¡Has Ganado!',
-                            description: `Recibes ${winnings} fichas. (x${multiplier})`,
-                        });
-                    } else {
-                         toast({
-                            title: '¡Mala suerte!',
-                            description: `No has ganado nada esta vez. (x${multiplier})`,
-                        });
-                    }
-                    
-                    World.remove(world, ballBody);
-                    // No longer need to remove the listener, it will handle other balls
-                    break; 
-                }
-            }
-        };
-
-        Events.on(engine, 'collisionStart', collisionListener);
+        Matter.World.add(world, ball);
 
         setTimeout(() => {
-            // Check if the ball is still in the world before removing
             if (world.bodies.some(body => body.id === ball.id)) {
-                 World.remove(world, ball);
+                 Matter.World.remove(world, ball);
             }
-        }, 8000); // Failsafe removal
+        }, 8000);
     };
 
 
@@ -636,11 +663,13 @@ export default function CasinoPage() {
                 <CardContent className="flex flex-col items-center gap-4">
                     <div ref={plinkoContainerRef} className="w-full h-[400px] relative">
                          <div className="absolute bottom-0 left-0 right-0 flex justify-around">
-                            {PLINKO_MULTIPLIERS.map((mult, i) => (
-                                <div key={i} className={cn("w-full text-center text-xs sm:text-sm font-bold text-white py-1 rounded-sm bg-gradient-to-t", MULTIPLIER_COLORS[mult === 2 ? 10 : mult])}>
+                            {PLINKO_MULTIPLIERS.map((mult, i) => {
+                                const colorKey = mult === 2 ? 10 : mult;
+                                return (
+                                <div key={i} className="w-full text-center text-xs sm:text-sm font-bold text-white py-1.5 rounded-b-sm" style={{ backgroundColor: MULTIPLIER_COLORS[colorKey] }}>
                                     x{mult}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                     <div className="w-full px-4 space-y-4">
@@ -859,7 +888,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
-
-    
