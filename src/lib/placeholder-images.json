@@ -31,6 +31,30 @@
       "imageHint": "medieval shield"
     },
     {
+      "id": "store-item-gem",
+      "description": "A single, valuable gem.",
+      "imageUrl": "https://picsum.photos/seed/gem1/300/200",
+      "imageHint": "purple gem"
+    },
+    {
+      "id": "store-item-chips",
+      "description": "A stack of casino chips.",
+      "imageUrl": "https://picsum.photos/seed/chips1/300/200",
+      "imageHint": "poker chips"
+    },
+    {
+      "id": "store-item-epic-chest",
+      "description": "An ornate, glowing epic chest.",
+      "imageUrl": "https://picsum.photos/seed/epicchest/300/200",
+      "imageHint": "fantasy chest"
+    },
+    {
+      "id": "store-item-legendary-chest",
+      "description": "A radiant, legendary treasure chest.",
+      "imageUrl": "https://picsum.photos/seed/legendarychest/300/200",
+      "imageHint": "treasure chest"
+    },
+    {
       "id": "exercise-pushups",
       "description": "Image for pushups exercise",
       "imageUrl": "https://picsum.photos/seed/pushups/400/200",

@@ -20,6 +20,7 @@ export const tiendaItems = [
     price: 500,
     description: 'Aumenta los puntos de estudio en un 10% por 1 hora.',
     image: getImage('store-item-1'),
+    currency: 'goldLingots',
   },
   {
     id: 2,
@@ -27,6 +28,7 @@ export const tiendaItems = [
     price: 300,
     description: 'Permite completar un ejercicio extra al día.',
     image: getImage('store-item-2'),
+    currency: 'goldLingots',
   },
   {
     id: 3,
@@ -34,6 +36,7 @@ export const tiendaItems = [
     price: 1000,
     description: 'Desbloquea un logro exclusivo.',
     image: getImage('store-item-3'),
+    currency: 'goldLingots',
   },
   {
     id: 4,
@@ -41,6 +44,39 @@ export const tiendaItems = [
     price: 750,
     description: 'Protege tu racha de un día de inactividad.',
     image: getImage('store-item-4'),
+    currency: 'goldLingots',
+  },
+  {
+    id: 5,
+    name: '1 Gema',
+    price: 10,
+    description: 'La moneda premium para artículos exclusivos.',
+    image: getImage('store-item-gem'),
+    currency: 'goldLingots',
+  },
+  {
+    id: 6,
+    name: 'Pack de 10 Fichas',
+    price: 15,
+    description: 'Para probar tu suerte en el casino.',
+    image: getImage('store-item-chips'),
+    currency: 'goldLingots',
+  },
+  {
+    id: 7,
+    name: 'Cofre Épico',
+    price: 5,
+    description: 'Contiene recompensas raras y valiosas.',
+    image: getImage('store-item-epic-chest'),
+    currency: 'gems',
+  },
+  {
+    id: 8,
+    name: 'Cofre Legendario',
+    price: 7,
+    description: 'Garantiza un objeto de la más alta rareza.',
+    image: getImage('store-item-legendary-chest'),
+    currency: 'gems',
   },
 ];
 
