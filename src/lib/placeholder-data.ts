@@ -81,7 +81,7 @@ export const hvPassLevels: HvPassLevel[] = Array.from({ length: 100 }, (_, i) =>
     } else if (level % 5 === 0) {
         freeReward = { type: 'casinoChips', quantity: 5 };
     } else {
-        freeReward = { type: 'goldLingots', quantity: 10 };
+        freeReward = { type: 'goldLingots', quantity: Math.floor(Math.random() * 4) + 2 }; // Random between 2 and 5
     }
     
     // --- Premium Rewards (now on every level) ---
