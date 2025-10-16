@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    // This is needed to allow the Next.js dev server to work correctly in Cloud Workstations.
+    allowedDevOrigins: [
+      'https://*.cluster-r7kbxfo3fnev2vskbkhhphetq6.cloudworkstations.dev',
+    ],
+  },
   images: {
     remotePatterns: [
       {
