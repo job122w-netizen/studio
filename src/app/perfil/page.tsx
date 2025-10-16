@@ -176,15 +176,6 @@ export default function PerfilPage() {
     });
   }
 
-  const addTestChips = () => {
-      if (!userProfileRef) return;
-      updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(1000) });
-      toast({
-          title: "¡Fichas de prueba!",
-          description: "Has recibido 1000 fichas de casino para probar los juegos."
-      });
-  }
-
   if (isLoading || !userProfile) {
     return (
       <div className="space-y-8 animate-fade-in pb-16">
@@ -370,16 +361,6 @@ export default function PerfilPage() {
                     </li>
                     ))}
                 </ul>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Zona de Pruebas (Solo Desarrollo)</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={unlockAllBackgroundsForTesting}>Desbloquear Fondos</Button>
-                <Button variant="outline" size="sm" onClick={addTestChips}><Coins className="mr-2"/>Añadir 1000 Fichas</Button>
             </CardContent>
         </Card>
 
