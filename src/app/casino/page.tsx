@@ -180,16 +180,14 @@ export default function CasinoPage() {
         engine: Matter.Engine;
         render: Matter.Render;
         runner: Matter.Runner;
-        Matter: typeof Matter;
     } | null>(null);
     const [plinkoBetAmount, setPlinkoBetAmount] = useState([1]);
 
 
      useEffect(() => {
-        let isMounted = true;
         const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
-            if (!plinkoContainerRef.current || !isMounted || matterInstance.current) return;
+            if (!plinkoContainerRef.current || matterInstance.current) return;
 
             const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
@@ -204,7 +202,7 @@ export default function CasinoPage() {
                 },
             });
             const runner = Matter.Runner.create();
-            matterInstance.current = { engine, render, runner, Matter };
+            matterInstance.current = { engine, render, runner };
 
             const world = engine.world;
             const width = container.clientWidth;
@@ -277,23 +275,25 @@ export default function CasinoPage() {
                         if (!engine.world.bodies.includes(ballInPair)) {
                             continue;
                         }
-
-                        const multiplier = parseFloat(prizeInPair.label.split('-')[1]);
-                        const winnings = Math.floor(ballInPair.plugin.bet * multiplier);
                         
-                        if (winnings > 0) {
-                            updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
-                            toast({
-                                title: '¡Has Ganado!',
-                                description: `Recibes ${winnings} fichas. (x${multiplier})`,
-                            });
-                        } else {
+                        const bet = ballInPair.plugin.bet || 1;
+                        const multiplier = parseFloat(prizeInPair.label.split('-')[1]);
+                        const winnings = Math.floor(bet * multiplier);
+                        
+                        if (winnings !== 0) {
                              updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
-                            toast({
-                                title: '¡Mala suerte!',
-                                description: `Pierdes ${-winnings} fichas. (x${multiplier})`,
-                                variant: 'destructive',
-                            });
+                             if(winnings > 0) {
+                                 toast({
+                                     title: '¡Has Ganado!',
+                                     description: `Recibes ${winnings} fichas. (x${multiplier})`,
+                                 });
+                             } else {
+                                toast({
+                                     title: '¡Mala suerte!',
+                                     description: `Pierdes ${-winnings} fichas. (x${multiplier})`,
+                                     variant: 'destructive',
+                                 });
+                             }
                         }
                         
                         Matter.World.remove(engine.world, ballInPair);
@@ -304,13 +304,12 @@ export default function CasinoPage() {
             Matter.Runner.run(runner, engine);
             Matter.Render.run(render);
         };
-
+        
         initPlinko();
     
         return () => {
-             isMounted = false;
              if (matterInstance.current) {
-                const { render, runner, engine, Matter } = matterInstance.current;
+                const { render, runner, engine } = matterInstance.current;
                 Matter.Render.stop(render);
                 Matter.Runner.stop(runner);
                 Matter.World.clear(engine.world, false);
@@ -331,7 +330,10 @@ export default function CasinoPage() {
 
         updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(-currentBet) });
 
-        const { Matter, engine } = matterInstance.current;
+        const { engine } = matterInstance.current;
+        const Matter = (window as any).Matter;
+        if (!Matter) return;
+
         const world = engine.world;
         const container = plinkoContainerRef.current;
         if (!container) return;
@@ -846,7 +848,7 @@ export default function CasinoPage() {
                 </CardFooter>
             </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+            <Card className="shadow-lg hover-shadow-xl transition-shadow">
                 <CardHeader>
                     <CardTitle>Lanzamiento de Dados</CardTitle>
                     <CardDescription>Apuesta 1 ficha de casino y gana el doble si sacas pares.</CardDescription>
@@ -883,5 +885,7 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
 
     
