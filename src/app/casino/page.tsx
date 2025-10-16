@@ -186,19 +186,19 @@ export default function CasinoPage() {
 
 
     useEffect(() => {
-        // Only run on client
         if (typeof window === 'undefined') return;
 
         let isMounted = true;
-
+        
         const initPlinko = async () => {
             const Matter = (await import('matter-js')).default;
             matterJsRef.current = Matter;
 
-            if (!plinkoContainerRef.current || !isMounted) return;
-
+            if (!plinkoContainerRef.current || !isMounted || matterInstance.current) return;
+            
             const container = plinkoContainerRef.current;
             const engine = Matter.Engine.create({ gravity: { x: 0, y: 1 } });
+            
             const render = Matter.Render.create({
                 element: container,
                 engine: engine,
@@ -216,14 +216,12 @@ export default function CasinoPage() {
             const width = container.clientWidth;
             const height = 400;
 
-            // Add side walls to prevent balls from getting stuck
             Matter.World.add(world, [
                 Matter.Bodies.rectangle(width / 2, height + 10, width, 20, { isStatic: true, render: { visible: false } }),
                 Matter.Bodies.rectangle(-10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
                 Matter.Bodies.rectangle(width + 10, height / 2, 20, height, { isStatic: true, render: { visible: false } }),
             ]);
 
-            // Create pegs
             const pegRadius = 5;
             const rows = 8;
             const cols = 10;
@@ -249,7 +247,6 @@ export default function CasinoPage() {
             const prizeCount = PLINKO_MULTIPLIERS.length;
             const prizeSlotWidth = width / prizeCount;
 
-            // Create prize slots
             for (let i = 0; i < prizeCount; i++) {
                 const multiplier = PLINKO_MULTIPLIERS[i];
                 const colorKey = multiplier;
@@ -270,7 +267,6 @@ export default function CasinoPage() {
                 Matter.World.add(world, prizeSlot);
             }
             
-            // Create visible dividers between prize slots
             for (let i = 1; i < prizeCount; i++) {
                 Matter.World.add(world, Matter.Bodies.rectangle(i * prizeSlotWidth, height - 30, 4, 60, { isStatic: true, render: { fillStyle: 'hsl(var(--border))' } }));
             }
@@ -286,7 +282,7 @@ export default function CasinoPage() {
 
                     if(ballInPair && prizeInPair){
                         if (!engine.world.bodies.includes(ballInPair)) {
-                            continue; // Ball already processed
+                            continue;
                         }
                         
                         const bet = ballInPair.plugin.bet || 1;
@@ -903,3 +899,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
