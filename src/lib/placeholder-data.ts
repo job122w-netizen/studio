@@ -53,37 +53,39 @@ export type HvPassReward = {
 export type HvPassLevel = {
     level: number;
     freeReward: HvPassReward;
-    premiumReward?: HvPassReward;
+    premiumReward: HvPassReward;
 };
 
-// Generate 100 levels for the pass
+// --- New Reward Generation Logic ---
+
+const generateRandomGemLevels = (): Set<number> => {
+    const gemLevels = new Set<number>();
+    while (gemLevels.size < 20) {
+        const randomLevel = Math.floor(Math.random() * 100) + 1;
+        gemLevels.add(randomLevel);
+    }
+    return gemLevels;
+};
+
+const gemLevels = generateRandomGemLevels();
+
 export const hvPassLevels: HvPassLevel[] = Array.from({ length: 100 }, (_, i) => {
     const level = i + 1;
+
+    // --- Free Rewards ---
     let freeReward: HvPassReward;
-
-    // Logic for more varied free rewards
-    if (level % 20 === 0) {
-        freeReward = { type: 'gem', quantity: 1 }; // Special gem every 20 levels
+    if (gemLevels.has(level)) {
+        freeReward = { type: 'gem', quantity: 1 };
     } else if (level % 10 === 0) {
-        freeReward = { type: 'chest', quantity: 1 }; // Chest every 10 levels (but not 20, 40, etc.)
+        freeReward = { type: 'chest', quantity: 1 };
     } else if (level % 5 === 0) {
-        freeReward = { type: 'casinoChips', quantity: 5 }; // Casino chips every 5 levels
+        freeReward = { type: 'casinoChips', quantity: 5 };
     } else {
-        freeReward = { type: 'goldLingots', quantity: 10 }; // Gold lingots for other levels
+        freeReward = { type: 'goldLingots', quantity: 10 };
     }
     
-    let premiumReward: HvPassReward | undefined;
-
-    // Premium rewards logic
-    if (level % 10 === 0 && level !== 100) {
-        premiumReward = { type: 'chest', quantity: 1 };
-    } else if (level % 5 === 0) {
-        premiumReward = { type: 'casinoChips', quantity: 10 };
-    } else if (level % 3 === 0) {
-        premiumReward = { type: 'goldLingots', quantity: 50 };
-    }
-    
-    // Specific premium rewards for profile backgrounds, overriding previous logic
+    // --- Premium Rewards (now on every level) ---
+    let premiumReward: HvPassReward;
     const backgroundLevels: { [key: number]: string } = {
         20: 'pixel-art-1', 30: 'pixel-art-2', 40: 'pixel-art-3',
         50: 'pixel-art-4', 60: 'pixel-art-5', 70: 'pixel-art-6',
@@ -93,6 +95,18 @@ export const hvPassLevels: HvPassLevel[] = Array.from({ length: 100 }, (_, i) =>
 
     if (backgroundLevels[level]) {
         premiumReward = { type: 'profileBackground', itemId: backgroundLevels[level] };
+    } else if (level % 10 === 0) {
+        // Special chest every 10 levels
+        premiumReward = { type: 'chest', quantity: 1 };
+    } else if (level % 5 === 0) {
+        // More casino chips every 5 levels
+        premiumReward = { type: 'casinoChips', quantity: 15 };
+    } else if (level % 2 === 0) {
+        // Generous gold lingots on even levels
+        premiumReward = { type: 'goldLingots', quantity: 50 };
+    } else {
+        // Casino chips on odd levels
+        premiumReward = { type: 'casinoChips', quantity: 5 };
     }
 
     return {
