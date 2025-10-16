@@ -11,87 +11,30 @@ import { collection, query, orderBy, limit } from "firebase/firestore";
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type UserProfile = {
+type Ranking = {
   id: string;
   username: string;
   experiencePoints: number;
   imageUrl?: string;
-  isBot?: boolean;
+  userId: string;
 };
-
-const botNames = [
-  "Sombra", "Relámpago", "Titán", "Espectro", "Nova", "Fénix", 
-  "Oráculo", "Vortex", "Lince", "Cometa", "Zenith", "Abismo"
-];
-
-// Function to generate bots based on the user's score
-const generateBots = (userScore: number): UserProfile[] => {
-    const bots: UserProfile[] = [];
-    const botCount = 12;
-
-    for (let i = 0; i < botCount; i++) {
-        const scoreFluctuation = (Math.random() - 0.5) * userScore * 0.8; // Bots are +/- 40% of user score
-        const botScore = Math.max(0, Math.floor(userScore + scoreFluctuation + (i * 150)));
-        const botId = `bot-${i}`;
-        bots.push({
-            id: botId,
-            username: botNames[i % botNames.length],
-            experiencePoints: botScore,
-            imageUrl: `https://i.pravatar.cc/40?u=bot${i}`,
-            isBot: true,
-        });
-    }
-    return bots;
-};
-
 
 export default function RankingPage() {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
 
-  const usersCollectionRef = useMemoFirebase(() => {
+  const rankingsCollectionRef = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'users');
+    return collection(firestore, 'rankings');
   }, [firestore]);
 
-  const usersQuery = useMemoFirebase(() => {
-    if (!usersCollectionRef) return null;
-    return query(usersCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
-  }, [usersCollectionRef]);
+  const rankingsQuery = useMemoFirebase(() => {
+    if (!rankingsCollectionRef) return null;
+    return query(rankingsCollectionRef, orderBy("experiencePoints", "desc"), limit(100));
+  }, [rankingsCollectionRef]);
 
-  const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
+  const { data: rankedList, isLoading } = useCollection<Ranking>(rankingsQuery);
   
-  const currentUserData = useMemo(() => {
-      return users?.find(u => u.id === currentUser?.uid);
-  }, [users, currentUser]);
-  
-  const rankedList = useMemo(() => {
-    if (!users) return [];
-
-    const currentUserScore = currentUserData?.experiencePoints ?? 0;
-    const bots = generateBots(currentUserScore);
-    
-    // Filter out the current user if they exist to avoid duplication
-    const otherPlayers = users.filter(r => r.id !== currentUser?.uid);
-    
-    // Create a Set of real player IDs for quick lookup
-    const realPlayerIds = new Set(users.map(p => p.id));
-    
-    // Filter out bots that might have scores too close to real players to avoid weird clustering
-    const filteredBots = bots.filter(bot => 
-      !users.some(player => Math.abs(player.experiencePoints - bot.experiencePoints) < 100)
-    );
-
-    const combinedList = [...users, ...filteredBots];
-
-    return combinedList
-        .sort((a, b) => b.experiencePoints - a.experiencePoints)
-        .slice(0, 100) // Ensure the final list is not excessively long
-        .map((player, index) => ({ ...player, rank: index + 1 }));
-
-  }, [users, currentUserData, currentUser?.uid]);
-
-
   return (
     <div className="space-y-8 animate-fade-in">
       <section className="text-center">
@@ -128,17 +71,17 @@ export default function RankingPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {rankedList.map((player) => (
-                    <TableRow key={player.id} className={player.id === currentUser?.uid ? 'bg-primary/10' : ''}>
+                {rankedList && rankedList.map((player, index) => (
+                    <TableRow key={player.id} className={player.userId === currentUser?.uid ? 'bg-primary/10' : ''}>
                     <TableCell className="font-bold text-lg text-center">
-                        {player.rank && player.rank <= 3 ? (
+                        {index + 1 <= 3 ? (
                         <span className={
-                            player.rank === 1 ? "text-yellow-500" :
-                            player.rank === 2 ? "text-gray-400" :
+                            index + 1 === 1 ? "text-yellow-500" :
+                            index + 1 === 2 ? "text-gray-400" :
                             "text-orange-400"
-                        }>{player.rank}</span>
+                        }>{index + 1}</span>
                         ) : (
-                        player.rank
+                        index + 1
                         )}
                     </TableCell>
                     <TableCell>
@@ -148,7 +91,7 @@ export default function RankingPage() {
                             <AvatarFallback>{player.username?.charAt(0) ?? '?'}</AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{player.username}</span>
-                        {player.id === currentUser?.uid && <Badge variant="default">Tú</Badge>}
+                        {player.userId === currentUser?.uid && <Badge variant="default">Tú</Badge>}
                         </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">{player.experiencePoints.toLocaleString('es-ES')}</TableCell>

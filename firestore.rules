@@ -61,7 +61,7 @@ service cloud.firestore {
       }
 
       function isCreatingOwner(userId) {
-        return request.auth.uid == userId;
+          return request.auth.uid == userId;
       }
 
       function isExistingOwner(userId) {
@@ -94,7 +94,7 @@ service cloud.firestore {
       }
 
       function isCreatingOwner(userId) {
-        return request.auth.uid == userId;
+          return request.auth.uid == userId;
       }
 
        function isExistingOwner(userId) {
@@ -114,7 +114,7 @@ service cloud.firestore {
      * @allow (create) - A user can create a weekly routine for themselves.
      * @allow (get, list, update, delete) - A user can get, list, update, or delete their own weekly routine.
      * @deny (create) - A user cannot create a weekly routine for another user.
-     * @deny (get, list, update, delete) - A user cannot get, list, update, or delete another user's weekly routine.
+     * @deny (get, list, update, or delete) - A user cannot get, list, update, or delete another user's weekly routine.
      * @principle Enforces document ownership for weekly routines.
      */
     match /users/{userId}/weeklyRoutine/{dayId} {
@@ -126,8 +126,8 @@ service cloud.firestore {
         return request.auth.uid == userId;
       }
 
-      function isCreatingOwner(userId) {
-        return request.auth.uid == userId;
+       function isCreatingOwner(userId) {
+          return request.auth.uid == userId;
       }
 
        function isExistingOwner(userId) {
@@ -160,7 +160,7 @@ service cloud.firestore {
       }
 
       function isCreatingOwner(userId) {
-        return request.auth.uid == userId;
+          return request.auth.uid == userId;
       }
 
        function isExistingOwner(userId) {
@@ -195,7 +195,7 @@ service cloud.firestore {
      * @allow (create) - A user can create a record of owning an item.
      * @allow (get, list, update, delete) - A user can get, list, update, or delete their own owned items.
      * @deny (create) - A user cannot create an item ownership record for another user.
-     * @deny (get, list, update, delete) - A user cannot get, list, update, or delete another user's owned items.
+     * @deny (get, list, update, or delete) - A user cannot get, list, update, or delete another user's owned items.
      * @principle Enforces document ownership for user items.
      */
     match /users/{userId}/userItems/{userItemId} {
@@ -208,7 +208,7 @@ service cloud.firestore {
       }
 
       function isCreatingOwner(userId) {
-        return request.auth.uid == userId;
+          return request.auth.uid == userId;
       }
 
        function isExistingOwner(userId) {
@@ -228,7 +228,7 @@ service cloud.firestore {
      * @allow (create) - A user can create their own HV Pass subscription record.
      * @allow (get, list, update, delete) - A user can get, list, update, or delete their own HV Pass subscription.
      * @deny (create) - A user cannot create an HV Pass subscription for another user.
-     * @deny (get, list, update, delete) - A user cannot get, list, update, or delete another user's HV Pass subscription.
+     * @deny (get, list, update, or delete) - A user cannot get, list, update, or delete another user's HV Pass subscription.
      * @principle Enforces document ownership for HV Pass subscriptions.
      */
     match /users/{userId}/hvPass {
@@ -241,7 +241,7 @@ service cloud.firestore {
       }
 
       function isCreatingOwner(userId) {
-        return request.auth.uid == userId;
+          return request.auth.uid == userId;
       }
 
        function isExistingOwner(userId) {
@@ -261,7 +261,7 @@ service cloud.firestore {
      * @allow (create) - A user can create a casino game record for themselves.
      * @allow (get, list, update, delete) - A user can get, list, update, or delete their own casino game records.
      * @deny (create) - A user cannot create a casino game record for another user.
-     * @deny (get, list, update, delete) - A user cannot get, list, update, or delete another user's casino game records.
+     * @deny (get, list, update, or delete) - A user cannot get, list, update, or delete another user's casino game records.
      * @principle Enforces document ownership for casino game records.
      */
     match /users/{userId}/casinoGames/{casinoGameId} {
@@ -274,7 +274,7 @@ service cloud.firestore {
       }
 
       function isCreatingOwner(userId) {
-        return request.auth.uid == userId;
+          return request.auth.uid == userId;
       }
 
        function isExistingOwner(userId) {
