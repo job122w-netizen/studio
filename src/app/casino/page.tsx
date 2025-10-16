@@ -3,9 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, increment } from "firebase/firestore";
+import { doc, increment, getDoc } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -111,7 +111,7 @@ const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => voi
                 "w-full aspect-square flex items-center justify-center rounded-md transition-all duration-200",
                 cell.state === 'hidden' ? "bg-muted hover:bg-muted/80" : "bg-card",
                 cell.content === 'bomb' && cell.state === 'revealed' && "bg-destructive/20",
-                cell.content.startsWith('prize') && cell.state === 'revealed' && "bg-primary/20",
+                cell.content !== 'bomb' && cell.state === 'revealed' && "bg-primary/20",
             )}
         >
             {renderContent()}
@@ -161,11 +161,10 @@ export default function CasinoPage() {
     const [foundPrizes, setFoundPrizes] = useState<MineCellContent[]>([]);
     const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
     
-    // Fallback to 0 if casinoChips is NaN, null, or undefined
     const casinoChips = userProfile?.casinoChips ?? 0;
     const isChipCountInvalid = isNaN(casinoChips);
 
-    const rollDice = () => {
+    const rollDice = async () => {
         if (!userProfileRef || (casinoChips < 1 || isChipCountInvalid)) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
@@ -187,7 +186,15 @@ export default function CasinoPage() {
                 setRolling(false);
                 if (newDice1 === newDice2) {
                     setDiceResultMessage('¡Ganaste 2 fichas!');
-                    updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(2) });
+                     // Data sanitization: check current value before incrementing
+                     getDoc(userProfileRef).then(docSnap => {
+                        const currentChips = docSnap.data()?.casinoChips;
+                        if (typeof currentChips !== 'number' || isNaN(currentChips)) {
+                            updateDocumentNonBlocking(userProfileRef, { casinoChips: 2 });
+                        } else {
+                            updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(2) });
+                        }
+                    });
                 } else {
                     setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
                 }
@@ -245,10 +252,12 @@ export default function CasinoPage() {
         setTimeout(() => stopReel(2), 3000);
     };
 
-    const checkWin = (finalReels: typeof slotSymbols) => {
+    const checkWin = async (finalReels: typeof slotSymbols) => {
         if (!userProfileRef) return;
     
         const [reel1, reel2, reel3] = finalReels;
+        const currentProfile = (await getDoc(userProfileRef)).data();
+        if (!currentProfile) return;
     
         if (reel1.id === reel2.id && reel2.id === reel3.id) {
             const winningSymbol = reel1.id;
@@ -258,7 +267,7 @@ export default function CasinoPage() {
     
             switch (winningSymbol) {
                 case 'star':
-                    if (userProfile?.hasPremiumPass) {
+                    if (currentProfile.hasPremiumPass) {
                         updates = { gems: increment(20) };
                         toastTitle = "¡PREMIO MAYOR, OTRA VEZ!";
                         toastDescription = "Ya tienes el Pase Premium, ¡así que recibes 20 gemas!";
@@ -277,7 +286,11 @@ export default function CasinoPage() {
                     toastDescription = "¡Has ganado 80 Lingotes de Oro!";
                     break;
                 case 'ticket':
-                    updates = { casinoChips: increment(100) };
+                     if (typeof currentProfile.casinoChips !== 'number' || isNaN(currentProfile.casinoChips)) {
+                        updates = { casinoChips: 100 };
+                     } else {
+                        updates = { casinoChips: increment(100) };
+                     }
                     toastDescription = "¡Has ganado 100 Fichas de Casino!";
                     break;
                 default:
@@ -292,7 +305,11 @@ export default function CasinoPage() {
         }
     
         if (reel1.id === reel2.id || reel1.id === reel3.id || reel2.id === reel3.id) {
-            updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(2) });
+             if (typeof currentProfile.casinoChips !== 'number' || isNaN(currentProfile.casinoChips)) {
+                 updateDocumentNonBlocking(userProfileRef, { casinoChips: 2 });
+             } else {
+                 updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(2) });
+             }
             setSlotResultMessage("¡Casi! Recuperas tus 2 fichas.");
             return;
         }
@@ -335,7 +352,7 @@ export default function CasinoPage() {
         }, 1500);
     };
 
-    const handleCupPick = (pickedCup: CupState) => {
+    const handleCupPick = async (pickedCup: CupState) => {
         if (shellGamePhase !== 'picking' || !userProfileRef) return;
 
         setShellGamePhase('result');
@@ -344,7 +361,13 @@ export default function CasinoPage() {
         if (pickedCup.hasPrize) {
             const winnings = shellBetAmount[0] * 2;
             setShellResultMessage(`¡Correcto! ¡Has ganado ${winnings} fichas!`);
-            updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
+             const docSnap = await getDoc(userProfileRef);
+             const currentChips = docSnap.data()?.casinoChips;
+             if (typeof currentChips !== 'number' || isNaN(currentChips)) {
+                 updateDocumentNonBlocking(userProfileRef, { casinoChips: winnings });
+             } else {
+                 updateDocumentNonBlocking(userProfileRef, { casinoChips: increment(winnings) });
+             }
         } else {
             setShellResultMessage('¡Incorrecto! Mejor suerte la próxima vez.');
         }
@@ -417,25 +440,35 @@ export default function CasinoPage() {
         let description = 'Has cobrado tus premios: ';
         const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
 
-        foundPrizes.forEach(prize => {
-            if (prize === 'gem') {
-                updates.gems = increment((updates.gems?.value || 0) + multiplier);
-                description += `${multiplier} gemas, `;
-            } else if (prize === 'goldLingot') {
-                updates.goldLingots = increment((updates.goldLingots?.value || 0) + multiplier);
-                description += `${multiplier} lingotes, `;
-            } else if (prize === 'casinoChip') {
-                updates.casinoChips = increment((updates.casinoChips?.value || 0) + multiplier);
-                description += `${multiplier} fichas, `;
-            } else if (prize === 'premiumPass') {
-                updates.hasPremiumPass = true;
-                description += `¡EL PASE PREMIUM!, `;
-            }
-        });
+        getDoc(userProfileRef).then(docSnap => {
+            const currentChips = docSnap.data()?.casinoChips;
+            const currentChipsAreInvalid = typeof currentChips !== 'number' || isNaN(currentChips);
+            let chipUpdateValue = currentChipsAreInvalid ? 0 : currentChips;
 
-        updateDocumentNonBlocking(userProfileRef, updates);
-        toast({ title: `¡Premios cobrados! (x${multiplier})`, description: description.slice(0, -2) });
-        setMinePhase('betting');
+            foundPrizes.forEach(prize => {
+                if (prize === 'gem') {
+                    updates.gems = increment((updates.gems?.value || 0) + multiplier);
+                    description += `${multiplier} gemas, `;
+                } else if (prize === 'goldLingot') {
+                    updates.goldLingots = increment((updates.goldLingots?.value || 0) + multiplier);
+                    description += `${multiplier} lingotes, `;
+                } else if (prize === 'casinoChip') {
+                    chipUpdateValue += multiplier;
+                    description += `${multiplier} fichas, `;
+                } else if (prize === 'premiumPass') {
+                    updates.hasPremiumPass = true;
+                    description += `¡EL PASE PREMIUM!, `;
+                }
+            });
+
+            if(chipUpdateValue !== (currentChipsAreInvalid ? 0 : currentChips)) {
+                updates.casinoChips = chipUpdateValue;
+            }
+
+            updateDocumentNonBlocking(userProfileRef, updates);
+            toast({ title: `¡Premios cobrados! (x${multiplier})`, description: description.slice(0, -2) });
+            setMinePhase('betting');
+        });
     };
 
     const Dice1Icon = diceIcons[dice1];
@@ -454,7 +487,7 @@ export default function CasinoPage() {
                  {isLoading ? (
                     <Skeleton className="h-8 w-48 mx-auto" />
                  ) : (
-                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{casinoChips.toLocaleString('es-ES')}</span> Fichas</p>
+                    <p className="text-lg font-semibold text-foreground">Tu saldo: <span className="text-primary">{(casinoChips ?? 0).toLocaleString('es-ES')}</span> Fichas</p>
                  )}
             </div>
 
@@ -498,7 +531,7 @@ export default function CasinoPage() {
                 </CardContent>
                 <CardFooter>
                     {minePhase === 'betting' && (
-                        <Button size="lg" className="w-full" onClick={startMineSweeper} disabled={isLoading || casinoChips < 5 || isChipCountInvalid}>
+                        <Button size="lg" className="w-full" onClick={startMineSweeper} disabled={isLoading || (casinoChips ?? 0) < 5 || isChipCountInvalid}>
                             Jugar (5 Fichas)
                         </Button>
                     )}
@@ -537,7 +570,7 @@ export default function CasinoPage() {
                 </CardContent>
                 <CardFooter>
                     {shellGamePhase === 'betting' && (
-                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || casinoChips < shellBetAmount[0] || isChipCountInvalid}>
+                        <Button size="lg" className="w-full" onClick={startShellGame} disabled={isLoading || (casinoChips ?? 0) < (shellBetAmount[0] ?? 1) || isChipCountInvalid}>
                             Jugar (1 Ficha)
                         </Button>
                     )}
@@ -593,7 +626,7 @@ export default function CasinoPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button size="lg" className="w-full" onClick={spinSlots} disabled={spinning || isLoading || casinoChips < 2 || isChipCountInvalid}>
+                    <Button size="lg" className="w-full" onClick={spinSlots} disabled={spinning || isLoading || (casinoChips ?? 0) < 2 || isChipCountInvalid}>
                         {spinning ? 'Girando...' : 'Girar (2 Fichas)'}
                     </Button>
                 </CardFooter>
@@ -612,7 +645,7 @@ export default function CasinoPage() {
                      {diceResultMessage && <p className="text-foreground font-semibold">{diceResultMessage}</p>}
                 </CardContent>
                 <CardFooter>
-                    <Button size="lg" className="w-full" onClick={rollDice} disabled={rolling || isLoading || casinoChips < 1 || isChipCountInvalid}>
+                    <Button size="lg" className="w-full" onClick={rollDice} disabled={rolling || isLoading || (casinoChips ?? 0) < 1 || isChipCountInvalid}>
                         {rolling ? 'Lanzando...' : 'Lanzar Dados (1 Ficha)'}
                     </Button>
                 </CardFooter>
