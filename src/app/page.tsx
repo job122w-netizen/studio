@@ -167,9 +167,8 @@ export default function Home() {
         <p className="text-muted-foreground mt-2">"La disciplina es el puente entre las metas y los logros."</p>
       </section>
       
-      <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden bg-card/50">
+      <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] bg-background/40">
-            
             <div 
               className={cn(
                   "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
@@ -196,18 +195,19 @@ export default function Home() {
                           className="w-24 text-center text-xl font-bold"
                         />
                     </div>
-                    <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                        <Play className="mr-2 h-5 w-5"/>
-                        Iniciar Sesión
-                    </Button>
                 </div>
               )}
             </div>
             
-            {isStudying && (
+            {isStudying ? (
                 <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
                     <Square className="mr-2 h-5 w-5"/>
                     Detener
+                </Button>
+            ) : (
+                 <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                    <Play className="mr-2 h-5 w-5"/>
+                    Iniciar Sesión
                 </Button>
             )}
         </CardContent>
