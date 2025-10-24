@@ -14,8 +14,6 @@ import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
-const STUDY_DURATION = 25 * 60; // 25 minutes
-
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -41,11 +39,12 @@ export default function Home() {
 
   const { data: recentActivities } = useCollection(recentStudySessionsQuery);
 
-
   const [isStudying, setIsStudying] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(STUDY_DURATION);
-  const [studySubject, setStudySubject] = useState("");
+  const [studyDurationMinutes, setStudyDurationMinutes] = useState(25);
+  const [remainingTime, setRemainingTime] = useState(25 * 60);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [totalSessionDuration, setTotalSessionDuration] = useState(25 * 60);
+
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -63,13 +62,15 @@ export default function Home() {
       }, 1000);
     } else if (remainingTime <= 0 && isStudying) {
       handleStopStudy(true); // Automatically stop and save when timer finishes
+      
+      const xpReward = Math.floor(totalSessionDuration / 60) * 50;
       toast({
         title: "¡Sesión de estudio completada!",
-        description: `¡Has ganado 1250 Puntos, 1 Lingote y 1 Ficha por completar 25 minutos!`,
+        description: `¡Has ganado ${xpReward} Puntos, 1 Lingote y 1 Ficha!`,
       });
       if (userProfileRef) {
           updateDocumentNonBlocking(userProfileRef, {
-            experiencePoints: increment(1250),
+            experiencePoints: increment(xpReward),
             goldLingots: increment(1),
           });
           updateCasinoChips(userProfileRef, 1);
@@ -81,26 +82,28 @@ export default function Home() {
         clearInterval(timerRef.current);
       }
     };
-  }, [isStudying, remainingTime, userProfileRef, toast]);
+  }, [isStudying, remainingTime, userProfileRef, toast, totalSessionDuration]);
 
   const handleStartStudy = () => {
-    if (!studySubject) {
+    if (studyDurationMinutes <= 0) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Por favor, introduce un tema de estudio.",
+        description: "La duración debe ser mayor a 0 minutos.",
       });
       return;
     }
+    const durationInSeconds = studyDurationMinutes * 60;
+    setTotalSessionDuration(durationInSeconds);
+    setRemainingTime(durationInSeconds);
     setIsStudying(true);
     setSessionStartTime(new Date());
-    setRemainingTime(STUDY_DURATION);
   };
   
   const handleStopStudy = (isCompleted = false) => {
     setIsStudying(false);
     
-    const elapsedTime = STUDY_DURATION - remainingTime;
+    const elapsedTime = totalSessionDuration - remainingTime;
     
     if (user && studySessionsRef && sessionStartTime && (elapsedTime > 10 || isCompleted)) {
       const endTime = new Date();
@@ -108,21 +111,21 @@ export default function Home() {
 
       addDocumentNonBlocking(studySessionsRef, {
           userId: user.uid,
-          subject: studySubject,
+          subject: 'Estudio General',
           startTime: sessionStartTime,
           endTime: endTime,
           durationMinutes: durationMinutes
       }).then(() => {
-          if (!isCompleted) { // Avoid double toast
+          if (!isCompleted) { 
             if (durationMinutes > 0) {
                 toast({
                    title: "Sesión guardada",
-                   description: `Has estudiado "${studySubject}" por ${durationMinutes} minutos.`,
+                   description: `Has estudiado por ${durationMinutes} minutos.`,
                });
            } else {
                 toast({
                    title: "Sesión guardada",
-                   description: `Has estudiado "${studySubject}" por menos de un minuto.`,
+                   description: `Has estudiado por menos de un minuto.`,
                });
            }
           }
@@ -137,8 +140,7 @@ export default function Home() {
         });
     }
     
-    setRemainingTime(STUDY_DURATION);
-    setStudySubject("");
+    setRemainingTime(studyDurationMinutes * 60);
     setSessionStartTime(null);
     if(timerRef.current) clearInterval(timerRef.current);
   };
@@ -161,14 +163,10 @@ export default function Home() {
   }
   
   const xpFromDuration = (minutes: number) => {
-     // Simplified XP calculation, as the main reward is for 25 mins now.
     return Math.floor(minutes / 5) * 50;
   }
 
   const isLoading = isUserLoading || isProfileLoading;
-  
-  const progress = isStudying ? (STUDY_DURATION - remainingTime) / STUDY_DURATION : 0;
-  const circleSize = 180 + (120 * progress); // Grows from 180px to 300px
 
   if (isLoading && !userProfile) { // Show loading only on initial load
     return (
@@ -194,43 +192,39 @@ export default function Home() {
             <span>Registrar Estudio</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 flex flex-col items-center justify-center gap-4 min-h-[350px] relative">
-          <div 
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all duration-1000 ease-in-out" 
-              style={{ 
-                  width: `${circleSize}px`, 
-                  height: `${circleSize}px`,
-                  boxShadow: `0 0 ${20 + progress * 60}px 0px hsl(var(--primary) / ${0.5 + progress * 0.4})`
-              }}
-          ></div>
-          
-          <div className="relative z-10 w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center p-4">
-            {isStudying ? (
-              <>
-                <p className="text-6xl font-bold font-mono text-primary-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
-                <p className="text-primary-foreground text-lg font-semibold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-md mt-2">{studySubject}</p>
-                <Button size="lg" className="w-3/4 mt-4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                    <Square className="mr-2 h-5 w-5"/>
-                    Detener y Guardar
-                </Button>
-              </>
-            ) : (
-              <div className="w-full space-y-4">
-                 <p className="text-primary-foreground font-semibold">¿Listo para una sesión de 25 minutos?</p>
-                <Input 
-                  placeholder="¿Qué vas a estudiar hoy?" 
-                  value={studySubject}
-                  onChange={(e) => setStudySubject(e.target.value)}
-                  disabled={isLoading}
-                  className="bg-white/80 text-center placeholder:text-muted-foreground"
-                />
-                <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || !studySubject}>
-                  <Play className="mr-2 h-5 w-5"/>
-                  Iniciar Sesión
-                </Button>
-              </div>
-            )}
-          </div>
+        <CardContent className="p-0 flex flex-col items-center justify-center gap-4 min-h-[350px] relative bg-muted/20">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 rounded-full shadow-glow blur-2xl"></div>
+
+            <div className="relative z-10 w-full max-w-sm flex flex-col items-center justify-center gap-6 text-center p-4">
+                {isStudying ? (
+                    <>
+                        <p className="text-7xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
+                        <Button size="lg" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                            <Square className="mr-2 h-5 w-5"/>
+                            Detener y Guardar
+                        </Button>
+                    </>
+                ) : (
+                    <div className="w-full space-y-4">
+                        <div className="flex flex-col items-center gap-2">
+                            <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
+                            <Input
+                              id="duration-input"
+                              type="number"
+                              placeholder="25"
+                              value={studyDurationMinutes}
+                              onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
+                              disabled={isLoading}
+                              className="w-24 text-center text-xl font-bold"
+                            />
+                        </div>
+                        <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                            <Play className="mr-2 h-5 w-5"/>
+                            Iniciar Sesión
+                        </Button>
+                    </div>
+                )}
+            </div>
         </CardContent>
       </Card>
 
