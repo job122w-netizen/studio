@@ -193,26 +193,10 @@ export default function Home() {
               width: `${sphereSize}px`,
             }}
           >
-            {(isStudying || sessionCompleted) && (
+            {(isStudying || sessionCompleted) ? (
                  <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
-            )}
-          </div>
-
-          {isStudying ? (
-              <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                  <Square className="mr-2 h-5 w-5"/>
-                  Detener
-              </Button>
-          ) : sessionCompleted ? (
-              <Button size="lg" className="w-3/4" onClick={() => {
-                  setSessionCompleted(false);
-                  setRemainingTime(studyDurationMinutes * 60);
-              }}>
-                  <Play className="mr-2 h-5 w-5"/>
-                  Estudiar de Nuevo
-              </Button>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
+            ) : (
+                <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
                   <p className="font-semibold text-lg">Minutos de Estudio</p>
                   <div className="flex gap-2">
                       <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
@@ -232,12 +216,28 @@ export default function Home() {
                         />
                     </div>
                   )}
+                </div>
+            )}
+          </div>
 
-                  <Button size="lg" className="w-full mt-4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                      <Play className="mr-2 h-5 w-5"/>
-                      Iniciar Sesión
-                  </Button>
-            </div>
+          {isStudying ? (
+              <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                  <Square className="mr-2 h-5 w-5"/>
+                  Detener
+              </Button>
+          ) : sessionCompleted ? (
+              <Button size="lg" className="w-3/4" onClick={() => {
+                  setSessionCompleted(false);
+                  setRemainingTime(studyDurationMinutes * 60);
+              }}>
+                  <Play className="mr-2 h-5 w-5"/>
+                  Estudiar de Nuevo
+              </Button>
+          ) : (
+            <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                <Play className="mr-2 h-5 w-5"/>
+                Iniciar Sesión
+            </Button>
           )}
 
         </CardContent>
