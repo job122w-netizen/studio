@@ -181,7 +181,7 @@ export default function Home() {
       </section>
       
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
-        <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] bg-background/40">
+        <CardContent className="p-8 flex flex-col items-center justify-center gap-10 min-h-[400px] bg-background/40">
           
            <div 
                 className={cn(
@@ -217,7 +217,7 @@ export default function Home() {
               )}
             </div>
           ) : (
-             <div className="flex flex-col items-center justify-center gap-6 text-center text-foreground">
+             <div className="flex flex-col items-center justify-center gap-8 text-center text-foreground">
                   <p className="font-semibold text-lg">Minutos de Estudio</p>
                   <div className="flex gap-2">
                       <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
@@ -249,5 +249,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
