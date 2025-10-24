@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, ListChecks, BookOpen, Play, Square } from "lucide-react";
-import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, addDoc, query, orderBy, limit, serverTimestamp, increment } from "firebase/firestore";
+import { Clock, Play, Square } from "lucide-react";
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, collection, serverTimestamp, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
-import { cn } from "@/lib/utils";
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -31,13 +30,6 @@ export default function Home() {
     if (!user) return null;
     return collection(firestore, `users/${user.uid}/studySessions`);
   }, [firestore, user]);
-
-  const recentStudySessionsQuery = useMemoFirebase(() => {
-    if (!studySessionsRef) return null;
-    return query(studySessionsRef, orderBy("endTime", "desc"), limit(5));
-  }, [studySessionsRef]);
-
-  const { data: recentActivities } = useCollection(recentStudySessionsQuery);
 
   const [isStudying, setIsStudying] = useState(false);
   const [studyDurationMinutes, setStudyDurationMinutes] = useState(25);
@@ -152,20 +144,6 @@ export default function Home() {
     return `${m}:${s}`;
   };
 
-  const formatDuration = (minutes: number) => {
-    if (minutes < 1) return "Menos de 1 min";
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-        return `${hours}h ${mins}m`;
-    }
-    return `${mins} min`;
-  }
-  
-  const xpFromDuration = (minutes: number) => {
-    return Math.floor(minutes / 5) * 50;
-  }
-
   const isLoading = isUserLoading || isProfileLoading;
 
   if (isLoading && !userProfile) { // Show loading only on initial load
@@ -225,37 +203,6 @@ export default function Home() {
                     </div>
                 )}
             </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ListChecks className="h-5 w-5 text-primary" />
-            <span>Actividad Reciente</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!recentActivities || recentActivities.length === 0 ? (
-            <p className="text-center text-muted-foreground">No hay actividad reciente. ¡Empieza a estudiar!</p>
-          ) : (
-            <ul className="space-y-4">
-              {recentActivities.map((activity) => (
-                <li key={activity.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-muted p-2 rounded-full">
-                       <BookOpen className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{activity.subject}</p>
-                      <p className="text-sm text-muted-foreground">{formatDuration(activity.durationMinutes)}</p>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium text-primary">+{xpFromDuration(activity.durationMinutes).toLocaleString('es-ES')} Puntos</div>
-                </li>
-              ))}
-            </ul>
-          )}
         </CardContent>
       </Card>
     </div>
