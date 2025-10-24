@@ -6,7 +6,7 @@ import { Play, Square, Plus } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, collection, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
@@ -183,13 +183,20 @@ export default function Home() {
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] bg-background/40">
           
-          {!(isStudying || sessionCompleted) ? (
-             <>
-              <div 
-                className="relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear"
-                style={{ height: `${maxSize}px`, width: `${maxSize}px` }}
+           <div 
+                className={cn(
+                    "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
+                    (isStudying || sessionCompleted) && "animate-pulse-glow",
+                    !isStudying && !sessionCompleted && "shadow-subtle-glow"
+                )}
+                style={{
+                  height: `${sphereSize}px`,
+                  width: `${sphereSize}px`,
+                }}
               />
-              <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground -mt-4">
+
+          {!(isStudying || sessionCompleted) ? (
+             <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground -mt-4">
                   <p className="font-semibold text-lg">Minutos de Estudio</p>
                   <div className="flex gap-2">
                       <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
@@ -214,20 +221,9 @@ export default function Home() {
                       Iniciar Sesión
                   </Button>
               </div>
-            </>
           ) : (
-            <>
-              <div 
-                className={cn(
-                    "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
-                    (isStudying || sessionCompleted) && "animate-pulse-glow shadow-glow"
-                )}
-                style={{
-                  height: `${sphereSize}px`,
-                  width: `${sphereSize}px`,
-                }}
-              />
-              <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10 -mt-4">{formatTime(remainingTime)}</p>
+            <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground -mt-4">
+              <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
               
               {isStudying && (
                 <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
@@ -245,7 +241,7 @@ export default function Home() {
                     Estudiar de Nuevo
                 </Button>
               )}
-            </>
+            </div>
           )}
 
         </CardContent>
