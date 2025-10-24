@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Square, Plus } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, collection, increment, serverTimestamp } from "firebase/firestore";
+import { doc, collection, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
@@ -183,13 +183,12 @@ export default function Home() {
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] bg-background/40">
           
-          {!(isStudying || sessionCompleted) && (
+          {!(isStudying || sessionCompleted) ? (
              <>
               <div 
                 className="relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear"
                 style={{ height: `${maxSize}px`, width: `${maxSize}px` }}
-              >
-              </div>
+              />
               <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground -mt-4">
                   <p className="font-semibold text-lg">Minutos de Estudio</p>
                   <div className="flex gap-2">
@@ -216,9 +215,7 @@ export default function Home() {
                   </Button>
               </div>
             </>
-          )}
-
-          {(isStudying || sessionCompleted) && (
+          ) : (
             <>
               <div 
                 className={cn(
@@ -229,9 +226,7 @@ export default function Home() {
                   height: `${sphereSize}px`,
                   width: `${sphereSize}px`,
                 }}
-              >
-              </div>
-
+              />
               <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10 -mt-4">{formatTime(remainingTime)}</p>
               
               {isStudying && (
