@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, collection, serverTimestamp, increment } from "firebase/firestore";
+import { doc, collection, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
 import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Input } from "@/components/ui/input";
@@ -143,6 +143,12 @@ export default function Home() {
   };
 
   const isLoading = isUserLoading || isProfileLoading;
+  
+  const progress = totalSessionDuration > 0 ? (totalSessionDuration - remainingTime) / totalSessionDuration : 0;
+  const minSize = 64; // 4rem
+  const maxSize = 192; // 12rem
+  const sphereSize = isStudying ? minSize + (maxSize - minSize) * progress : maxSize;
+
 
   if (isLoading && !userProfile) {
     return (
@@ -162,43 +168,48 @@ export default function Home() {
       </section>
       
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden bg-card/50">
-        <CardContent className="p-8 flex flex-col items-center justify-center gap-6 min-h-[400px] bg-background/40">
-          
-            <div 
+        <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] relative bg-background/40">
+            <div
               className={cn(
-                "h-48 w-48 rounded-full bg-primary/80 transition-all duration-500",
-                 isStudying ? "animate-pulse-glow shadow-glow" : "shadow-lg"
+                "rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
+                isStudying ? "animate-pulse-glow shadow-glow" : "shadow-lg"
               )}
+              style={{
+                height: `${sphereSize}px`,
+                width: `${sphereSize}px`,
+              }}
             />
             
-            {isStudying ? (
-                <div className="text-center flex flex-col items-center gap-4">
-                    <p className="text-8xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
-                    <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                        <Square className="mr-2 h-5 w-5"/>
-                        Detener
-                    </Button>
-                </div>
-            ) : (
-                <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                        <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
-                        <Input
-                          id="duration-input"
-                          type="number"
-                          placeholder="25"
-                          value={studyDurationMinutes}
-                          onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
-                          disabled={isLoading}
-                          className="w-24 text-center text-xl font-bold"
-                        />
-                    </div>
-                    <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                        <Play className="mr-2 h-5 w-5"/>
-                        Iniciar Sesión
-                    </Button>
-                </div>
-            )}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              {isStudying ? (
+                  <>
+                      <p className="text-8xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
+                      <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                          <Square className="mr-2 h-5 w-5"/>
+                          Detener
+                      </Button>
+                  </>
+              ) : (
+                  <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                          <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
+                          <Input
+                            id="duration-input"
+                            type="number"
+                            placeholder="25"
+                            value={studyDurationMinutes}
+                            onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
+                            disabled={isLoading}
+                            className="w-24 text-center text-xl font-bold"
+                          />
+                      </div>
+                      <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                          <Play className="mr-2 h-5 w-5"/>
+                          Iniciar Sesión
+                      </Button>
+                  </div>
+              )}
+            </div>
         </CardContent>
       </Card>
     </div>
