@@ -169,43 +169,41 @@ export default function Home() {
           
             <div 
               className={cn(
-                "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/80 shadow-glow transition-all duration-1000 ease-linear",
-                 isStudying && "animate-pulse-glow"
+                "h-48 w-48 rounded-full bg-primary/80",
+                 isStudying ? "animate-pulse-glow shadow-glow" : "shadow-lg"
               )}
-              style={{
-                width: isStudying ? `${sphereSize}px` : '200px',
-                height: isStudying ? `${sphereSize}px` : '200px',
-              }}
             />
             
-            {isStudying ? (
-                <div className="relative text-center flex flex-col items-center gap-4 z-10">
-                    <p className="text-8xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
-                    <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                        <Square className="mr-2 h-5 w-5"/>
-                        Detener
-                    </Button>
-                </div>
-            ) : (
-                <div className="relative w-full max-w-sm flex flex-col items-center justify-center gap-6 text-center z-10">
-                    <div className="flex flex-col items-center gap-2">
-                        <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
-                        <Input
-                          id="duration-input"
-                          type="number"
-                          placeholder="25"
-                          value={studyDurationMinutes}
-                          onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
-                          disabled={isLoading}
-                          className="w-24 text-center text-xl font-bold"
-                        />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                {isStudying ? (
+                    <div className="text-center flex flex-col items-center gap-4">
+                        <p className="text-8xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
+                        <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                            <Square className="mr-2 h-5 w-5"/>
+                            Detener
+                        </Button>
                     </div>
-                    <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                        <Play className="mr-2 h-5 w-5"/>
-                        Iniciar Sesión
-                    </Button>
-                </div>
-            )}
+                ) : (
+                    <div className="w-full max-w-sm flex flex-col items-center justify-center gap-6 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
+                            <Input
+                              id="duration-input"
+                              type="number"
+                              placeholder="25"
+                              value={studyDurationMinutes}
+                              onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
+                              disabled={isLoading}
+                              className="w-24 text-center text-xl font-bold"
+                            />
+                        </div>
+                        <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                            <Play className="mr-2 h-5 w-5"/>
+                            Iniciar Sesión
+                        </Button>
+                    </div>
+                )}
+            </div>
         </CardContent>
       </Card>
     </div>
