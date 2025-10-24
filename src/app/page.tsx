@@ -2,17 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Square } from "lucide-react";
+import { Play, Square, Plus } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, collection, increment } from "firebase/firestore";
+import { doc, collection, increment, serverTimestamp } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
-import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { Input } from "@/components/ui/input";
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -37,6 +37,7 @@ export default function Home() {
   const [remainingTime, setRemainingTime] = useState(25 * 60);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [totalSessionDuration, setTotalSessionDuration] = useState(25 * 60);
+  const [showCustomSlider, setShowCustomSlider] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -132,7 +133,8 @@ export default function Home() {
         });
     }
     
-    setRemainingTime(studyDurationMinutes * 60);
+    // Do not reset study duration, keep user's last selection
+    // setRemainingTime(studyDurationMinutes * 60); 
     setSessionStartTime(null);
     if(timerRef.current) clearInterval(timerRef.current);
   };
@@ -142,6 +144,13 @@ export default function Home() {
     const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
+
+  const formatSliderTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins > 0 ? `${mins}m` : ''}`.trim();
+  }
 
   const isLoading = isUserLoading || isProfileLoading;
   
@@ -170,6 +179,7 @@ export default function Home() {
       
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] bg-background/40">
+          
           {isStudying ? (
             <>
               <div 
@@ -181,9 +191,7 @@ export default function Home() {
                   height: `${sphereSize}px`,
                   width: `${sphereSize}px`,
                 }}
-              >
-                {/* This div is the growing sphere */}
-              </div>
+              />
               <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
               <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
                   <Square className="mr-2 h-5 w-5"/>
@@ -200,29 +208,36 @@ export default function Home() {
                   height: `${maxSize}px`,
                   width: `${maxSize}px`,
                 }}
-              >
-                 {/* Static sphere */}
-              </div>
-              <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center text-foreground">
-                  <div className="flex flex-col items-center gap-2">
-                      <label htmlFor="duration-input" className="font-semibold">Minutos de Estudio</label>
-                      <Input
-                        id="duration-input"
-                        type="number"
-                        placeholder="25"
-                        value={studyDurationMinutes}
-                        onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
-                        disabled={isLoading}
-                        className="w-24 text-center text-xl font-bold"
-                      />
+              />
+              <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
+                  <p className="font-semibold text-lg">Minutos de Estudio</p>
+                  <div className="flex gap-2">
+                      <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
+                      <Button variant={studyDurationMinutes === 50 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(50); setShowCustomSlider(false); }}>50 min</Button>
+                      <Button variant={showCustomSlider ? 'default' : 'secondary'} size="icon" onClick={() => setShowCustomSlider(s => !s)}><Plus /></Button>
                   </div>
-                  <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                  
+                  {showCustomSlider && (
+                    <div className="w-full max-w-xs pt-4 space-y-2">
+                        <p className="font-bold text-xl">{formatSliderTime(studyDurationMinutes)}</p>
+                        <Slider
+                            defaultValue={[studyDurationMinutes]}
+                            min={1}
+                            max={14 * 60}
+                            step={1}
+                            onValueChange={(value) => setStudyDurationMinutes(value[0])}
+                        />
+                    </div>
+                  )}
+
+                  <Button size="lg" className="w-full mt-4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
                       <Play className="mr-2 h-5 w-5"/>
                       Iniciar Sesión
                   </Button>
               </div>
             </>
           )}
+
         </CardContent>
       </Card>
     </div>
