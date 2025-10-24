@@ -196,7 +196,7 @@ export default function Home() {
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[350px] pt-8 relative">
           <div 
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all duration-1000 ease-in-out shadow-glow -z-10" 
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all duration-1000 ease-in-out -z-10" 
               style={{ 
                   width: `${circleSize}px`, 
                   height: `${circleSize}px`,
