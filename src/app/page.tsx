@@ -33,6 +33,7 @@ export default function Home() {
   }, [firestore, user]);
 
   const [isStudying, setIsStudying] = useState(false);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
   const [studyDurationMinutes, setStudyDurationMinutes] = useState(25);
   const [remainingTime, setRemainingTime] = useState(25 * 60);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
@@ -89,11 +90,15 @@ export default function Home() {
     setTotalSessionDuration(durationInSeconds);
     setRemainingTime(durationInSeconds);
     setIsStudying(true);
+    setSessionCompleted(false);
     setSessionStartTime(new Date());
   };
   
   const handleStopStudy = (isCompleted = false) => {
     setIsStudying(false);
+    if(isCompleted) {
+        setSessionCompleted(true);
+    }
     
     const elapsedTime = totalSessionDuration - remainingTime;
     
@@ -133,8 +138,6 @@ export default function Home() {
         });
     }
     
-    // Do not reset study duration, keep user's last selection
-    // setRemainingTime(studyDurationMinutes * 60); 
     setSessionStartTime(null);
     if(timerRef.current) clearInterval(timerRef.current);
   };
@@ -157,7 +160,7 @@ export default function Home() {
   const progress = totalSessionDuration > 0 ? (totalSessionDuration - remainingTime) / totalSessionDuration : 0;
   const minSize = 64; // 4rem
   const maxSize = 192; // 12rem
-  const sphereSize = isStudying ? minSize + (maxSize - minSize) * progress : maxSize;
+  const sphereSize = isStudying || sessionCompleted ? minSize + (maxSize - minSize) * progress : maxSize;
 
 
   if (isLoading && !userProfile) {
@@ -180,36 +183,36 @@ export default function Home() {
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] bg-background/40">
           
+          <div 
+            className={cn(
+                "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
+                (isStudying || sessionCompleted) && "animate-pulse-glow shadow-glow"
+            )}
+            style={{
+              height: `${sphereSize}px`,
+              width: `${sphereSize}px`,
+            }}
+          >
+            {(isStudying || sessionCompleted) && (
+                 <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
+            )}
+          </div>
+
           {isStudying ? (
-            <>
-              <div 
-                className={cn(
-                    "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
-                    "animate-pulse-glow shadow-glow"
-                )}
-                style={{
-                  height: `${sphereSize}px`,
-                  width: `${sphereSize}px`,
-                }}
-              />
-              <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
               <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
                   <Square className="mr-2 h-5 w-5"/>
                   Detener
               </Button>
-            </>
+          ) : sessionCompleted ? (
+              <Button size="lg" className="w-3/4" onClick={() => {
+                  setSessionCompleted(false);
+                  setRemainingTime(studyDurationMinutes * 60);
+              }}>
+                  <Play className="mr-2 h-5 w-5"/>
+                  Estudiar de Nuevo
+              </Button>
           ) : (
-            <>
-               <div 
-                className={cn(
-                  "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear shadow-lg"
-                )}
-                style={{
-                  height: `${maxSize}px`,
-                  width: `${maxSize}px`,
-                }}
-              />
-              <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
+            <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
                   <p className="font-semibold text-lg">Minutos de Estudio</p>
                   <div className="flex gap-2">
                       <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
@@ -234,8 +237,7 @@ export default function Home() {
                       <Play className="mr-2 h-5 w-5"/>
                       Iniciar Sesión
                   </Button>
-              </div>
-            </>
+            </div>
           )}
 
         </CardContent>
