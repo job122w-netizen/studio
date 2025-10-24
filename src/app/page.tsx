@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Play, Square } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Play, Square } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, collection, serverTimestamp, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
@@ -13,7 +13,6 @@ import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
-
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -39,7 +38,6 @@ export default function Home() {
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [totalSessionDuration, setTotalSessionDuration] = useState(25 * 60);
 
-
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
@@ -48,14 +46,13 @@ export default function Home() {
     }
   }, [user, isUserLoading, router]);
 
-
   useEffect(() => {
     if (isStudying && remainingTime > 0) {
       timerRef.current = setInterval(() => {
         setRemainingTime(prevTime => prevTime - 1);
       }, 1000);
     } else if (remainingTime <= 0 && isStudying) {
-      handleStopStudy(true); // Automatically stop and save when timer finishes
+      handleStopStudy(true);
       
       const xpReward = Math.floor(totalSessionDuration / 60) * 50;
       toast({
@@ -139,7 +136,6 @@ export default function Home() {
     if(timerRef.current) clearInterval(timerRef.current);
   };
 
-
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -148,7 +144,7 @@ export default function Home() {
 
   const isLoading = isUserLoading || isProfileLoading;
 
-  if (isLoading && !userProfile) { // Show loading only on initial load
+  if (isLoading && !userProfile) {
     return (
         <div className="flex justify-center items-center h-full">
             <div className="text-center">
@@ -157,7 +153,9 @@ export default function Home() {
         </div>
     );
   }
-  
+
+  const progress = isStudying ? (totalSessionDuration - remainingTime) / totalSessionDuration : 0;
+  const sphereSize = 50 + progress * 150; // min 50px, max 200px
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -167,12 +165,21 @@ export default function Home() {
       </section>
       
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden bg-card/50">
-        <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] relative">
-            
-            <div className="w-48 h-48 rounded-full bg-primary shadow-glow transition-all duration-500"/>
+        <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] relative bg-background/40">
+          
+            <div 
+              className={cn(
+                "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/80 shadow-glow transition-all duration-1000 ease-linear",
+                 isStudying && "animate-pulse-glow"
+              )}
+              style={{
+                width: isStudying ? `${sphereSize}px` : '200px',
+                height: isStudying ? `${sphereSize}px` : '200px',
+              }}
+            />
             
             {isStudying ? (
-                <div className="text-center flex flex-col items-center gap-4">
+                <div className="relative text-center flex flex-col items-center gap-4 z-10">
                     <p className="text-8xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
                     <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
                         <Square className="mr-2 h-5 w-5"/>
@@ -180,7 +187,7 @@ export default function Home() {
                     </Button>
                 </div>
             ) : (
-                <div className="w-full max-w-sm flex flex-col items-center justify-center gap-6 text-center">
+                <div className="relative w-full max-w-sm flex flex-col items-center justify-center gap-6 text-center z-10">
                     <div className="flex flex-col items-center gap-2">
                         <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
                         <Input
