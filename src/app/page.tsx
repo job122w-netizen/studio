@@ -197,25 +197,7 @@ export default function Home() {
                  <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
             ) : (
                 <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
-                  <p className="font-semibold text-lg">Minutos de Estudio</p>
-                  <div className="flex gap-2">
-                      <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
-                      <Button variant={studyDurationMinutes === 50 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(50); setShowCustomSlider(false); }}>50 min</Button>
-                      <Button variant={showCustomSlider ? 'default' : 'secondary'} size="icon" onClick={() => setShowCustomSlider(s => !s)}><Plus /></Button>
-                  </div>
-                  
-                  {showCustomSlider && (
-                    <div className="w-full max-w-xs pt-4 space-y-2">
-                        <p className="font-bold text-xl">{formatSliderTime(studyDurationMinutes)}</p>
-                        <Slider
-                            defaultValue={[studyDurationMinutes]}
-                            min={1}
-                            max={14 * 60}
-                            step={1}
-                            onValueChange={(value) => setStudyDurationMinutes(value[0])}
-                        />
-                    </div>
-                  )}
+                  {/* Content for when not studying is now inside the sphere */}
                 </div>
             )}
           </div>
@@ -234,10 +216,31 @@ export default function Home() {
                   Estudiar de Nuevo
               </Button>
           ) : (
-            <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                <Play className="mr-2 h-5 w-5"/>
-                Iniciar Sesión
-            </Button>
+            <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
+                <p className="font-semibold text-lg">Minutos de Estudio</p>
+                <div className="flex gap-2">
+                    <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
+                    <Button variant={studyDurationMinutes === 50 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(50); setShowCustomSlider(false); }}>50 min</Button>
+                    <Button variant={showCustomSlider ? 'default' : 'secondary'} size="icon" onClick={() => setShowCustomSlider(s => !s)}><Plus /></Button>
+                </div>
+                
+                {showCustomSlider && (
+                  <div className="w-full max-w-xs pt-4 space-y-2">
+                      <p className="font-bold text-xl">{formatSliderTime(studyDurationMinutes)}</p>
+                      <Slider
+                          defaultValue={[studyDurationMinutes]}
+                          min={1}
+                          max={14 * 60}
+                          step={1}
+                          onValueChange={(value) => setStudyDurationMinutes(value[0])}
+                      />
+                  </div>
+                )}
+                 <Button size="lg" className="w-full mt-4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                    <Play className="mr-2 h-5 w-5"/>
+                    Iniciar Sesión
+                </Button>
+            </div>
           )}
 
         </CardContent>
