@@ -194,9 +194,9 @@ export default function Home() {
             <span>Registrar Estudio</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[350px] pt-8 relative">
+        <CardContent className="p-0 flex flex-col items-center justify-center gap-4 min-h-[350px] relative">
           <div 
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all duration-1000 ease-in-out -z-10" 
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all duration-1000 ease-in-out" 
               style={{ 
                   width: `${circleSize}px`, 
                   height: `${circleSize}px`,
@@ -204,7 +204,7 @@ export default function Home() {
               }}
           ></div>
           
-          <div className="relative w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center">
+          <div className="relative z-10 w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center p-4">
             {isStudying ? (
               <>
                 <p className="text-6xl font-bold font-mono text-primary-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
@@ -215,7 +215,7 @@ export default function Home() {
                 </Button>
               </>
             ) : (
-              <div className="w-full space-y-4 px-4">
+              <div className="w-full space-y-4">
                  <p className="text-primary-foreground font-semibold">¿Listo para una sesión de 25 minutos?</p>
                 <Input 
                   placeholder="¿Qué vas a estudiar hoy?" 
