@@ -12,7 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
+import { cn } from "@/lib/utils";
 
+const STUDY_DURATION = 25 * 60; // 25 minutes
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -41,13 +43,12 @@ export default function Home() {
 
 
   const [isStudying, setIsStudying] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [remainingTime, setRemainingTime] = useState(STUDY_DURATION);
   const [studySubject, setStudySubject] = useState("");
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastRewardTimeRef = useRef<number>(0);
-
+  
   useEffect(() => {
     if (!isUserLoading && !user) {
         router.push('/auth');
@@ -56,40 +57,31 @@ export default function Home() {
 
 
   useEffect(() => {
-    if (isStudying) {
+    if (isStudying && remainingTime > 0) {
       timerRef.current = setInterval(() => {
-        setElapsedTime(prevTime => {
-          const newTime = prevTime + 1;
-          const thirtyMinuteMark = Math.floor(newTime / 1800);
-
-          if (thirtyMinuteMark > lastRewardTimeRef.current) {
-            lastRewardTimeRef.current = thirtyMinuteMark;
-            if (userProfileRef) {
-               updateDocumentNonBlocking(userProfileRef, {
-                experiencePoints: increment(1250),
-                goldLingots: increment(1),
-              });
-              updateCasinoChips(userProfileRef, 1);
-               toast({
-                title: "¡Recompensa de estudio!",
-                description: "¡Has ganado 1250 Puntos, 1 Lingote y 1 Ficha!",
-              });
-            }
-          }
-          return newTime;
-        });
+        setRemainingTime(prevTime => prevTime - 1);
       }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+    } else if (remainingTime <= 0 && isStudying) {
+      handleStopStudy(true); // Automatically stop and save when timer finishes
+      toast({
+        title: "¡Sesión de estudio completada!",
+        description: `¡Has ganado 1250 Puntos, 1 Lingote y 1 Ficha por completar 25 minutos!`,
+      });
+      if (userProfileRef) {
+          updateDocumentNonBlocking(userProfileRef, {
+            experiencePoints: increment(1250),
+            goldLingots: increment(1),
+          });
+          updateCasinoChips(userProfileRef, 1);
       }
     }
+    
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
     };
-  }, [isStudying, userProfileRef, toast]);
+  }, [isStudying, remainingTime, userProfileRef, toast]);
 
   const handleStartStudy = () => {
     if (!studySubject) {
@@ -102,23 +94,26 @@ export default function Home() {
     }
     setIsStudying(true);
     setSessionStartTime(new Date());
-    setElapsedTime(0);
-    lastRewardTimeRef.current = 0;
+    setRemainingTime(STUDY_DURATION);
   };
   
-  const handleStopStudy = () => {
+  const handleStopStudy = (isCompleted = false) => {
     setIsStudying(false);
-    if(user && studySessionsRef && sessionStartTime && elapsedTime > 10 && userProfileRef) {
-        const endTime = new Date();
-        const durationMinutes = Math.floor(elapsedTime / 60);
+    
+    const elapsedTime = STUDY_DURATION - remainingTime;
+    
+    if (user && studySessionsRef && sessionStartTime && (elapsedTime > 10 || isCompleted)) {
+      const endTime = new Date();
+      const durationMinutes = Math.floor(elapsedTime / 60);
 
-        addDocumentNonBlocking(studySessionsRef, {
-            userId: user.uid,
-            subject: studySubject,
-            startTime: sessionStartTime,
-            endTime: endTime,
-            durationMinutes: durationMinutes
-        }).then(() => {
+      addDocumentNonBlocking(studySessionsRef, {
+          userId: user.uid,
+          subject: studySubject,
+          startTime: sessionStartTime,
+          endTime: endTime,
+          durationMinutes: durationMinutes
+      }).then(() => {
+          if (!isCompleted) { // Avoid double toast
             if (durationMinutes > 0) {
                 toast({
                    title: "Sesión guardada",
@@ -130,10 +125,11 @@ export default function Home() {
                    description: `Has estudiado "${studySubject}" por menos de un minuto.`,
                });
            }
-           updateUserStreak(userProfileRef);
-        });
+          }
+          updateUserStreak(userProfileRef!);
+      });
        
-    } else if (elapsedTime > 0 && elapsedTime <= 10) {
+    } else if (elapsedTime > 0 && elapsedTime <= 10 && !isCompleted) {
         toast({
             variant: "destructive",
             title: "Sesión no guardada",
@@ -141,17 +137,17 @@ export default function Home() {
         });
     }
     
-    setElapsedTime(0);
+    setRemainingTime(STUDY_DURATION);
     setStudySubject("");
     setSessionStartTime(null);
+    if(timerRef.current) clearInterval(timerRef.current);
   };
 
 
   const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
-    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
+    return `${m}:${s}`;
   };
 
   const formatDuration = (minutes: number) => {
@@ -165,10 +161,14 @@ export default function Home() {
   }
   
   const xpFromDuration = (minutes: number) => {
-    return Math.floor(minutes / 30) * 1250;
+     // Simplified XP calculation, as the main reward is for 25 mins now.
+    return Math.floor(minutes / 5) * 50;
   }
 
   const isLoading = isUserLoading || isProfileLoading;
+  
+  const progress = (STUDY_DURATION - remainingTime) / STUDY_DURATION;
+  const circleSize = 60 + (140 * progress); // Grows from 60px to 200px
 
   if (isLoading && !userProfile) { // Show loading only on initial load
     return (
@@ -194,27 +194,37 @@ export default function Home() {
             <span>Registrar Estudio</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4">
-          <p className="text-6xl font-bold font-mono text-primary">{formatTime(elapsedTime)}</p>
+        <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[300px]">
           {!isStudying ? (
-            <div className="w-full space-y-4">
+            <div className="w-full space-y-4 px-4">
               <Input 
                 placeholder="¿Qué vas a estudiar?" 
                 value={studySubject}
                 onChange={(e) => setStudySubject(e.target.value)}
-                disabled={isStudying || isLoading}
+                disabled={isLoading}
               />
               <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || !studySubject}>
                 <Play className="mr-2 h-5 w-5"/>
-                Iniciar Sesión de Estudio
+                Iniciar Sesión de 25 min
               </Button>
             </div>
           ) : (
-             <div className="w-full space-y-4 text-center">
-                <p className="text-muted-foreground">Estudiando: <span className="font-semibold text-foreground">{studySubject}</span></p>
-                <Button size="lg" className="w-full" onClick={handleStopStudy} disabled={isLoading}>
+             <div className="relative w-full flex flex-col items-center justify-center gap-4">
+                <div 
+                    className="glowing-circle" 
+                    style={{ 
+                        width: `${circleSize}px`, 
+                        height: `${circleSize}px`,
+                        boxShadow: `0 0 ${10 + progress * 50}px 0px hsl(var(--primary) / 0.7)`
+                    }}
+                ></div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <p className="text-6xl font-bold font-mono text-primary-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
+                    <p className="text-foreground text-sm font-semibold bg-background/50 backdrop-blur-sm px-2 py-1 rounded-md mt-2">{studySubject}</p>
+                </div>
+                <Button size="lg" className="w-3/4 mt-[220px]" onClick={() => handleStopStudy(false)} disabled={isLoading}>
                     <Square className="mr-2 h-5 w-5"/>
-                    Detener Sesión
+                    Detener y Guardar
                 </Button>
              </div>
           )}
