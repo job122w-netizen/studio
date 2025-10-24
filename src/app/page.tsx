@@ -13,6 +13,44 @@ import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
 
+const CircularProgress = ({ progress }: { progress: number }) => {
+  const radius = 140;
+  const stroke = 12;
+  const normalizedRadius = radius - stroke * 2;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg
+      height={radius * 2}
+      width={radius * 2}
+      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90"
+    >
+      <circle
+        stroke="hsl(var(--muted))"
+        fill="transparent"
+        strokeWidth={stroke}
+        r={normalizedRadius}
+        cx={radius}
+        cy={radius}
+      />
+      <circle
+        stroke="hsl(var(--primary))"
+        fill="transparent"
+        strokeWidth={stroke}
+        strokeDasharray={circumference + ' ' + circumference}
+        style={{ strokeDashoffset }}
+        strokeLinecap="round"
+        r={normalizedRadius}
+        cx={radius}
+        cy={radius}
+        className="transition-all duration-300 ease-linear"
+      />
+    </svg>
+  );
+};
+
+
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -155,9 +193,11 @@ export default function Home() {
         </div>
     );
   }
+  
+  const progress = isStudying ? ((totalSessionDuration - remainingTime) / totalSessionDuration) * 100 : 0;
 
   return (
-    <div className="space-y-8 animate-fade-in pb-16">
+    <div className="space-y-8 animate-fade-in">
       <section className="text-center">
         <h1 className="text-3xl font-bold font-headline text-foreground">Tu Espacio de Crecimiento</h1>
         <p className="text-muted-foreground mt-2">"La disciplina es el puente entre las metas y los logros."</p>
@@ -170,20 +210,23 @@ export default function Home() {
             <span>Registrar Estudio</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 flex flex-col items-center justify-center gap-4 min-h-[350px] relative bg-muted/20">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 rounded-full shadow-glow blur-2xl"></div>
+        <CardContent className="p-0 flex flex-col items-center justify-center gap-4 min-h-[400px] relative bg-muted/20">
+            
+            <CircularProgress progress={progress} />
 
-            <div className="relative z-10 w-full max-w-sm flex flex-col items-center justify-center gap-6 text-center p-4">
+            {/* Inner Circle */}
+            <div className="relative w-[240px] h-[240px] bg-background rounded-full flex flex-col items-center justify-center shadow-inner">
+                
                 {isStudying ? (
-                    <>
-                        <p className="text-7xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
-                        <Button size="lg" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                    <div className="text-center">
+                        <p className="text-6xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
+                        <Button size="lg" variant="ghost" className="w-3/4 mt-4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
                             <Square className="mr-2 h-5 w-5"/>
-                            Detener y Guardar
+                            Detener
                         </Button>
-                    </>
+                    </div>
                 ) : (
-                    <div className="w-full space-y-4">
+                    <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center p-4">
                         <div className="flex flex-col items-center gap-2">
                             <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
                             <Input
