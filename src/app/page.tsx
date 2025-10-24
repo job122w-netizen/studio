@@ -126,7 +126,7 @@ export default function Home() {
                });
            }
           }
-          updateUserStreak(userProfileRef!);
+          if(userProfileRef) updateUserStreak(userProfileRef);
       });
        
     } else if (elapsedTime > 0 && elapsedTime <= 10 && !isCompleted) {
@@ -211,11 +211,11 @@ export default function Home() {
           ) : (
              <div className="relative w-full flex flex-col items-center justify-center gap-4">
                 <div 
-                    className="glowing-circle" 
+                    className="rounded-full bg-primary transition-all duration-1000 ease-in-out shadow-glow" 
                     style={{ 
                         width: `${circleSize}px`, 
                         height: `${circleSize}px`,
-                        boxShadow: `0 0 ${10 + progress * 50}px 0px hsl(var(--primary) / 0.7)`
+                        boxShadow: `0 0 ${10 + progress * 50}px 0px hsl(var(--primary) / ${0.7 + progress * 0.3})`
                     }}
                 ></div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
