@@ -115,8 +115,9 @@ export default function Home() {
                });
            } else {
                 toast({
-                   title: "Sesión guardada",
-                   description: `Has estudiado por menos de un minuto.`,
+                   title: "Sesión no guardada",
+                   description: "La sesión debe durar al menos 10 segundos.",
+                   variant: 'destructive'
                });
            }
           }
@@ -169,47 +170,59 @@ export default function Home() {
       
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] bg-background/40">
-            <div 
-              className={cn(
-                  "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
-                  isStudying ? "animate-pulse-glow shadow-glow" : "shadow-lg"
-              )}
-              style={{
-                height: `${sphereSize}px`,
-                width: `${sphereSize}px`,
-              }}
-            >
-              {isStudying ? (
-                <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
-              ) : (
-                <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center text-foreground">
-                    <div className="flex flex-col items-center gap-2">
-                        <label htmlFor="duration-input" className="font-semibold">Minutos de Estudio</label>
-                        <Input
-                          id="duration-input"
-                          type="number"
-                          placeholder="25"
-                          value={studyDurationMinutes}
-                          onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
-                          disabled={isLoading}
-                          className="w-24 text-center text-xl font-bold"
-                        />
-                    </div>
-                </div>
-              )}
-            </div>
-            
-            {isStudying ? (
-                <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                    <Square className="mr-2 h-5 w-5"/>
-                    Detener
-                </Button>
-            ) : (
-                 <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                    <Play className="mr-2 h-5 w-5"/>
-                    Iniciar Sesión
-                </Button>
-            )}
+          {isStudying ? (
+            <>
+              <div 
+                className={cn(
+                    "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
+                    "animate-pulse-glow shadow-glow"
+                )}
+                style={{
+                  height: `${sphereSize}px`,
+                  width: `${sphereSize}px`,
+                }}
+              >
+                {/* This div is the growing sphere */}
+              </div>
+              <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
+              <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                  <Square className="mr-2 h-5 w-5"/>
+                  Detener
+              </Button>
+            </>
+          ) : (
+            <>
+               <div 
+                className={cn(
+                  "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear shadow-lg"
+                )}
+                style={{
+                  height: `${maxSize}px`,
+                  width: `${maxSize}px`,
+                }}
+              >
+                 {/* Static sphere */}
+              </div>
+              <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center text-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                      <label htmlFor="duration-input" className="font-semibold">Minutos de Estudio</label>
+                      <Input
+                        id="duration-input"
+                        type="number"
+                        placeholder="25"
+                        value={studyDurationMinutes}
+                        onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
+                        disabled={isLoading}
+                        className="w-24 text-center text-xl font-bold"
+                      />
+                  </div>
+                  <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                      <Play className="mr-2 h-5 w-5"/>
+                      Iniciar Sesión
+                  </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
