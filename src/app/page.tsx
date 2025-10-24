@@ -167,8 +167,8 @@ export default function Home() {
 
   const isLoading = isUserLoading || isProfileLoading;
   
-  const progress = (STUDY_DURATION - remainingTime) / STUDY_DURATION;
-  const circleSize = 60 + (140 * progress); // Grows from 60px to 200px
+  const progress = isStudying ? (STUDY_DURATION - remainingTime) / STUDY_DURATION : 0;
+  const circleSize = 180 + (120 * progress); // Grows from 180px to 300px
 
   if (isLoading && !userProfile) { // Show loading only on initial load
     return (
@@ -187,48 +187,50 @@ export default function Home() {
         <p className="text-muted-foreground mt-2">"La disciplina es el puente entre las metas y los logros."</p>
       </section>
       
-      <Card className="shadow-lg hover:shadow-xl transition-shadow">
+      <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
             <span>Registrar Estudio</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[300px]">
-          {!isStudying ? (
-            <div className="w-full space-y-4 px-4">
-              <Input 
-                placeholder="¿Qué vas a estudiar?" 
-                value={studySubject}
-                onChange={(e) => setStudySubject(e.target.value)}
-                disabled={isLoading}
-              />
-              <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || !studySubject}>
-                <Play className="mr-2 h-5 w-5"/>
-                Iniciar Sesión de 25 min
-              </Button>
-            </div>
-          ) : (
-             <div className="relative w-full flex flex-col items-center justify-center gap-4">
-                <div 
-                    className="rounded-full bg-primary transition-all duration-1000 ease-in-out shadow-glow" 
-                    style={{ 
-                        width: `${circleSize}px`, 
-                        height: `${circleSize}px`,
-                        boxShadow: `0 0 ${10 + progress * 50}px 0px hsl(var(--primary) / ${0.7 + progress * 0.3})`
-                    }}
-                ></div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <p className="text-6xl font-bold font-mono text-primary-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
-                    <p className="text-foreground text-sm font-semibold bg-background/50 backdrop-blur-sm px-2 py-1 rounded-md mt-2">{studySubject}</p>
-                </div>
-                <Button size="lg" className="w-3/4 mt-[220px]" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+        <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[350px] pt-8 relative">
+          <div 
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary transition-all duration-1000 ease-in-out shadow-glow -z-10" 
+              style={{ 
+                  width: `${circleSize}px`, 
+                  height: `${circleSize}px`,
+                  boxShadow: `0 0 ${20 + progress * 60}px 0px hsl(var(--primary) / ${0.5 + progress * 0.4})`
+              }}
+          ></div>
+          
+          <div className="relative w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center">
+            {isStudying ? (
+              <>
+                <p className="text-6xl font-bold font-mono text-primary-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
+                <p className="text-primary-foreground text-lg font-semibold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-md mt-2">{studySubject}</p>
+                <Button size="lg" className="w-3/4 mt-4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
                     <Square className="mr-2 h-5 w-5"/>
                     Detener y Guardar
                 </Button>
-             </div>
-          )}
-
+              </>
+            ) : (
+              <div className="w-full space-y-4 px-4">
+                 <p className="text-primary-foreground font-semibold">¿Listo para una sesión de 25 minutos?</p>
+                <Input 
+                  placeholder="¿Qué vas a estudiar hoy?" 
+                  value={studySubject}
+                  onChange={(e) => setStudySubject(e.target.value)}
+                  disabled={isLoading}
+                  className="bg-white/80 text-center placeholder:text-muted-foreground"
+                />
+                <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || !studySubject}>
+                  <Play className="mr-2 h-5 w-5"/>
+                  Iniciar Sesión
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
