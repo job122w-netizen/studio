@@ -180,20 +180,12 @@ export default function Home() {
                 width: `${sphereSize}px`,
               }}
             >
-              {isStudying && (
+              {isStudying ? (
                 <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
-              )}
-            </div>
-            
-            {isStudying ? (
-                <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                    <Square className="mr-2 h-5 w-5"/>
-                    Detener
-                </Button>
-            ) : (
-                <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center -mt-20">
+              ) : (
+                <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center text-foreground">
                     <div className="flex flex-col items-center gap-2">
-                        <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
+                        <label htmlFor="duration-input" className="font-semibold">Minutos de Estudio</label>
                         <Input
                           id="duration-input"
                           type="number"
@@ -204,11 +196,19 @@ export default function Home() {
                           className="w-24 text-center text-xl font-bold"
                         />
                     </div>
-                    <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                    <Button size="lg" className="w-3/4" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
                         <Play className="mr-2 h-5 w-5"/>
                         Iniciar Sesión
                     </Button>
                 </div>
+              )}
+            </div>
+            
+            {isStudying && (
+                <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                    <Square className="mr-2 h-5 w-5"/>
+                    Detener
+                </Button>
             )}
         </CardContent>
       </Card>
