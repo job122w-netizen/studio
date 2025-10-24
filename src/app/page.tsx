@@ -12,43 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
-
-const CircularProgress = ({ progress }: { progress: number }) => {
-  const radius = 140;
-  const stroke = 12;
-  const normalizedRadius = radius - stroke * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-  return (
-    <svg
-      height={radius * 2}
-      width={radius * 2}
-      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90"
-    >
-      <circle
-        stroke="hsl(var(--muted))"
-        fill="transparent"
-        strokeWidth={stroke}
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-      />
-      <circle
-        stroke="hsl(var(--primary))"
-        fill="transparent"
-        strokeWidth={stroke}
-        strokeDasharray={circumference + ' ' + circumference}
-        style={{ strokeDashoffset }}
-        strokeLinecap="round"
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-        className="transition-all duration-300 ease-linear"
-      />
-    </svg>
-  );
-};
+import { cn } from "@/lib/utils";
 
 
 export default function Home() {
@@ -194,7 +158,6 @@ export default function Home() {
     );
   }
   
-  const progress = isStudying ? ((totalSessionDuration - remainingTime) / totalSessionDuration) * 100 : 0;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -203,49 +166,39 @@ export default function Home() {
         <p className="text-muted-foreground mt-2">"La disciplina es el puente entre las metas y los logros."</p>
       </section>
       
-      <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            <span>Registrar Estudio</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 flex flex-col items-center justify-center gap-4 min-h-[400px] relative bg-muted/20">
+      <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden bg-card/50">
+        <CardContent className="p-8 flex flex-col items-center justify-center gap-8 min-h-[400px] relative">
             
-            <CircularProgress progress={progress} />
-
-            {/* Inner Circle */}
-            <div className="relative w-[240px] h-[240px] bg-background rounded-full flex flex-col items-center justify-center shadow-inner">
-                
-                {isStudying ? (
-                    <div className="text-center">
-                        <p className="text-6xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
-                        <Button size="lg" variant="ghost" className="w-3/4 mt-4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                            <Square className="mr-2 h-5 w-5"/>
-                            Detener
-                        </Button>
+            <div className="w-48 h-48 rounded-full bg-primary shadow-glow transition-all duration-500"/>
+            
+            {isStudying ? (
+                <div className="text-center flex flex-col items-center gap-4">
+                    <p className="text-8xl font-bold font-mono text-foreground drop-shadow-lg">{formatTime(remainingTime)}</p>
+                    <Button size="lg" variant="ghost" className="w-3/4" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                        <Square className="mr-2 h-5 w-5"/>
+                        Detener
+                    </Button>
+                </div>
+            ) : (
+                <div className="w-full max-w-sm flex flex-col items-center justify-center gap-6 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                        <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
+                        <Input
+                          id="duration-input"
+                          type="number"
+                          placeholder="25"
+                          value={studyDurationMinutes}
+                          onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
+                          disabled={isLoading}
+                          className="w-24 text-center text-xl font-bold"
+                        />
                     </div>
-                ) : (
-                    <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 text-center p-4">
-                        <div className="flex flex-col items-center gap-2">
-                            <label htmlFor="duration-input" className="text-foreground font-semibold">Minutos de Estudio</label>
-                            <Input
-                              id="duration-input"
-                              type="number"
-                              placeholder="25"
-                              value={studyDurationMinutes}
-                              onChange={(e) => setStudyDurationMinutes(parseInt(e.target.value, 10))}
-                              disabled={isLoading}
-                              className="w-24 text-center text-xl font-bold"
-                            />
-                        </div>
-                        <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                            <Play className="mr-2 h-5 w-5"/>
-                            Iniciar Sesión
-                        </Button>
-                    </div>
-                )}
-            </div>
+                    <Button size="lg" className="w-full" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                        <Play className="mr-2 h-5 w-5"/>
+                        Iniciar Sesión
+                    </Button>
+                </div>
+            )}
         </CardContent>
       </Card>
     </div>
