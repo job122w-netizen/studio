@@ -23,6 +23,10 @@
           "type": "number",
           "description": "The user's current experience points."
         },
+        "studyHours": {
+            "type": "number",
+            "description": "Total accumulated study hours."
+        },
         "goldLingots": {
           "type": "number",
           "description": "The number of gold lingots the user has."

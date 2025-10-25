@@ -174,6 +174,8 @@ export default function Home() {
 
     // --- Save Session Logic ---
     if (user && studySessionsRef && finalDurationMinutes > 0) {
+        const studyHoursIncrement = finalDurationMinutes / 60;
+        
         await addDocumentNonBlocking(studySessionsRef, {
             userId: user.uid,
             subject: 'Estudio General',
@@ -181,6 +183,12 @@ export default function Home() {
             endTime: endTime,
             durationMinutes: finalDurationMinutes
         });
+
+        if (userProfileRef) {
+            updateDocumentNonBlocking(userProfileRef, {
+                studyHours: increment(studyHoursIncrement)
+            });
+        }
 
         if (!isCompleted) { 
             toast({

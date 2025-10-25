@@ -31,6 +31,16 @@ const ranks = [
     { name: "Sabio", xpThreshold: 200000 },
 ];
 
+const studyAchievements = [
+    { name: "Estudiante Dedicado", description: "Estudia por 10 horas", hours: 10 },
+    { name: "Estudiante Comprometido", description: "Estudia por 30 horas", hours: 30 },
+    { name: "Estudiante Veterano", description: "Estudia por 50 horas", hours: 50 },
+    { name: "Devorador de Libros", description: "Estudia por 100 horas", hours: 100 },
+    { name: "Máquina de Estudio", description: "Estudia por 250 horas", hours: 250 },
+    { name: "Cerebrito", description: "Estudia por 500 horas", hours: 500 },
+    { name: "Eminencia", description: "Estudia por 1000 horas", hours: 1000 },
+];
+
 const getRank = (xp: number) => {
     let currentRank = ranks[0];
     let nextRank = ranks[1];
@@ -81,17 +91,13 @@ export default function PerfilPage() {
     ? ((xp - currentRank.xpThreshold) / (nextRank.xpThreshold - currentRank.xpThreshold)) * 100
     : 100;
 
+  const totalStudyHours = Math.floor(userProfile?.studyHours || 0);
+
   const stats = [
     { icon: Star, label: "Puntos HV", value: userProfile?.experiencePoints?.toLocaleString('es-ES') || "0" },
     { icon: Flame, label: "Racha de Días", value: userProfile?.currentStreak || "0" },
-    { icon: BookOpen, label: "Horas de Estudio", value: userProfile?.studyHours || "0" },
+    { icon: BookOpen, label: "Horas de Estudio", value: totalStudyHours.toLocaleString('es-ES') },
     { icon: Dumbbell, label: "Ejercicios", value: userProfile?.exercisesCompleted || "0" },
-  ];
-
-  const achievements = [
-    { icon: Shield, name: "Mente de Acero", description: "Completa 7 días de meditación" },
-    { icon: Shield, name: "Madrugador", description: "Estudia antes de las 6 AM" },
-    { icon: Shield, name: "Maratón de Estudio", description: "Estudia por más de 5 horas seguidas" },
   ];
   
   const isLoading = isUserLoading || isProfileLoading;
@@ -260,6 +266,9 @@ export default function PerfilPage() {
         description: purchaseDescription,
     });
   };
+
+  const unlockedAchievements = studyAchievements.filter(ach => totalStudyHours >= ach.hours);
+  const nextAchievement = studyAchievements.find(ach => totalStudyHours < ach.hours);
 
   if (isLoading || !userProfile) {
     return (
@@ -480,19 +489,32 @@ export default function PerfilPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary"/> Logros</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary"/> Logros de Estudio</CardTitle>
             </CardHeader>
             <CardContent>
                 <ul className="space-y-4">
-                    {achievements.map((ach, index) => (
-                    <li key={index} className="flex items-center gap-4">
-                        <ach.icon className="h-8 w-8 text-yellow-500" />
+                    {unlockedAchievements.map((ach) => (
+                    <li key={ach.name} className="flex items-center gap-4">
+                        <Trophy className="h-8 w-8 text-yellow-500" />
                         <div>
                         <p className="font-semibold">{ach.name}</p>
                         <p className="text-sm text-muted-foreground">{ach.description}</p>
                         </div>
                     </li>
                     ))}
+                    {nextAchievement && (
+                       <li className="flex items-center gap-4 opacity-60">
+                         <Trophy className="h-8 w-8 text-muted-foreground" />
+                         <div>
+                           <p className="font-semibold">{nextAchievement.name}</p>
+                           <p className="text-sm text-muted-foreground">{nextAchievement.description}</p>
+                            <div className="mt-1">
+                                <Progress value={(totalStudyHours / nextAchievement.hours) * 100} className="h-2" />
+                                <p className="text-xs text-muted-foreground mt-1">{totalStudyHours.toLocaleString()} / {nextAchievement.hours.toLocaleString()} horas</p>
+                            </div>
+                         </div>
+                       </li>
+                    )}
                 </ul>
             </CardContent>
         </Card>
