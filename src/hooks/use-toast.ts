@@ -8,7 +8,7 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 1
+const TOAST_LIMIT = 5 // Increased limit for custom components
 const TOAST_REMOVE_DELAY = 1000000
 
 type ToasterToast = ToastProps & {
@@ -153,17 +153,36 @@ function toast({ ...props }: Toast) {
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
-  dispatch({
-    type: "ADD_TOAST",
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss()
+  // If it's a custom component, we assume it handles its own lifecycle.
+  // We still add it to the toast array so it can be rendered by the Toaster.
+  if (props.component) {
+     const duration = props.duration || 4000;
+     dispatch({
+        type: "ADD_TOAST",
+        toast: {
+            ...props,
+            id,
+            open: true,
+        },
+     });
+     // Automatically remove it after its duration
+     setTimeout(() => {
+        dispatch({ type: "REMOVE_TOAST", toastId: id });
+     }, duration + 500); // Add a buffer for fade-out animations
+  } else {
+    dispatch({
+      type: "ADD_TOAST",
+      toast: {
+        ...props,
+        id,
+        open: true,
+        onOpenChange: (open) => {
+          if (!open) dismiss()
+        },
       },
-    },
-  })
+    });
+  }
+
 
   return {
     id: id,
