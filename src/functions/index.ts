@@ -7,8 +7,8 @@ initializeApp();
 const db = getFirestore();
 
 const updateUserRanking = async (userId: string, userData: any) => {
-    // Ensure experiencePoints is a number, defaulting to 0 if it's missing or not a number.
-    const experiencePoints = typeof userData?.experiencePoints === 'number' ? userData.experiencePoints : 0;
+    // If experiencePoints is missing or not a number, default to 0.
+    const experiencePoints = userData?.experiencePoints || 0;
     const username = userData?.username || 'Usuario Anónimo';
     const imageUrl = userData?.imageUrl || `https://i.pravatar.cc/150?u=${userId}`;
 
@@ -47,4 +47,5 @@ export const onUserCreateSyncRanking = onDocumentCreated("/users/{userId}", asyn
         console.error("Error in onUserCreateSyncRanking:", error);
     }
 });
+
 
