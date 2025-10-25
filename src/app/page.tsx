@@ -137,16 +137,17 @@ export default function Home() {
 
     // --- Reward Logic ---
     if (isCompleted && studyDurationMinutes >= 25 && userProfileRef) {
-        const xpReward = Math.floor(studyDurationMinutes / 25) * 50; // 50 XP per 25 min block
+        const blocksOf25 = Math.floor(studyDurationMinutes / 25);
+        const xpReward = blocksOf25 * 1000;
+        const chipReward = blocksOf25 * 3;
         toast({
           title: "¡Sesión de estudio completada!",
-          description: `¡Has ganado ${xpReward} Puntos, 1 Lingote y 1 Ficha!`,
+          description: `¡Has ganado ${xpReward} Puntos y ${chipReward} Fichas!`,
         });
         updateDocumentNonBlocking(userProfileRef, {
           experiencePoints: increment(xpReward),
-          goldLingots: increment(1),
         });
-        updateCasinoChips(userProfileRef, 1);
+        updateCasinoChips(userProfileRef, chipReward);
     } else if (isCompleted) {
         toast({
           title: "¡Sesión de estudio completada!",
