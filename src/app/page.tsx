@@ -24,7 +24,10 @@ const studyQuotes = [
     "¿Sabías que tu cerebro crea nuevas conexiones neuronales cada vez que aprendes algo nuevo?",
     "¿Sabías que enseñar a otros es una de las formas más efectivas de consolidar tu conocimiento?",
     "¿Sabías que los errores aumentan la actividad cerebral y son una parte crucial del proceso de aprendizaje?",
-    "¿Sabías que dormir bien después de estudiar ayuda a tu cerebro a consolidar los recuerdos y lo aprendido?"
+    "¿Sabías que dormir bien después de estudiar ayuda a tu cerebro a consolidar los recuerdos y lo aprendido?",
+    "Nuestra mayor debilidad radica en rendirnos. La forma más segura de tener éxito es siempre intentarlo una vez más. - Thomas A. Edison",
+    "Dime y lo olvido, enséñame y lo recuerdo, involúcrame y lo aprendo. - Benjamin Franklin",
+    "Vive como si fueses a morir mañana. Aprende como si fueses a vivir para siempre. - Mahatma Gandhi"
 ];
 
 export default function Home() {
