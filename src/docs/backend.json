@@ -99,6 +99,11 @@
             "type": "array",
             "description": "List of items the user owns.",
             "items": { "$ref": "#/entities/UserItem" }
+        },
+        "claimedStudyAchievements": {
+            "type": "array",
+            "description": "List of IDs of study achievements whose rewards have been claimed.",
+            "items": { "type": "number" }
         }
       },
       "required": [

@@ -21,6 +21,9 @@ import { cn } from "@/lib/utils";
 import { colorThemes } from "@/lib/themes";
 import { Inventory } from "@/components/profile/inventory";
 import { tiendaItems, TiendaItem } from "@/lib/placeholder-data";
+import { studyAchievements, StudyAchievement } from "@/lib/achievements";
+import { AchievementsList } from "@/components/profile/achievements";
+
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -29,16 +32,6 @@ const ranks = [
     { name: "Maestro", xpThreshold: 50000 },
     { name: "Gran Maestro", xpThreshold: 100000 },
     { name: "Sabio", xpThreshold: 200000 },
-];
-
-const studyAchievements = [
-    { name: "Estudiante Dedicado", description: "Estudia por 10 horas", hours: 10 },
-    { name: "Estudiante Comprometido", description: "Estudia por 30 horas", hours: 30 },
-    { name: "Estudiante Veterano", description: "Estudia por 50 horas", hours: 50 },
-    { name: "Devorador de Libros", description: "Estudia por 100 horas", hours: 100 },
-    { name: "Máquina de Estudio", description: "Estudia por 250 horas", hours: 250 },
-    { name: "Cerebrito", description: "Estudia por 500 horas", hours: 500 },
-    { name: "Eminencia", description: "Estudia por 1000 horas", hours: 1000 },
 ];
 
 const getRank = (xp: number) => {
@@ -267,9 +260,49 @@ export default function PerfilPage() {
     });
   };
 
-  const unlockedAchievements = studyAchievements.filter(ach => totalStudyHours >= ach.hours);
-  const nextAchievement = studyAchievements.find(ach => totalStudyHours < ach.hours);
+  const handleClaimAchievement = (achievement: StudyAchievement) => {
+    if (!userProfileRef) return;
+    
+    const { reward } = achievement;
+    const updates: { [key: string]: any } = {
+        claimedStudyAchievements: arrayUnion(achievement.id)
+    };
 
+    let description = 'Has recibido: ';
+    const rewards: string[] = [];
+
+    if (reward.xp) {
+        updates.experiencePoints = increment(reward.xp);
+        rewards.push(`${reward.xp.toLocaleString()} XP`);
+    }
+    if (reward.goldLingots) {
+        updates.goldLingots = increment(reward.goldLingots);
+        rewards.push(`${reward.goldLingots} lingotes`);
+    }
+    if (reward.gems) {
+        updates.gems = increment(reward.gems);
+        rewards.push(`${reward.gems} gemas`);
+    }
+    if (reward.casinoChips) {
+        updates.casinoChips = increment(reward.casinoChips);
+        rewards.push(`${reward.casinoChips} fichas`);
+    }
+    if (reward.chest) {
+        const chestItem = tiendaItems.find(item => item.id === (reward.chest === 'epic' ? 7 : 8));
+        if (chestItem) {
+            updates.userItems = arrayUnion({ itemId: chestItem.id, purchaseDate: new Date().toISOString() });
+            rewards.push(`1x Cofre ${reward.chest === 'epic' ? 'Épico' : 'Legendario'}`);
+        }
+    }
+
+    updateDocumentNonBlocking(userProfileRef, updates);
+
+    toast({
+        title: `¡Logro Desbloqueado: ${achievement.name}!`,
+        description: description + rewards.join(', ') + '.',
+    });
+  };
+  
   if (isLoading || !userProfile) {
     return (
       <div className="space-y-8 animate-fade-in pb-16">
@@ -399,21 +432,36 @@ export default function PerfilPage() {
       </Card>
       
       <Card>
-          <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                  <Backpack className="h-5 w-5 text-primary"/> Mochila
-              </CardTitle>
-          </CardHeader>
-          <CardContent>
-              <Inventory 
-                userItems={userProfile.userItems || []} 
-                allItems={tiendaItems}
-                onUseItem={handleUseItem}
-              />
-          </CardContent>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+              <Backpack className="h-5 w-5 text-primary"/> Mochila
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Inventory 
+            userItems={userProfile.userItems || []} 
+            allItems={tiendaItems}
+            onUseItem={handleUseItem}
+          />
+        </CardContent>
       </Card>
 
-       <Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" /> Logros de Estudio
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AchievementsList
+            totalStudyHours={totalStudyHours}
+            claimedAchievements={userProfile.claimedStudyAchievements || []}
+            onClaim={handleClaimAchievement}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary"/> Temas de Color</div>
@@ -486,39 +534,6 @@ export default function PerfilPage() {
           )}
         </CardContent>
       </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary"/> Logros de Estudio</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ul className="space-y-4">
-                    {unlockedAchievements.map((ach) => (
-                    <li key={ach.name} className="flex items-center gap-4">
-                        <Trophy className="h-8 w-8 text-yellow-500" />
-                        <div>
-                        <p className="font-semibold">{ach.name}</p>
-                        <p className="text-sm text-muted-foreground">{ach.description}</p>
-                        </div>
-                    </li>
-                    ))}
-                    {nextAchievement && (
-                       <li className="flex items-center gap-4 opacity-60">
-                         <Trophy className="h-8 w-8 text-muted-foreground" />
-                         <div>
-                           <p className="font-semibold">{nextAchievement.name}</p>
-                           <p className="text-sm text-muted-foreground">{nextAchievement.description}</p>
-                            <div className="mt-1">
-                                <Progress value={(totalStudyHours / nextAchievement.hours) * 100} className="h-2" />
-                                <p className="text-xs text-muted-foreground mt-1">{totalStudyHours.toLocaleString()} / {nextAchievement.hours.toLocaleString()} horas</p>
-                            </div>
-                         </div>
-                       </li>
-                    )}
-                </ul>
-            </CardContent>
-        </Card>
-
     </div>
   );
 }
