@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -170,13 +171,12 @@ export default function Home() {
             });
         }
         if(userProfileRef) {
-            const { updated, newStreak } = await updateUserStreak(userProfileRef);
-            if (updated && newStreak > 0) {
-                toast({
-                    duration: 5000,
-                    component: <StreakToast streak={newStreak} />,
-                });
-            }
+            // For testing purposes, we'll always show the animation
+            await updateUserStreak(userProfileRef);
+            toast({
+                duration: 5000,
+                component: <StreakToast streak={(userProfile?.currentStreak || 0) + 1} />,
+            });
         }
     } else if (!isCompleted && elapsedTime < 60) { // Stopped before 1 min
         toast({
