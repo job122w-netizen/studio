@@ -2,7 +2,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X, Coins } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
@@ -269,12 +269,7 @@ export default function PerfilPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><BarChart className="h-5 w-5 text-primary"/> Estadísticas</div>
-             <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8">
-                <LogOut className="w-4 h-4 text-destructive"/>
-             </Button>
-          </CardTitle>
+          <CardTitle className="flex items-center gap-2"><BarChart className="h-5 w-5 text-primary"/> Estadísticas</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
              <>
@@ -326,6 +321,12 @@ export default function PerfilPage() {
               </Collapsible>
              </>
         </CardContent>
+         <CardFooter className="flex-col items-stretch gap-2">
+            <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar Sesión
+            </Button>
+        </CardFooter>
       </Card>
       
        <Card>
