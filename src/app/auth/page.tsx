@@ -52,76 +52,85 @@ export default function AuthPage() {
   });
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (isClient && !isUserLoading && user) {
       router.push('/');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, isClient]);
 
   const createUserProfile = async (user: User) => {
     if (!firestore) return;
     const userProfileRef = doc(firestore, 'users', user.uid);
-    const userProfileSnap = await getDoc(userProfileRef);
+    
+    try {
+        const userProfileSnap = await getDoc(userProfileRef);
 
-    if (userProfileSnap.exists()) {
-        // If profile exists, update it with potentially new info from provider
-        const updateData: { username?: string; imageUrl?: string | null; email?: string; } = {};
-        if (user.displayName && user.displayName !== userProfileSnap.data().username) {
-            updateData.username = user.displayName;
-        }
-        if (user.photoURL && user.photoURL !== userProfileSnap.data().imageUrl) {
-            updateData.imageUrl = user.photoURL;
-        }
-        if(user.email && user.email !== userProfileSnap.data().email) {
-            updateData.email = user.email;
-        }
+        if (!userProfileSnap.exists()) {
+            // Profile doesn't exist, create it.
+            const newUserProfile = {
+                username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
+                email: user.email || 'anonimo@desafiohv.com',
+                level: 1,
+                experiencePoints: 0,
+                studyHours: 0,
+                goldLingots: 0,
+                casinoChips: 15,
+                gems: 0,
+                createdAt: serverTimestamp(),
+                imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+                currentStreak: 0,
+                lastActivityDate: null,
+                hvPassLevel: 1,
+                hvPassXp: 0,
+                hasPremiumPass: false,
+                unlockedBackgrounds: [],
+                selectedBackgroundId: null,
+                unlockedThemes: ['default-theme'],
+                selectedThemeId: 'default-theme',
+                mineSweeperMultiplier: 1,
+                bombStreak: 0,
+                userItems: [],
+                claimedStudyAchievements: [],
+                claimedStreakAchievements: []
+            };
+            await setDoc(userProfileRef, newUserProfile);
+        } else {
+            // Profile exists, update with provider data if necessary.
+            const profileData = userProfileSnap.data();
+            const updateData: { [key: string]: any } = {};
 
-        if (Object.keys(updateData).length > 0) {
-            await updateDoc(userProfileRef, updateData);
+            if (user.displayName && user.displayName !== profileData.username) {
+                updateData.username = user.displayName;
+            }
+            if (user.photoURL && user.photoURL !== profileData.imageUrl) {
+                updateData.imageUrl = user.photoURL;
+            }
+            if (user.email && user.email !== profileData.email) {
+                updateData.email = user.email;
+            }
+
+            if (Object.keys(updateData).length > 0) {
+                await updateDoc(userProfileRef, updateData);
+            }
         }
-    } else {
-        // If profile doesn't exist, create it
-        const newUserProfile = {
-            username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
-            email: user.email || 'anonimo@desafiohv.com',
-            level: 1,
-            experiencePoints: 0,
-            studyHours: 0,
-            goldLingots: 0,
-            casinoChips: 15,
-            gems: 0,
-            createdAt: serverTimestamp(),
-            imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-            currentStreak: 0,
-            lastActivityDate: null,
-            hvPassLevel: 1,
-            hvPassXp: 0,
-            hasPremiumPass: false,
-            unlockedBackgrounds: [],
-            selectedBackgroundId: null,
-            unlockedThemes: ['default-theme'],
-            selectedThemeId: 'default-theme',
-            mineSweeperMultiplier: 1,
-            bombStreak: 0,
-            userItems: [],
-            claimedStudyAchievements: [],
-            claimedStreakAchievements: []
-        };
-        await setDoc(userProfileRef, newUserProfile);
+    } catch (error) {
+        console.error("Error creating/updating user profile:", error);
+        // Re-throw the error to be caught by the calling function's catch block
+        throw new Error("No se pudo crear o actualizar el perfil de usuario.");
     }
   };
+
 
   const handleAuthError = (errorCode: string) => {
     let description = "Ocurrió un error inesperado. Por favor, intenta de nuevo.";
     switch (errorCode) {
         case 'auth/user-not-found':
-        case AuthErrorCodes.USER_DELETED:
             description = "El usuario no existe. Por favor, regístrate.";
             break;
         case AuthErrorCodes.INVALID_EMAIL:
             description = "El formato del correo electrónico no es válido.";
             break;
         case "auth/invalid-credential":
-            description = "Correo o contraseña incorrectos. Por favor, verifica tus credenciales.";
+             description = "Correo o contraseña incorrectos. Por favor, verifica tus credenciales e inténtalo de nuevo.";
             break;
         case AuthErrorCodes.EMAIL_EXISTS:
              description = "El correo electrónico ya está en uso por otra cuenta. Intenta iniciar sesión.";
@@ -146,6 +155,19 @@ export default function AuthPage() {
     });
   }
 
+  const handleAuthSuccess = async (userCredential: UserCredential) => {
+      try {
+        await createUserProfile(userCredential.user);
+        // The useEffect will handle the redirect once the user state is updated.
+      } catch (profileError: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error de Perfil',
+            description: profileError.message || "No se pudo guardar el perfil después del registro.",
+        });
+      }
+  }
+
   const onSubmit = async (values: z.infer<typeof formSchema>, isSignUp: boolean) => {
     if (!auth) return;
     setIsSubmitting(true);
@@ -156,7 +178,7 @@ export default function AuthPage() {
       } else {
         userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       }
-      await createUserProfile(userCredential.user);
+      await handleAuthSuccess(userCredential);
     } catch (error: any) {
         handleAuthError(error.code);
     } finally {
@@ -169,7 +191,7 @@ export default function AuthPage() {
     setIsSubmitting(true);
     try {
         const userCredential = await initiateAnonymousSignIn(auth);
-        await createUserProfile(userCredential.user);
+        await handleAuthSuccess(userCredential);
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {
@@ -183,7 +205,7 @@ export default function AuthPage() {
     try {
         const provider = new GoogleAuthProvider();
         const userCredential = await signInWithPopup(auth, provider);
-        await createUserProfile(userCredential.user);
+        await handleAuthSuccess(userCredential);
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {
@@ -191,10 +213,19 @@ export default function AuthPage() {
     }
   }
 
-  if (!isClient || isUserLoading || user) {
+  if (!isClient || isUserLoading) {
     return (
         <div className="flex justify-center items-center h-full">
-            <p>Cargando...</p>
+            <div className="text-center">
+                <div role="status">
+                    <svg aria-hidden="true" className="inline w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-primary" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                    </svg>
+                    <span className="sr-only">Cargando...</span>
+                </div>
+                <p className="mt-2">Verificando...</p>
+            </div>
         </div>
     );
   }
@@ -279,5 +310,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-    
