@@ -28,6 +28,18 @@ export default function TiendaPage() {
     const hasEnoughCurrency = item.currency === 'gems'
         ? (userProfile.gems ?? 0) >= item.price
         : (userProfile.goldLingots ?? 0) >= item.price;
+        
+    const isAlreadyOwnedAndNotConsumable = !item.consumable && userProfile.userItems?.some((ownedItem: any) => ownedItem.itemId === item.id);
+    
+    if (isAlreadyOwnedAndNotConsumable) {
+        toast({
+            variant: "default",
+            title: "Ya tienes este objeto",
+            description: "No puedes comprar este objeto más de una vez.",
+        });
+        return;
+    }
+
 
     if (!hasEnoughCurrency) {
         toast({
@@ -86,7 +98,10 @@ export default function TiendaPage() {
 
             break;
         }
-        default: // Items genéricos (no implementado en este ejemplo)
+        case 1: // Gema de Enfoque - Example of a non-consumable, unique item
+        case 3: // Llave de Logro
+        case 4: // Escudo Protector - Consumable, but handled by arrayUnion/arrayRemove
+        default:
              updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
              break;
     }

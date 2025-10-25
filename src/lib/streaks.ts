@@ -1,13 +1,17 @@
 'use client';
 
-import { doc, DocumentReference, getDoc, increment, writeBatch } from "firebase/firestore";
-import { firestore } from "@/firebase/client"; // Corrected import
+import { doc, DocumentReference, getDoc, increment, writeBatch, arrayRemove } from "firebase/firestore";
+import { firestore } from "@/firebase/client"; 
 import { format, subDays, isSameDay } from 'date-fns';
+import { toast } from "@/hooks/use-toast";
 
 type StreakUpdateResult = {
     updated: boolean;
     newStreak: number;
 }
+
+// The ID of the streak shield item in the store
+const STREAK_SHIELD_ID = 4;
 
 /**
  * Updates the user's activity streak.
@@ -39,13 +43,12 @@ export const updateUserStreak = async (userProfileRef: DocumentReference): Promi
         let newStreak = currentStreak;
         let streakUpdated = false;
 
-        // If there was a last activity date, check it.
         if (lastActivityDateStr) {
             const lastActivityDate = new Date(lastActivityDateStr);
             const yesterday = subDays(today, 1);
             
-            // If last activity was yesterday, increment streak.
             if (isSameDay(lastActivityDate, yesterday)) {
+                // Last activity was yesterday, increment streak.
                 newStreak = currentStreak + 1;
                 batch.update(userProfileRef, { 
                     currentStreak: increment(1),
@@ -53,13 +56,32 @@ export const updateUserStreak = async (userProfileRef: DocumentReference): Promi
                 });
                 streakUpdated = true;
             } else {
-                // If it wasn't yesterday, the streak is broken. Reset to 1.
-                newStreak = 1;
-                batch.update(userProfileRef, { 
-                    currentStreak: 1,
-                    lastActivityDate: todayStr,
-                });
-                streakUpdated = true;
+                // Streak is broken, check for a shield.
+                const userItems = userData.userItems || [];
+                const streakShield = userItems.find((item: any) => item.itemId === STREAK_SHIELD_ID);
+
+                if (streakShield) {
+                    // Shield found! Consume it and save the streak.
+                    newStreak = currentStreak; // Streak does not increase, but it's not reset.
+                    batch.update(userProfileRef, {
+                        userItems: arrayRemove(streakShield),
+                        lastActivityDate: todayStr, // Update date to consume shield for today
+                    });
+                    
+                    toast({
+                        title: "¡Racha Protegida!",
+                        description: "Tu Escudo Protector ha sido utilizado para salvar tu racha.",
+                    });
+                    streakUpdated = true; // Technically updated to consume the shield
+                } else {
+                    // No shield, reset the streak.
+                    newStreak = 1;
+                    batch.update(userProfileRef, { 
+                        currentStreak: 1,
+                        lastActivityDate: todayStr,
+                    });
+                    streakUpdated = true;
+                }
             }
         } else {
             // No last activity date, start a new streak.

@@ -85,6 +85,11 @@
         "bombStreak": {
             "type": "number",
             "description": "The number of consecutive times the user has hit a bomb in Minesweeper."
+        },
+        "userItems": {
+            "type": "array",
+            "description": "List of items the user owns.",
+            "items": { "$ref": "#/entities/UserItem" }
         }
       },
       "required": [
