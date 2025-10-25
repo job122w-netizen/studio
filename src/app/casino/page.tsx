@@ -45,6 +45,17 @@ const ReelIcon = ({ symbol }: { symbol: { icon: React.ElementType, id: string }}
 type CupState = { id: number; hasPrize: boolean; isRevealed: boolean };
 type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
 
+const shuffleArray = <T,>(array: T[]): T[] => {
+    let currentIndex = array.length, randomIndex;
+    const newArray = [...array];
+    while (currentIndex !== 0) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+      [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
+    }
+    return newArray;
+};
+
 const Cup = ({ isRevealed, hasPrize, onClick, phase }: { isRevealed: boolean, hasPrize: boolean, onClick: () => void, phase: ShellGamePhase }) => (
     <div
         className={cn(
@@ -74,17 +85,6 @@ type MineCell = {
     content: MineCellContent;
 };
 type MineSweeperPhase = 'betting' | 'playing' | 'gameOver';
-
-const shuffleArray = <T,>(array: T[]): T[] => {
-    let currentIndex = array.length, randomIndex;
-    const newArray = [...array];
-    while (currentIndex !== 0) {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex--;
-      [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
-    }
-    return newArray;
-};
 
 const MineCellDisplay = ({ cell, onClick }: { cell: MineCell, onClick: () => void }) => {
     const renderContent = () => {
@@ -167,7 +167,7 @@ export default function CasinoPage() {
     const multiplier = userProfile?.mineSweeperMultiplier ?? 1;
 
     // Game Logic Functions
-    const rollDice = async () => {
+    const rollDice = () => {
         if (!userProfileRef || casinoChips < diceBetAmount || diceBetAmount < 1) {
             toast({ variant: 'destructive', title: 'Apuesta inválida', description: 'No tienes suficientes fichas para esa apuesta.' });
             return;
@@ -177,8 +177,14 @@ export default function CasinoPage() {
         setDiceResultMessage('');
         // No await here for optimistic UI update
         updateCasinoChips(userProfileRef, -diceBetAmount);
+        
+        const rollInterval = setInterval(() => {
+            setDice1(Math.floor(Math.random() * 6));
+            setDice2(Math.floor(Math.random() * 6));
+        }, 100);
 
         setTimeout(async () => {
+            clearInterval(rollInterval);
             const newDice1 = Math.floor(Math.random() * 6);
             const newDice2 = Math.floor(Math.random() * 6);
             setDice1(newDice1);
@@ -192,10 +198,10 @@ export default function CasinoPage() {
                 setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
             }
             setRolling(false);
-        }, 300); // A short delay for animation
+        }, 1000); // Animation duration
     };
 
-     const spinSlots = async () => {
+     const spinSlots = () => {
         const cost = 2;
         if (!userProfileRef || casinoChips < cost) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
@@ -647,5 +653,3 @@ export default function CasinoPage() {
         </div>
     );
 }
-
-    
