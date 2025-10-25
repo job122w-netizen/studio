@@ -41,7 +41,7 @@ export const tiendaItems = [
   {
     id: 4,
     name: 'Escudo Protector',
-    price: 750,
+    price: 10,
     description: 'Protege tu racha de un día de inactividad.',
     currency: 'goldLingots',
     consumable: true,
