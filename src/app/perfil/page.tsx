@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X, Coins } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X, Coins, Zap } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { doc, serverTimestamp, updateDoc, increment, arrayUnion } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +19,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { colorThemes } from "@/lib/themes";
+import { StreakToast } from "@/components/ui/streak-toast";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -200,6 +201,13 @@ export default function PerfilPage() {
       });
   };
 
+  const handleTestStreakAnimation = () => {
+    const testStreak = (userProfile?.currentStreak || 0) + 1;
+    toast({
+      duration: 5000,
+      component: <StreakToast streak={testStreak} />,
+    });
+  };
 
   if (isLoading || !userProfile) {
     return (
@@ -322,6 +330,10 @@ export default function PerfilPage() {
              </>
         </CardContent>
          <CardFooter className="flex-col items-stretch gap-2">
+             <Button variant="secondary" onClick={handleTestStreakAnimation}>
+                <Zap className="mr-2 h-4 w-4" />
+                Probar Animación de Racha
+            </Button>
             <Button variant="outline" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Cerrar Sesión
