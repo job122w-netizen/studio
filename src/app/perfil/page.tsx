@@ -341,7 +341,7 @@ export default function PerfilPage() {
         <CardContent>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                 {colorThemes.map(theme => {
-                    const unlockedForTesting = ['default-theme', 'theme-blue', 'theme-turquoise', 'theme-green', 'theme-lightblue', 'theme-lilac'];
+                    const unlockedForTesting = ['default-theme', 'theme-blue', 'theme-turquoise', 'theme-green', 'theme-lightblue', 'theme-lilac', 'theme-orange', 'theme-yellow', 'theme-red', 'theme-cyan', 'theme-magenta'];
                     const isUnlocked = unlockedForTesting.includes(theme.id) || userProfile.unlockedThemes?.includes(theme.id);
                     
                     if (!isUnlocked) return null;
