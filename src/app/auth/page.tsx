@@ -77,6 +77,7 @@ export default function AuthPage() {
             unlockedThemes: [],
             selectedThemeId: 'default-theme',
             mineSweeperMultiplier: 1,
+            bombStreak: 0,
         };
         setDocumentNonBlocking(userProfileRef, newUserProfile, {});
     }
@@ -121,7 +122,8 @@ export default function AuthPage() {
         userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         await createUserProfile(userCredential.user);
       } else {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
+        userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        await createUserProfile(userCredential.user); // Ensure profile exists on login too
       }
     } catch (error: any) {
         handleAuthError(error.code);
