@@ -71,7 +71,6 @@ export default function TiendaPage() {
                 await updateDoc(userProfileRef, { casinoChips: increment(10) });
                 break;
             case 1: // Gema de Enfoque - Added to inventory to be used later
-            case 2: // Poción de Energía
             case 4: // Escudo Protector
             case 7: // Cofre Épico
             case 8: // Cofre Legendario
