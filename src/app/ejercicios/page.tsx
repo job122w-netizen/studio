@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { updateUserStreak } from '@/lib/streaks';
 import { updateCasinoChips } from '@/lib/transactions';
+import { StreakToast } from '@/components/ui/streak-toast';
 
 type Exercise = {
   id: string;
@@ -126,7 +127,7 @@ export default function EjerciciosPage() {
     });
   };
   
-  const toggleCompleteExercise = (dayId: string, exerciseId: string) => {
+  const toggleCompleteExercise = async (dayId: string, exerciseId: string) => {
     if (!userProfileRef || !weeklyRoutineRef) return;
 
     let isCompleting = false;
@@ -166,7 +167,13 @@ export default function EjerciciosPage() {
         title: "¡Ejercicio completado!",
         description: `¡Has ganado ${xpReward} XP!`,
       });
-      updateUserStreak(userProfileRef);
+      const { updated, newStreak } = await updateUserStreak(userProfileRef);
+      if (updated && newStreak > 0) {
+        toast({
+            duration: 5000,
+            component: <StreakToast streak={newStreak} />,
+        });
+      }
 
       const isDayNowCompleted = dayRoutine.exercises.length > 0 && dayRoutine.exercises.every(ex => ex.completed);
 

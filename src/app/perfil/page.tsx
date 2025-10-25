@@ -18,7 +18,6 @@ import { useRouter } from "next/navigation";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { ShareButton } from "@/components/ShareButton";
 import { colorThemes } from "@/lib/themes";
 
 const ranks = [
@@ -268,8 +267,6 @@ export default function PerfilPage() {
         </CardContent>
       </Card>
       
-      <ShareButton />
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

@@ -13,6 +13,7 @@ import { updateUserStreak } from "@/lib/streaks";
 import { updateCasinoChips } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import { StreakToast } from "@/components/ui/streak-toast";
 
 const studyQuotes = [
     "El estudio no es un acto de consumir ideas, sino de crearlas y recrearlas.",
@@ -118,7 +119,7 @@ export default function Home() {
     setSessionStartTime(new Date());
   };
   
-  const handleStopStudy = (isCompleted = false) => {
+  const handleStopStudy = async (isCompleted = false) => {
     setIsStudying(false);
     if(isCompleted) {
         setSessionCompleted(true);
@@ -154,21 +155,29 @@ export default function Home() {
 
     // --- Save Session Logic ---
     if (user && studySessionsRef && finalDurationMinutes > 0) {
-        addDocumentNonBlocking(studySessionsRef, {
+        await addDocumentNonBlocking(studySessionsRef, {
             userId: user.uid,
             subject: 'Estudio General',
             startTime: sessionStartTime,
             endTime: endTime,
             durationMinutes: finalDurationMinutes
-        }).then(() => {
-            if (!isCompleted) { 
+        });
+
+        if (!isCompleted) { 
+            toast({
+               title: "Sesión guardada",
+               description: `Has estudiado por ${finalDurationMinutes} minutos.`,
+            });
+        }
+        if(userProfileRef) {
+            const { updated, newStreak } = await updateUserStreak(userProfileRef);
+            if (updated && newStreak > 0) {
                 toast({
-                   title: "Sesión guardada",
-                   description: `Has estudiado por ${finalDurationMinutes} minutos.`,
+                    duration: 5000,
+                    component: <StreakToast streak={newStreak} />,
                 });
             }
-            if(userProfileRef) updateUserStreak(userProfileRef);
-        });
+        }
     } else if (!isCompleted && elapsedTime < 60) { // Stopped before 1 min
         toast({
            title: "Sesión no guardada",
