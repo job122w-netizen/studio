@@ -8,7 +8,7 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 5 // Increased limit for custom components
+const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
 
 type ToasterToast = ToastProps & {
@@ -16,7 +16,7 @@ type ToasterToast = ToastProps & {
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
-  component?: React.ReactNode // Add custom component property
+  component?: React.ReactNode
 }
 
 const actionTypes = {
@@ -94,8 +94,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -141,9 +139,10 @@ function dispatch(action: Action) {
   })
 }
 
+// Define a more specific type for the toast function argument
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+function toast(props: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -153,8 +152,6 @@ function toast({ ...props }: Toast) {
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
-  // If it's a custom component, we assume it handles its own lifecycle.
-  // We still add it to the toast array so it can be rendered by the Toaster.
   if (props.component) {
      const duration = props.duration || 4000;
      dispatch({
@@ -165,10 +162,9 @@ function toast({ ...props }: Toast) {
             open: true,
         },
      });
-     // Automatically remove it after its duration
      setTimeout(() => {
         dispatch({ type: "REMOVE_TOAST", toastId: id });
-     }, duration + 500); // Add a buffer for fade-out animations
+     }, duration + 500); 
   } else {
     dispatch({
       type: "ADD_TOAST",
