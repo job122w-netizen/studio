@@ -17,6 +17,12 @@ export const colorThemes: ColorTheme[] = [
     { id: 'theme-turquoise', name: 'Turquesa', primary: '174 72% 56%' },
     { id: 'theme-green', name: 'Verde', primary: '142 76% 36%' },
     { id: 'theme-lightblue', name: 'Celeste', primary: '199 89% 49%' },
+    { id: 'theme-lilac', name: 'Lila', primary: '275 95% 76%' },
+    { id: 'theme-orange', name: 'Naranja', primary: '25 95% 53%' },
+    { id: 'theme-yellow', name: 'Amarillo', primary: '48 96% 56%' },
+    { id: 'theme-red', name: 'Rojo', primary: '0 84% 60%' },
+    { id: 'theme-cyan', name: 'Cian', primary: '187 78% 48%' },
+    { id: 'theme-magenta', name: 'Magenta', primary: '316 69% 54%' },
 ];
 
 /**
@@ -28,5 +34,3 @@ export function applyTheme(primaryColor: string) {
         document.documentElement.style.setProperty('--primary', primaryColor);
     }
 }
-
-    

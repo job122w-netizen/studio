@@ -341,7 +341,11 @@ export default function PerfilPage() {
         <CardContent>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                 {colorThemes.map(theme => {
-                    const isUnlocked = true; // Always true for testing
+                    const unlockedForTesting = ['default-theme', 'theme-blue', 'theme-turquoise', 'theme-green', 'theme-lightblue', 'theme-lilac'];
+                    const isUnlocked = unlockedForTesting.includes(theme.id) || userProfile.unlockedThemes?.includes(theme.id);
+                    
+                    if (!isUnlocked) return null;
+
                     const isSelected = (userProfile.selectedThemeId ?? 'default-theme') === theme.id;
                     return (
                         <div 
@@ -349,17 +353,12 @@ export default function PerfilPage() {
                             className={cn(
                                 "relative aspect-square rounded-lg flex items-center justify-center border-4 transition-all",
                                 isSelected ? "border-primary shadow-lg" : "border-transparent",
-                                isUnlocked ? "cursor-pointer hover:border-primary/50" : "cursor-not-allowed"
+                                "cursor-pointer hover:border-primary/50"
                             )}
                             style={{ backgroundColor: `hsl(${theme.primary})`}}
-                            onClick={() => isUnlocked && handleSelectTheme(theme.id)}
+                            onClick={() => handleSelectTheme(theme.id)}
                         >
                             <span className="font-bold text-xs text-primary-foreground mix-blend-difference">{theme.name}</span>
-                             {!isUnlocked && (
-                                <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-sm">
-                                    <Lock className="h-6 w-6 text-white"/>
-                                </div>
-                             )}
                         </div>
                     )
                 })}
