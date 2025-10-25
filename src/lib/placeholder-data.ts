@@ -81,15 +81,15 @@ export const tiendaItems = [
 ];
 
 export type HvPassReward = {
-    type: 'goldLingots' | 'casinoChips' | 'chest' | 'profileBackground' | 'gem';
+    type: 'goldLingots' | 'casinoChips' | 'chest' | 'profileBackground' | 'gem' | 'colorTheme';
     quantity?: number;
-    itemId?: string; // For backgrounds
+    itemId?: string; // For backgrounds or themes
 };
 
 export type HvPassLevel = {
     level: number;
     freeReward: HvPassReward;
-    premiumReward: HvPassReward;
+    premiumReward?: HvPassReward;
 };
 
 
@@ -115,7 +115,7 @@ export const hvPassLevels: HvPassLevel[] = [
   { level: 17, freeReward: { type: 'goldLingots', quantity: 3 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 18, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 19, freeReward: { type: 'goldLingots', quantity: 3 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
-  { level: 20, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'profileBackground', itemId: 'pixel-art-1' } },
+  { level: 20, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'colorTheme', itemId: 'theme-blue' } },
   { level: 21, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 22, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 23, freeReward: { type: 'goldLingots', quantity: 5 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
@@ -125,7 +125,7 @@ export const hvPassLevels: HvPassLevel[] = [
   { level: 27, freeReward: { type: 'goldLingots', quantity: 2 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 28, freeReward: { type: 'goldLingots', quantity: 3 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 29, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
-  { level: 30, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'profileBackground', itemId: 'pixel-art-2' } },
+  { level: 30, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'colorTheme', itemId: 'theme-turquoise' } },
   { level: 31, freeReward: { type: 'goldLingots', quantity: 3 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 32, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 33, freeReward: { type: 'goldLingots', quantity: 3 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
@@ -135,7 +135,7 @@ export const hvPassLevels: HvPassLevel[] = [
   { level: 37, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 38, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 39, freeReward: { type: 'goldLingots', quantity: 3 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
-  { level: 40, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'profileBackground', itemId: 'pixel-art-3' } },
+  { level: 40, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'colorTheme', itemId: 'theme-green' } },
   { level: 41, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 42, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 43, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
@@ -145,7 +145,7 @@ export const hvPassLevels: HvPassLevel[] = [
   { level: 47, freeReward: { type: 'goldLingots', quantity: 2 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 48, freeReward: { type: 'goldLingots', quantity: 5 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 49, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
-  { level: 50, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'profileBackground', itemId: 'pixel-art-4' } },
+  { level: 50, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'colorTheme', itemId: 'theme-lightblue' } },
   { level: 51, freeReward: { type: 'goldLingots', quantity: 5 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 52, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 53, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
@@ -180,7 +180,7 @@ export const hvPassLevels: HvPassLevel[] = [
   { level: 82, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 83, freeReward: { type: 'goldLingots', quantity: 3 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 84, freeReward: { type: 'gem', quantity: 1 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
-  { level: 85, freeReward: { type: 'casinoChips', quantity: 5 }, premiumReward: { type: 'casinoChips', quantity: 15 } },
+  { level: 85, freeReward: { type: 'casinoChips', quantity: 5 }, premiumReward: { type: 'chest', quantity: 1 } },
   { level: 86, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
   { level: 87, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 88, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'goldLingots', quantity: 50 } },
@@ -197,3 +197,5 @@ export const hvPassLevels: HvPassLevel[] = [
   { level: 99, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 100, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'gem', quantity: 10 } }
 ];
+
+    

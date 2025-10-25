@@ -69,6 +69,15 @@
             "type": "string",
             "description": "The ID of the currently selected profile background."
         },
+         "unlockedThemes": {
+            "type": "array",
+            "description": "List of unlocked color theme IDs.",
+            "items": { "type": "string" }
+        },
+        "selectedThemeId": {
+            "type": "string",
+            "description": "The ID of the currently selected color theme."
+        },
         "mineSweeperMultiplier": {
             "type": "number",
             "description": "The current prize multiplier for the Minesweeper game."
@@ -272,10 +281,10 @@
         "properties": {
             "type": {
                 "type": "string",
-                "enum": ["goldLingots", "casinoChips", "chest", "profileBackground", "gem"]
+                "enum": ["goldLingots", "casinoChips", "chest", "profileBackground", "gem", "colorTheme"]
             },
             "quantity": { "type": "number" },
-            "itemId": { "type": "string", "description": "ID of the specific item, e.g., a background ID." }
+            "itemId": { "type": "string", "description": "ID of the specific item, e.g., a background ID or theme ID." }
         },
         "required": ["type"]
     },
@@ -290,6 +299,18 @@
         "imageUrl": { "type": "string" }
       },
       "required": ["id", "name", "imageUrl"]
+    },
+    "ColorTheme": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ColorTheme",
+      "type": "object",
+      "description": "A color theme for app customization.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "primary": { "type": "string", "description": "HSL value for the primary color" }
+      },
+      "required": ["id", "name", "primary"]
     },
     "CasinoGame": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -412,6 +433,12 @@
       },
       "description": "List of all available profile backgrounds."
     },
+     "/colorThemes/{themeId}": {
+      "schema": {
+        "$ref": "#/entities/ColorTheme"
+      },
+      "description": "List of all available app color themes."
+    },
     "/users/{userId}/casinoGames/{casinoGameId}": {
       "schema": {
         "$ref": "#/entities/CasinoGame"
@@ -426,4 +453,5 @@
     }
   }
 }
+
     

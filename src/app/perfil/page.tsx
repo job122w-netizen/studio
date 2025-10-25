@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X, Coins } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { doc, serverTimestamp, updateDoc, increment } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc, increment, arrayUnion } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
@@ -19,6 +19,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { ShareButton } from "@/components/ShareButton";
+import { colorThemes } from "@/lib/themes";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -167,6 +168,39 @@ export default function PerfilPage() {
     });
   };
 
+  const handleSelectTheme = (themeId: string) => {
+    if (!userProfileRef) return;
+
+    // Check if the user has unlocked the theme 'default-theme'
+    const isDefaultUnlocked = userProfile?.unlockedThemes?.includes('default-theme');
+    if (!isDefaultUnlocked) {
+        // If not, add it along with the new theme
+        updateDocumentNonBlocking(userProfileRef, { 
+            selectedThemeId: themeId,
+            unlockedThemes: arrayUnion('default-theme', themeId)
+        });
+    } else {
+        updateDocumentNonBlocking(userProfileRef, { 
+            selectedThemeId: themeId,
+            unlockedThemes: arrayUnion(themeId) 
+        });
+    }
+
+    toast({
+        title: "Tema actualizado",
+        description: "Tu nuevo tema ha sido guardado y aplicado."
+    });
+  };
+
+  const handleResetTheme = () => {
+      if (!userProfileRef) return;
+      updateDocumentNonBlocking(userProfileRef, { selectedThemeId: 'default-theme' });
+      toast({
+          title: "Tema restablecido",
+          description: "Se ha restaurado el tema predeterminado."
+      });
+  };
+
 
   if (isLoading || !userProfile) {
     return (
@@ -297,6 +331,42 @@ export default function PerfilPage() {
         </CardContent>
       </Card>
       
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary"/> Temas de Color</div>
+             <Button variant="ghost" size="sm" onClick={handleResetTheme}>Restablecer</Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                {colorThemes.map(theme => {
+                    const isUnlocked = userProfile.unlockedThemes?.includes(theme.id) ?? theme.id === 'default-theme';
+                    const isSelected = (userProfile.selectedThemeId ?? 'default-theme') === theme.id;
+                    return (
+                        <div 
+                            key={theme.id} 
+                            className={cn(
+                                "relative aspect-square rounded-lg flex items-center justify-center border-4 transition-all",
+                                isSelected ? "border-primary shadow-lg" : "border-transparent",
+                                isUnlocked ? "cursor-pointer hover:border-primary/50" : "cursor-not-allowed"
+                            )}
+                            style={{ backgroundColor: `hsl(${theme.primary})`}}
+                            onClick={() => isUnlocked && handleSelectTheme(theme.id)}
+                        >
+                            <span className="font-bold text-xs text-primary-foreground mix-blend-difference">{theme.name}</span>
+                             {!isUnlocked && (
+                                <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-sm">
+                                    <Lock className="h-6 w-6 text-white"/>
+                                </div>
+                             )}
+                        </div>
+                    )
+                })}
+            </div>
+        </CardContent>
+      </Card>
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -358,3 +428,5 @@ export default function PerfilPage() {
     </div>
   );
 }
+
+    

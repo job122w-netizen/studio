@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, CheckCircle, Coins, Lock, Star, Ticket, Zap, Box, Gem } from "lucide-react";
+import { Award, CheckCircle, Coins, Lock, Star, Ticket, Zap, Box, Gem, Palette } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from "firebase/firestore";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +25,8 @@ const RewardIcon = ({ reward }: { reward: HvPassReward }) => {
             return <Box className="h-6 w-6 text-orange-400" />;
         case 'profileBackground':
             return <div className="h-6 w-6 rounded-sm border-2 border-purple-400 bg-gray-600" />;
+        case 'colorTheme':
+            return <Palette className="h-6 w-6 text-blue-400" />;
         case 'gem':
             return <Gem className="h-6 w-6 text-purple-400" />;
         default:
@@ -165,3 +167,5 @@ export default function PaseHVPage() {
     </div>
   );
 }
+
+    
