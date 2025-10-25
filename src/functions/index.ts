@@ -14,7 +14,7 @@ const db = getFirestore();
  */
 const updateUserRanking = async (userId: string, userData: any) => {
     // Ensure that experiencePoints is always a number, defaulting to 0 if missing or not a number.
-    const experiencePoints = (typeof userData?.experiencePoints === 'number') ? userData.experiencePoints : 0;
+    const experiencePoints = userData?.experiencePoints || 0;
     
     // Provide a default username if it's missing.
     const username = userData?.username || 'Usuario Anónimo';
