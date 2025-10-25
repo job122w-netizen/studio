@@ -278,10 +278,6 @@ export default function PerfilPage() {
     let description = 'Has recibido: ';
     const rewards: string[] = [];
 
-    if (reward.xp) {
-        updates.experiencePoints = increment(reward.xp);
-        rewards.push(`${reward.xp.toLocaleString()} XP`);
-    }
     if (reward.goldLingots) {
         updates.goldLingots = increment(reward.goldLingots);
         rewards.push(`${reward.goldLingots} lingotes`);
