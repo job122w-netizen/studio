@@ -280,8 +280,8 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      <section className="text-center">
-        <p className="text-muted-foreground mt-2 text-sm italic">"{currentQuote}"</p>
+      <section className="text-center p-4 border rounded-lg">
+        <p className="text-muted-foreground text-sm italic">"{currentQuote}"</p>
       </section>
     </div>
   );
