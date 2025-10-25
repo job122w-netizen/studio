@@ -68,7 +68,7 @@ export default function TiendaPage() {
                 updates.gems = increment((updates.gems?.value || 0) + 1);
                 break;
             case 6: // 10 fichas
-                updates.casinoChips = increment(10);
+                await updateDoc(userProfileRef, { casinoChips: increment(10) });
                 break;
             case 1: // Gema de Enfoque - Added to inventory to be used later
             case 2: // Poción de Energía

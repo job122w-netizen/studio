@@ -161,15 +161,9 @@ export default function PaseHVPage() {
        {!hasPremiumPass && (
          <Card className="shadow-lg bg-gradient-to-br from-primary via-purple-600 to-indigo-700 text-primary-foreground mt-8">
             <CardHeader>
-                <CardTitle className="text-2xl">Conviértete en Premium por $5 USD</CardTitle>
-                <CardDescription className="text-purple-200">Acceso a todas las recompensas exclusivas del pase.</CardDescription>
+                <CardTitle className="text-2xl">¡Consigue el Pase Premium!</CardTitle>
+                <CardDescription className="text-purple-200">Abre cofres en la tienda para tener la oportunidad de ganar acceso a todas las recompensas exclusivas del pase.</CardDescription>
             </CardHeader>
-            <CardFooter>
-            <Button size="lg" variant="secondary" className="w-full text-primary font-bold hover:bg-white/90" onClick={handlePurchasePass}>
-                <Zap className="mr-2 h-4 w-4" />
-                Obtener Pase Premium
-            </Button>
-            </CardFooter>
         </Card>
        )}
     </div>

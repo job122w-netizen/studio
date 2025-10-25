@@ -248,6 +248,7 @@ export default function PerfilPage() {
     const updates: { [key: string]: any } = {};
     let purchaseDescription = `Has usado ${item.name}.`;
     let purchaseTitle = "¡Objeto utilizado!";
+    let extraRewards: string[] = [];
 
     switch (item.id) {
         case 1: // Gema de Enfoque
@@ -264,21 +265,42 @@ export default function PerfilPage() {
             
             updates.goldLingots = increment(lingotsWon);
             updates.casinoChips = increment(chipsWon);
-
-            let rewardsDescription = `¡Ganaste ${lingotsWon} lingotes y ${chipsWon} fichas!`;
+            extraRewards.push(`${lingotsWon} lingotes`, `${chipsWon} fichas`);
             
             const premiumChance = isLegendary ? 0.05 : 0.01;
             if (Math.random() < premiumChance) {
                  if (!userProfile.hasPremiumPass) {
                     updates.hasPremiumPass = true;
-                    rewardsDescription += " ¡Y el Pase HV Premium!";
+                    extraRewards.push("¡el Pase HV Premium!");
                  } else {
                     updates.gems = increment(5);
-                    rewardsDescription += " ¡Y 5 gemas de consolación!";
+                    extraRewards.push("5 gemas de consolación");
                  }
             }
             
-            purchaseDescription = rewardsDescription;
+            // Chance to win a background
+            const bgChance = isLegendary ? 0.5 : 0.2;
+            if (Math.random() < bgChance) {
+                const availableBgs = pixelArtBackgrounds.filter(bg => !userProfile.unlockedBackgrounds?.includes(bg.id));
+                if (availableBgs.length > 0) {
+                    const wonBg = availableBgs[Math.floor(Math.random() * availableBgs.length)];
+                    updates.unlockedBackgrounds = arrayUnion(wonBg.id);
+                    extraRewards.push(`el fondo "${wonBg.description.split(' ')[2]}"`);
+                }
+            }
+
+            // Chance to win a color theme
+            const colorChance = isLegendary ? 0.5 : 0.2;
+            if (Math.random() < colorChance) {
+                const availableColors = colorThemes.filter(c => !userProfile.unlockedThemes?.includes(c.id));
+                if (availableColors.length > 0) {
+                    const wonColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+                    updates.unlockedThemes = arrayUnion(wonColor.id);
+                    extraRewards.push(`el tema "${wonColor.name}"`);
+                }
+            }
+
+            purchaseDescription = '¡Ganaste ' + extraRewards.join(', ') + '!';
             purchaseTitle = isLegendary ? "Cofre Legendario Abierto" : "Cofre Épico Abierto";
             break;
         default:
@@ -501,8 +523,7 @@ export default function PerfilPage() {
         <CardContent>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                 {colorThemes.map(theme => {
-                    const unlockedForTesting = ['default-theme', 'theme-blue', 'theme-turquoise', 'theme-green', 'theme-lightblue', 'theme-lilac', 'theme-orange', 'theme-yellow', 'theme-red', 'theme-cyan', 'theme-magenta'];
-                    const isUnlocked = unlockedForTesting.includes(theme.id) || userProfile.unlockedThemes?.includes(theme.id);
+                    const isUnlocked = userProfile.unlockedThemes?.includes(theme.id);
                     
                     if (!isUnlocked) return null;
 
@@ -560,7 +581,7 @@ export default function PerfilPage() {
                 })}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground">Desbloquea fondos en el Pase HV para personalizar tu perfil.</p>
+            <p className="text-center text-muted-foreground">Desbloquea fondos en el Pase HV o en cofres para personalizar tu perfil.</p>
           )}
         </CardContent>
       </Card>
