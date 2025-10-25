@@ -30,9 +30,9 @@ const prizeTable = [
     { icon: Ticket, label: '100 Fichas de Casino', combo: [Ticket, Ticket, Ticket] },
 ];
 
-const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, id: string }, isSpinning: boolean }) => {
+const ReelIcon = ({ symbol }: { symbol: { icon: React.ElementType, id: string }}) => {
     const Icon = symbol.icon;
-    return <Icon className={cn("h-16 w-16 sm:h-20 sm:w-20 transition-transform duration-100", isSpinning && "animate-spin", {
+    return <Icon className={cn("h-16 w-16 sm:h-20 sm:w-20", {
         'text-yellow-500': symbol.id === 'coins',
         'text-red-400': symbol.id === 'ticket',
         'text-purple-400': symbol.id === 'gem',
@@ -45,12 +45,11 @@ const ReelIcon = ({ symbol, isSpinning }: { symbol: { icon: React.ElementType, i
 type CupState = { id: number; hasPrize: boolean; isRevealed: boolean };
 type ShellGamePhase = 'betting' | 'shuffling' | 'picking' | 'result';
 
-const Cup = ({ isRevealed, hasPrize, isShuffling, onClick, phase }: { isRevealed: boolean, hasPrize: boolean, isShuffling: boolean, onClick: () => void, phase: ShellGamePhase }) => (
+const Cup = ({ isRevealed, hasPrize, onClick, phase }: { isRevealed: boolean, hasPrize: boolean, onClick: () => void, phase: ShellGamePhase }) => (
     <div
         className={cn(
             "relative transition-transform duration-300",
             phase === 'picking' && "cursor-pointer hover:scale-110",
-            isShuffling && "animate-pulse"
         )}
         onClick={onClick}
     >
@@ -135,7 +134,6 @@ export default function CasinoPage() {
     const [reels, setReels] = useState([slotSymbols[0], slotSymbols[1], slotSymbols[2]]);
     const [spinning, setSpinning] = useState(false);
     const [slotResultMessage, setSlotResultMessage] = useState('');
-    const [reelsSpinning, setReelsSpinning] = useState([false, false, false]);
 
     const [shellGamePhase, setShellGamePhase] = useState<ShellGamePhase>('betting');
     const [cups, setCups] = useState<CupState[]>([
@@ -179,25 +177,19 @@ export default function CasinoPage() {
         setDiceResultMessage('');
         await updateCasinoChips(userProfileRef, -diceBetAmount);
 
-        let rollCount = 0;
-        const interval = setInterval(() => {
-            const newDice1 = Math.floor(Math.random() * 6);
-            const newDice2 = Math.floor(Math.random() * 6);
-            setDice1(newDice1);
-            setDice2(newDice2);
-            rollCount++;
-            if (rollCount > 10) {
-                clearInterval(interval);
-                setRolling(false);
-                const winnings = diceBetAmount * 2;
-                if (newDice1 === newDice2) {
-                    setDiceResultMessage(`¡Ganaste ${winnings} fichas!`);
-                     updateCasinoChips(userProfileRef, winnings);
-                } else {
-                    setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
-                }
-            }
-        }, 100);
+        const newDice1 = Math.floor(Math.random() * 6);
+        const newDice2 = Math.floor(Math.random() * 6);
+        setDice1(newDice1);
+        setDice2(newDice2);
+
+        const winnings = diceBetAmount * 2;
+        if (newDice1 === newDice2) {
+            setDiceResultMessage(`¡Ganaste ${winnings} fichas!`);
+            await updateCasinoChips(userProfileRef, winnings);
+        } else {
+            setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
+        }
+        setRolling(false);
     };
 
      const spinSlots = async () => {
@@ -211,43 +203,15 @@ export default function CasinoPage() {
         setSlotResultMessage('');
         await updateCasinoChips(userProfileRef, -cost);
         
-        let finalReelsResult: typeof slotSymbols = [...reels];
-        setReelsSpinning([true, true, true]);
-
-        const spinIntervals = finalReelsResult.map((_, index) => {
-            return setInterval(() => {
-                setReels(currentReels => {
-                    const newReels = [...currentReels];
-                    newReels[index] = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
-                    return newReels;
-                });
-            }, 100);
-        });
-
-        const stopReel = (index: number) => {
-            clearInterval(spinIntervals[index]);
-            const finalSymbol = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
-            finalReelsResult[index] = finalSymbol;
-            setReels(current => {
-                const newReels = [...current];
-                newReels[index] = finalSymbol;
-                return newReels;
-            });
-            setReelsSpinning(s => {
-                const newSpinning = [...s];
-                newSpinning[index] = false;
-                return newSpinning;
-            });
-
-            if (index === finalReelsResult.length - 1) {
-                setSpinning(false);
-                checkWin(finalReelsResult);
-            }
-        };
-
-        setTimeout(() => stopReel(0), 1000);
-        setTimeout(() => stopReel(1), 2000);
-        setTimeout(() => stopReel(2), 3000);
+        const finalReelsResult = [
+            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+            slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+            slotSymbols[Math.floor(Math.random() * slotSymbols.length)]
+        ];
+        
+        setReels(finalReelsResult);
+        await checkWin(finalReelsResult);
+        setSpinning(false);
     };
 
     const checkWin = async (finalReels: typeof slotSymbols) => {
@@ -264,12 +228,15 @@ export default function CasinoPage() {
                 case 'star':
                     toastTitle = "¡¡¡PREMIO MAYOR!!!";
                     toastDescription = "¡Has ganado el Pase HV Premium!";
+                    await updateDoc(userProfileRef, { hasPremiumPass: true });
                     break;
                 case 'gem':
                     toastDescription = "¡Has ganado 20 Gemas!";
+                    await updateDoc(userProfileRef, { gems: increment(20) });
                     break;
                 case 'coins':
                     toastDescription = "¡Has ganado 80 Lingotes de Oro!";
+                    await updateDoc(userProfileRef, { goldLingots: increment(80) });
                     break;
                 case 'ticket':
                     await updateCasinoChips(userProfileRef, 100);
@@ -312,20 +279,13 @@ export default function CasinoPage() {
         const initialCups = cups.map((cup, index) => ({
             ...cup,
             hasPrize: index === winningCupIndex,
-            isRevealed: true,
+            isRevealed: false, // Keep them hidden initially
         }));
-        setCups(initialCups);
-
-        setTimeout(() => {
-            const hiddenPrizeCups = initialCups.map(c => ({...c, isRevealed: false}));
-            
-            setTimeout(() => {
-                 const shuffledCups = shuffleArray(hiddenPrizeCups);
-                 setCups(shuffledCups);
-                setShellGamePhase('picking');
-                setShellResultMessage('¿Dónde está la ficha?');
-            }, 2500); 
-        }, 1500);
+        
+        const shuffledCups = shuffleArray(initialCups);
+        setCups(shuffledCups);
+        setShellGamePhase('picking');
+        setShellResultMessage('¿Dónde está la ficha?');
     };
 
     const handleCupPick = async (pickedCup: CupState) => {
@@ -553,7 +513,6 @@ export default function CasinoPage() {
                                 key={cup.id}
                                 isRevealed={cup.isRevealed}
                                 hasPrize={cup.hasPrize}
-                                isShuffling={shellGamePhase === 'shuffling'}
                                 onClick={() => handleCupPick(cup)}
                                 phase={shellGamePhase}
                             />
@@ -596,7 +555,7 @@ export default function CasinoPage() {
                         </div>
                         <div className="flex justify-center gap-4 sm:gap-8 p-4 bg-muted/50 rounded-lg border-2 border-primary/20">
                            {reels.map((symbol, index) => (
-                              <ReelIcon key={index} symbol={symbol} isSpinning={reelsSpinning[index]} />
+                              <ReelIcon key={index} symbol={symbol} />
                            ))}
                         </div>
                     </div>
@@ -647,8 +606,8 @@ export default function CasinoPage() {
                             const Dice1Icon = diceIcons[dice1];
                             const Dice2Icon = diceIcons[dice2];
                             return <>
-                                <Dice1Icon className={cn("h-24 w-24 text-primary", rolling && "animate-spin")} />
-                                <Dice2Icon className={cn("h-24 w-24 text-primary", rolling && "animate-spin")} />
+                                <Dice1Icon className={cn("h-24 w-24 text-primary")} />
+                                <Dice2Icon className={cn("h-24 w-24 text-primary")} />
                             </>
                         })()}
                     </div>
@@ -663,3 +622,5 @@ export default function CasinoPage() {
         </div>
     );
 }
+
+    
