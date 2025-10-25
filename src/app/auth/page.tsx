@@ -74,6 +74,7 @@ export default function AuthPage() {
             hvPassXp: 0,
             hasPremiumPass: false,
             unlockedBackgrounds: [],
+            selectedBackgroundId: null,
             unlockedThemes: [],
             selectedThemeId: 'default-theme',
             mineSweeperMultiplier: 1,
@@ -120,11 +121,10 @@ export default function AuthPage() {
       let userCredential: UserCredential;
       if (isSignUp) {
         userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-        await createUserProfile(userCredential.user);
       } else {
         userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        await createUserProfile(userCredential.user); // Ensure profile exists on login too
       }
+      await createUserProfile(userCredential.user);
     } catch (error: any) {
         handleAuthError(error.code);
     } finally {
