@@ -5,7 +5,7 @@ import { tiendaItems as placeholderItems } from "@/lib/placeholder-data";
 import { Coins, Gem, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, increment, arrayUnion } from "firebase/firestore";
+import { doc, increment, arrayUnion, Timestamp } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,6 +64,12 @@ export default function TiendaPage() {
 
     // Add item effect
     switch (item.id) {
+        case 1: // Gema de Enfoque
+            const now = new Date();
+            const expiryDate = new Date(now.getTime() + 14 * 60 * 60 * 1000); // 14 hours from now
+            updates.focusGemActiveUntil = Timestamp.fromDate(expiryDate);
+            purchaseDescription = "¡Recompensas de estudio duplicadas por 14 horas!";
+            break;
         case 5: // 1 gema
             updates.gems = increment(1 - (item.currency === 'gems' ? item.price : 0));
             break;
@@ -98,7 +104,6 @@ export default function TiendaPage() {
 
             break;
         }
-        case 1: // Gema de Enfoque - Example of a non-consumable, unique item
         case 3: // Llave de Logro
         case 4: // Escudo Protector - Consumable, but handled by arrayUnion/arrayRemove
         default:

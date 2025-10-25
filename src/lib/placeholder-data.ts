@@ -1,4 +1,3 @@
-
 import type { ImagePlaceholder } from './placeholder-images';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -17,10 +16,10 @@ export const tiendaItems = [
   {
     id: 1,
     name: 'Gema de Enfoque',
-    price: 500,
-    description: 'Aumenta los puntos de estudio en un 10% por 1 hora.',
-    currency: 'goldLingots',
-    consumable: false,
+    price: 3,
+    description: 'Duplica las recompensas de estudio por 14 horas.',
+    currency: 'gems',
+    consumable: true,
   },
   {
     id: 2,
@@ -197,5 +196,3 @@ export const hvPassLevels: HvPassLevel[] = [
   { level: 99, freeReward: { type: 'goldLingots', quantity: 4 }, premiumReward: { type: 'casinoChips', quantity: 5 } },
   { level: 100, freeReward: { type: 'chest', quantity: 1 }, premiumReward: { type: 'gem', quantity: 10 } }
 ];
-
-    

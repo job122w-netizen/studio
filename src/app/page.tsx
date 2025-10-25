@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -136,15 +135,31 @@ export default function Home() {
     const finalDurationMinutes = isCompleted ? studyDurationMinutes : Math.floor(elapsedTime / 60);
 
     // --- Reward Logic ---
-    if (isCompleted && studyDurationMinutes >= 25 && userProfileRef) {
+    if (isCompleted && studyDurationMinutes >= 25 && userProfileRef && userProfile) {
         const blocksOf25 = Math.floor(studyDurationMinutes / 25);
-        const xpReward = blocksOf25 * 1000;
-        const chipReward = blocksOf25 * 3;
-        const lingotReward = blocksOf25 * 1;
+        let xpReward = blocksOf25 * 1000;
+        let chipReward = blocksOf25 * 3;
+        let lingotReward = blocksOf25 * 1;
+
+        // Check for active Focus Gem
+        const now = new Date();
+        const focusGemExpiry = userProfile.focusGemActiveUntil?.toDate();
+        let gemActive = false;
+        if (focusGemExpiry && focusGemExpiry > now) {
+            xpReward *= 2;
+            chipReward *= 2;
+            lingotReward *= 2;
+            gemActive = true;
+        }
+
+        const toastTitle = gemActive ? "¡Estudio Potenciado!" : "¡Sesión de estudio completada!";
+        const toastDescription = `¡Has ganado ${xpReward} XP, ${lingotReward} lingote(s) y ${chipReward} fichas!`;
+
         toast({
-          title: "¡Sesión de estudio completada!",
-          description: `¡Has ganado ${xpReward} XP, ${lingotReward} lingote y ${chipReward} fichas!`,
+          title: toastTitle,
+          description: toastDescription,
         });
+
         updateDocumentNonBlocking(userProfileRef, {
           experiencePoints: increment(xpReward),
           goldLingots: increment(lingotReward)
@@ -299,5 +314,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
