@@ -131,17 +131,6 @@ export default function TiendaPage() {
       <div className="grid grid-cols-2 gap-4">
         {placeholderItems.map((item) => (
           <Card key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-            {item.image && (
-              <div className="relative aspect-[3/2] w-full">
-                <Image
-                  src={item.image.imageUrl}
-                  alt={item.name}
-                  fill
-                  className="object-cover"
-                  data-ai-hint={item.image.imageHint}
-                />
-              </div>
-            )}
             <CardHeader className="p-4 flex-grow">
               <CardTitle className="text-base">{item.name}</CardTitle>
               <CardDescription className="text-xs">{item.description}</CardDescription>
