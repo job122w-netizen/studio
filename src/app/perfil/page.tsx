@@ -341,7 +341,7 @@ export default function PerfilPage() {
         <CardContent>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                 {colorThemes.map(theme => {
-                    const isUnlocked = userProfile.unlockedThemes?.includes(theme.id) ?? theme.id === 'default-theme';
+                    const isUnlocked = true; // Always true for testing
                     const isSelected = (userProfile.selectedThemeId ?? 'default-theme') === theme.id;
                     return (
                         <div 
@@ -428,5 +428,3 @@ export default function PerfilPage() {
     </div>
   );
 }
-
-    
