@@ -14,6 +14,15 @@ import { updateCasinoChips } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 
+const studyQuotes = [
+    "El estudio no es un acto de consumir ideas, sino de crearlas y recrearlas.",
+    "La raíz de la educación es amarga, pero el fruto es dulce.",
+    "Involúcrame y lo aprendo.",
+    "El aprendizaje es un tesoro que seguirá a su dueño a todas partes.",
+    "La inversión en conocimiento paga el mejor interés.",
+    "Nunca consideres el estudio como una obligación, sino como una oportunidad."
+];
+
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -39,9 +48,14 @@ export default function Home() {
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [totalSessionDuration, setTotalSessionDuration] = useState(25 * 60);
   const [showCustomSlider, setShowCustomSlider] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState('');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
+  useEffect(() => {
+    setCurrentQuote(studyQuotes[Math.floor(Math.random() * studyQuotes.length)]);
+  }, []);
+
   useEffect(() => {
     if (!isUserLoading && !user) {
         router.push('/auth');
@@ -176,73 +190,74 @@ export default function Home() {
   return (
     <div className="space-y-8 animate-fade-in">
       <section className="text-center">
-        <h1 className="text-3xl font-bold font-headline text-foreground">Tu Espacio de Crecimiento</h1>
-        <p className="text-muted-foreground mt-2">"La disciplina es el puente entre las metas y los logros."</p>
+        <p className="text-muted-foreground mt-2 text-lg italic">"{currentQuote}"</p>
       </section>
       
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-10 min-h-[400px] bg-background/40">
           
-           <div 
-                className={cn(
-                    "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
-                    (isStudying || sessionCompleted) && "animate-pulse-glow",
-                    !isStudying && !sessionCompleted && "shadow-subtle-glow"
-                )}
-                style={{
-                  height: `${sphereSize}px`,
-                  width: `${sphereSize}px`,
-                }}
-              />
-
-          {isStudying || sessionCompleted ? (
-            <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
-              <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
-              
-              {isStudying && (
-                <Button size="lg" variant="ghost" className="w-full" onClick={() => handleStopStudy(false)} disabled={isLoading}>
-                    <Square className="mr-2 h-5 w-5"/>
-                    Detener
-                </Button>
-              )}
-
-              {sessionCompleted && (
-                 <Button size="lg" className="w-full" onClick={() => {
-                    setSessionCompleted(false);
-                    setRemainingTime(studyDurationMinutes * 60);
-                }}>
-                    <Play className="mr-2 h-5 w-5"/>
-                    Estudiar de Nuevo
-                </Button>
-              )}
-            </div>
-          ) : (
-             <div className="flex flex-col items-center justify-center gap-8 text-center text-foreground">
-                  <p className="font-semibold text-lg">Minutos de Estudio</p>
-                  <div className="flex gap-2">
-                      <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
-                      <Button variant={studyDurationMinutes === 50 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(50); setShowCustomSlider(false); }}>50 min</Button>
-                      <Button variant={showCustomSlider ? 'default' : 'secondary'} size="icon" onClick={() => setShowCustomSlider(s => !s)}><Plus /></Button>
-                  </div>
-                  
-                  {showCustomSlider && (
-                    <div className="w-full max-w-xs pt-2 space-y-2">
-                        <p className="font-bold text-xl">{formatSliderTime(studyDurationMinutes)}</p>
-                        <Slider
-                            defaultValue={[studyDurationMinutes]}
-                            min={1}
-                            max={14 * 60}
-                            step={1}
-                            onValueChange={(value) => setStudyDurationMinutes(value[0])}
-                        />
-                    </div>
+           <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
+             <div 
+                  className={cn(
+                      "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
+                      (isStudying || sessionCompleted) && "animate-pulse-glow",
+                      !isStudying && !sessionCompleted && "shadow-subtle-glow"
                   )}
-                   <Button size="lg" className="w-full mt-2" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
-                      <Play className="mr-2 h-5 w-5"/>
-                      Iniciar Sesión
+                  style={{
+                    height: `${sphereSize}px`,
+                    width: `${sphereSize}px`,
+                  }}
+                />
+
+            {isStudying || sessionCompleted ? (
+              <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground mt-4">
+                <p className="text-5xl sm:text-6xl font-bold font-mono text-foreground drop-shadow-lg z-10">{formatTime(remainingTime)}</p>
+                
+                {isStudying && (
+                  <Button size="lg" variant="ghost" className="w-full" onClick={() => handleStopStudy(false)} disabled={isLoading}>
+                      <Square className="mr-2 h-5 w-5"/>
+                      Detener
                   </Button>
+                )}
+
+                {sessionCompleted && (
+                   <Button size="lg" className="w-full" onClick={() => {
+                      setSessionCompleted(false);
+                      setRemainingTime(studyDurationMinutes * 60);
+                  }}>
+                      <Play className="mr-2 h-5 w-5"/>
+                      Estudiar de Nuevo
+                  </Button>
+                )}
               </div>
-          )}
+            ) : (
+               <div className="flex flex-col items-center justify-center gap-8 text-center text-foreground mt-4">
+                    <p className="font-semibold text-lg">Minutos de Estudio</p>
+                    <div className="flex gap-2">
+                        <Button variant={studyDurationMinutes === 25 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(25); setShowCustomSlider(false); }}>25 min</Button>
+                        <Button variant={studyDurationMinutes === 50 && !showCustomSlider ? 'default' : 'secondary'} onClick={() => { setStudyDurationMinutes(50); setShowCustomSlider(false); }}>50 min</Button>
+                        <Button variant={showCustomSlider ? 'default' : 'secondary'} size="icon" onClick={() => setShowCustomSlider(s => !s)}><Plus /></Button>
+                    </div>
+                    
+                    {showCustomSlider && (
+                      <div className="w-full max-w-xs pt-2 space-y-2">
+                          <p className="font-bold text-xl">{formatSliderTime(studyDurationMinutes)}</p>
+                          <Slider
+                              defaultValue={[studyDurationMinutes]}
+                              min={1}
+                              max={14 * 60}
+                              step={1}
+                              onValueChange={(value) => setStudyDurationMinutes(value[0])}
+                          />
+                      </div>
+                    )}
+                     <Button size="lg" className="w-full mt-2" onClick={handleStartStudy} disabled={isLoading || studyDurationMinutes <= 0}>
+                        <Play className="mr-2 h-5 w-5"/>
+                        Iniciar Sesión
+                    </Button>
+                </div>
+            )}
+           </div>
 
         </CardContent>
       </Card>
