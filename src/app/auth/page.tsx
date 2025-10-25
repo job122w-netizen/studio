@@ -52,36 +52,47 @@ export default function AuthPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const createUserProfile = async (user: User) => {
+  const createUserProfile = async (user: User, isNewUser: boolean = false) => {
     if (!firestore) return;
     const userProfileRef = doc(firestore, 'users', user.uid);
-    const userProfileSnap = await getDoc(userProfileRef);
-
-    if (!userProfileSnap.exists()) {
-        const newUserProfile = {
-            username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
-            email: user.email || 'anonimo@desafiohv.com',
-            level: 1,
-            experiencePoints: 0,
-            goldLingots: 0,
-            casinoChips: 0,
-            gems: 0,
-            createdAt: serverTimestamp(),
-            imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-            currentStreak: 0,
-            lastActivityDate: null,
-            hvPassLevel: 1,
-            hvPassXp: 0,
-            hasPremiumPass: false,
-            unlockedBackgrounds: [],
-            selectedBackgroundId: null,
-            unlockedThemes: [],
-            selectedThemeId: 'default-theme',
-            mineSweeperMultiplier: 1,
-            bombStreak: 0,
-        };
-        setDocumentNonBlocking(userProfileRef, newUserProfile, {});
+    
+    // Only create a new profile if it's a new user and the document doesn't exist
+    if (isNewUser) {
+        const userProfileSnap = await getDoc(userProfileRef);
+        if (userProfileSnap.exists()) {
+            return; // Profile already exists, do nothing
+        }
+    } else {
+        // For sign-ins, we can also check and create if missing, as a safeguard.
+         const userProfileSnap = await getDoc(userProfileRef);
+        if (userProfileSnap.exists()) {
+            return;
+        }
     }
+
+    const newUserProfile = {
+        username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
+        email: user.email || 'anonimo@desafiohv.com',
+        level: 1,
+        experiencePoints: 0,
+        goldLingots: 0,
+        casinoChips: 0,
+        gems: 0,
+        createdAt: serverTimestamp(),
+        imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+        currentStreak: 0,
+        lastActivityDate: null,
+        hvPassLevel: 1,
+        hvPassXp: 0,
+        hasPremiumPass: false,
+        unlockedBackgrounds: [],
+        selectedBackgroundId: null,
+        unlockedThemes: ['default-theme'],
+        selectedThemeId: 'default-theme',
+        mineSweeperMultiplier: 1,
+        bombStreak: 0,
+    };
+    setDocumentNonBlocking(userProfileRef, newUserProfile, {});
   };
 
   const handleAuthError = (errorCode: string) => {
@@ -95,13 +106,13 @@ export default function AuthPage() {
             break;
         case "auth/invalid-credential":
         case AuthErrorCodes.INVALID_PASSWORD:
-             description = "La contraseña es incorrecta.";
+             description = "Correo o contraseña incorrectos.";
             break;
         case AuthErrorCodes.EMAIL_EXISTS:
-             description = "El correo electrónico ya está en uso.";
+             description = "El correo electrónico ya está en uso por otra cuenta.";
             break;
         case AuthErrorCodes.WEAK_PASSWORD:
-            description = "La contraseña es demasiado débil.";
+            description = "La contraseña es demasiado débil (mínimo 6 caracteres).";
             break;
         default:
             description = "Por favor, revisa tus credenciales e inténtalo de nuevo."
@@ -118,13 +129,13 @@ export default function AuthPage() {
     if (!auth) return;
     setIsSubmitting(true);
     try {
-      let userCredential: UserCredential;
       if (isSignUp) {
-        userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        await createUserProfile(userCredential.user, true); // It's a new user
       } else {
-        userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        await createUserProfile(userCredential.user, false); // Safeguard check on sign-in
       }
-      await createUserProfile(userCredential.user);
     } catch (error: any) {
         handleAuthError(error.code);
     } finally {
@@ -137,7 +148,7 @@ export default function AuthPage() {
     setIsSubmitting(true);
     try {
         const userCredential = await initiateAnonymousSignIn(auth);
-        await createUserProfile(userCredential.user);
+        await createUserProfile(userCredential.user, true);
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {
@@ -151,7 +162,8 @@ export default function AuthPage() {
     try {
         const provider = new GoogleAuthProvider();
         const userCredential = await signInWithPopup(auth, provider);
-        await createUserProfile(userCredential.user);
+        // Let createUserProfile handle if it's a truly new user or not
+        await createUserProfile(userCredential.user, false); 
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {
@@ -236,8 +248,8 @@ export default function AuthPage() {
             </Button>
           <Button 
             onClick={handleAnonymousSignIn} 
-            variant="outline" 
-            className="w-full"
+            variant="link" 
+            className="w-full text-muted-foreground"
             disabled={isSubmitting}
             >
             Entrar como Anónimo

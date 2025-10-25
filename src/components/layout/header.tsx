@@ -1,4 +1,4 @@
-import { ThemeToggle } from "../theme-toggle";
+import { UserNav } from "./user-nav";
 
 export function Header() {
   return (
@@ -7,7 +7,7 @@ export function Header() {
       <h1 className="text-2xl font-bold tracking-tight text-foreground font-headline drop-shadow-md">
         Desafío HV
       </h1>
-      <ThemeToggle />
+      <UserNav />
     </header>
   );
 }
