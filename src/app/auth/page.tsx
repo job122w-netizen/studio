@@ -13,7 +13,7 @@ import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Auth, AuthErrorCodes, User, UserCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { doc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Por favor, introduce un correo válido.' }),
@@ -25,6 +25,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
         <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
         <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+        ... (path data continues) ...
         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
     </svg>
 );
@@ -52,47 +53,52 @@ export default function AuthPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const createUserProfile = async (user: User, isNewUser: boolean = false) => {
+  const createUserProfile = async (user: User) => {
     if (!firestore) return;
     const userProfileRef = doc(firestore, 'users', user.uid);
-    
-    // Only create a new profile if it's a new user and the document doesn't exist
-    if (isNewUser) {
-        const userProfileSnap = await getDoc(userProfileRef);
-        if (userProfileSnap.exists()) {
-            return; // Profile already exists, do nothing
+    const userProfileSnap = await getDoc(userProfileRef);
+
+    if (userProfileSnap.exists()) {
+        // Profile exists, update it with the latest info from the auth provider
+        const updateData: { username?: string, imageUrl?: string } = {};
+        if (user.displayName) {
+            updateData.username = user.displayName;
+        }
+        if (user.photoURL) {
+            updateData.imageUrl = user.photoURL;
+        }
+        if (Object.keys(updateData).length > 0) {
+            await updateDoc(userProfileRef, updateData);
         }
     } else {
-        // For sign-ins, we can also check and create if missing, as a safeguard.
-         const userProfileSnap = await getDoc(userProfileRef);
-        if (userProfileSnap.exists()) {
-            return;
-        }
+        // Profile doesn't exist, create a new one
+        const newUserProfile = {
+            username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
+            email: user.email || 'anonimo@desafiohv.com',
+            level: 1,
+            experiencePoints: 0,
+            goldLingots: 0,
+            casinoChips: 0,
+            gems: 0,
+            createdAt: serverTimestamp(),
+            imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+            currentStreak: 0,
+            lastActivityDate: null,
+            hvPassLevel: 1,
+            hvPassXp: 0,
+            hasPremiumPass: false,
+            unlockedBackgrounds: [],
+            selectedBackgroundId: null,
+            unlockedThemes: ['default-theme'],
+            selectedThemeId: 'default-theme',
+            mineSweeperMultiplier: 1,
+            bombStreak: 0,
+            userItems: [],
+            claimedStudyAchievements: [],
+            claimedStreakAchievements: []
+        };
+        setDocumentNonBlocking(userProfileRef, newUserProfile, {});
     }
-
-    const newUserProfile = {
-        username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
-        email: user.email || 'anonimo@desafiohv.com',
-        level: 1,
-        experiencePoints: 0,
-        goldLingots: 0,
-        casinoChips: 0,
-        gems: 0,
-        createdAt: serverTimestamp(),
-        imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-        currentStreak: 0,
-        lastActivityDate: null,
-        hvPassLevel: 1,
-        hvPassXp: 0,
-        hasPremiumPass: false,
-        unlockedBackgrounds: [],
-        selectedBackgroundId: null,
-        unlockedThemes: ['default-theme'],
-        selectedThemeId: 'default-theme',
-        mineSweeperMultiplier: 1,
-        bombStreak: 0,
-    };
-    setDocumentNonBlocking(userProfileRef, newUserProfile, {});
   };
 
   const handleAuthError = (errorCode: string) => {
@@ -129,13 +135,13 @@ export default function AuthPage() {
     if (!auth) return;
     setIsSubmitting(true);
     try {
+      let userCredential: UserCredential;
       if (isSignUp) {
-        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-        await createUserProfile(userCredential.user, true); // It's a new user
+        userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       } else {
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        await createUserProfile(userCredential.user, false); // Safeguard check on sign-in
+        userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       }
+      await createUserProfile(userCredential.user);
     } catch (error: any) {
         handleAuthError(error.code);
     } finally {
@@ -148,7 +154,7 @@ export default function AuthPage() {
     setIsSubmitting(true);
     try {
         const userCredential = await initiateAnonymousSignIn(auth);
-        await createUserProfile(userCredential.user, true);
+        await createUserProfile(userCredential.user);
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {
@@ -162,8 +168,7 @@ export default function AuthPage() {
     try {
         const provider = new GoogleAuthProvider();
         const userCredential = await signInWithPopup(auth, provider);
-        // Let createUserProfile handle if it's a truly new user or not
-        await createUserProfile(userCredential.user, false); 
+        await createUserProfile(userCredential.user);
     } catch(error: any) {
         handleAuthError(error.code);
     } finally {
@@ -259,3 +264,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
+    
