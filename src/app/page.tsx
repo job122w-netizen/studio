@@ -171,12 +171,13 @@ export default function Home() {
             });
         }
         if(userProfileRef) {
-            // For testing purposes, we'll always show the animation
-            await updateUserStreak(userProfileRef);
-            toast({
-                duration: 5000,
-                component: <StreakToast streak={(userProfile?.currentStreak || 0) + 1} />,
-            });
+            const { updated, newStreak } = await updateUserStreak(userProfileRef);
+            if (updated && newStreak > 0) {
+              toast({
+                  duration: 5000,
+                  component: <StreakToast streak={newStreak} />,
+              });
+            }
         }
     } else if (!isCompleted && elapsedTime < 60) { // Stopped before 1 min
         toast({
