@@ -8,6 +8,7 @@ import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, increment, arrayUnion, Timestamp, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { updateCasinoChips } from "@/lib/transactions";
 
 export default function TiendaPage() {
   const { user, isUserLoading } = useUser();
@@ -68,7 +69,7 @@ export default function TiendaPage() {
                 updates.gems = increment((updates.gems?.value || 0) + 1);
                 break;
             case 6: // 10 fichas
-                await updateDoc(userProfileRef, { casinoChips: increment(10) });
+                await updateCasinoChips(userProfileRef, 10);
                 break;
             case 1: // Gema de Enfoque - Added to inventory to be used later
             case 4: // Escudo Protector

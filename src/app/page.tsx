@@ -137,7 +137,7 @@ export default function Home() {
         // --- Reward Logic ---
         if (isCompleted && studyDurationMinutes >= 25 && userProfileRef && userProfile) {
             const blocksOf25 = Math.floor(studyDurationMinutes / 25);
-            let xpReward = blocksOf25 * 1000;
+            let xpReward = 0; // XP Removed
             let chipReward = blocksOf25 * 3;
             let lingotReward = blocksOf25 * 1;
 
@@ -146,14 +146,14 @@ export default function Home() {
             const focusGemExpiry = userProfile.focusGemActiveUntil?.toDate();
             let gemActive = false;
             if (focusGemExpiry && focusGemExpiry > now) {
-                xpReward *= 2;
+                // xpReward *= 2; // XP removed
                 chipReward *= 2;
                 lingotReward *= 2;
                 gemActive = true;
             }
 
             const toastTitle = gemActive ? "¡Estudio Potenciado!" : "¡Sesión de estudio completada!";
-            const toastDescription = `¡Has ganado ${xpReward} XP, ${lingotReward} lingote(s) y ${chipReward} fichas!`;
+            const toastDescription = `¡Has ganado ${lingotReward} lingote(s) y ${chipReward} fichas!`;
 
             toast({
               title: toastTitle,
@@ -161,7 +161,7 @@ export default function Home() {
             });
 
             await updateDoc(userProfileRef, {
-              experiencePoints: increment(xpReward),
+              // experiencePoints: increment(xpReward), // XP removed
               goldLingots: increment(lingotReward)
             });
             await updateCasinoChips(userProfileRef, chipReward);

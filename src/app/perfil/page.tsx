@@ -282,7 +282,7 @@ export default function PerfilPage() {
             // Chance to win a color theme
             const colorChance = isLegendary ? 0.5 : 0.2;
             if (Math.random() < colorChance) {
-                const availableColors = colorThemes.filter(c => !userProfile.unlockedThemes?.includes(c.id));
+                const availableColors = colorThemes.filter(c => c.id !== 'default-theme' && !userProfile.unlockedThemes?.includes(c.id));
                 if (availableColors.length > 0) {
                     const wonColor = availableColors[Math.floor(Math.random() * availableColors.length)];
                     updates.unlockedThemes = arrayUnion(wonColor.id);

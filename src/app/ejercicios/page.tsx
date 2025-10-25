@@ -138,6 +138,9 @@ export default function EjerciciosPage() {
   const toggleCompleteExercise = async (dayId: string, exerciseId: string) => {
     if (!userProfileRef || !weeklyRoutineRef) return;
 
+    // Create a deep copy of the routine to avoid direct state mutation before async operations
+    const originalLocalRoutine = JSON.parse(JSON.stringify(localRoutine));
+
     let isCompleting = false;
     let wasDayAlreadyCompleted = false;
 
@@ -146,6 +149,7 @@ export default function EjerciciosPage() {
         wasDayAlreadyCompleted = dayBeforeUpdate.exercises.every(ex => ex.completed);
     }
 
+    // Optimistically update the UI
     const newLocalRoutine = localRoutine.map(day => {
       if (day.id === dayId) {
         const updatedExercises = day.exercises.map(ex => {
@@ -159,23 +163,16 @@ export default function EjerciciosPage() {
       }
       return day;
     });
-
     setLocalRoutine(newLocalRoutine);
 
     const dayRoutine = newLocalRoutine.find(d => d.id === dayId);
     if (!dayRoutine) return;
     
     try {
-        const xpReward = 100;
+        const xpReward = 100; // This is not used anymore, but kept for logic structure
         
         if (isCompleting) {
-          await updateDoc(userProfileRef, {
-            experiencePoints: increment(xpReward)
-          });
-          toast({
-            title: "¡Ejercicio completado!",
-            description: `¡Has ganado ${xpReward} XP!`,
-          });
+          // No XP reward
           const { updated, newStreak } = await updateUserStreak(userProfileRef);
           if (updated && newStreak > 0) {
             toast({
@@ -195,19 +192,23 @@ export default function EjerciciosPage() {
                 title: "¡Rutina del día completada!",
                 description: "¡Has ganado 3 lingotes de oro y 3 fichas de casino por tu disciplina!",
             });
+          } else {
+             toast({
+                title: "¡Ejercicio completado!",
+                description: `¡Sigue así!`,
+             });
           }
 
         } else {
-             await updateDoc(userProfileRef, {
-                experiencePoints: increment(-xpReward)
-             });
+             // No XP deduction
              toast({
                 title: "Ejercicio deshecho",
-                description: `Se han restado ${xpReward} XP.`,
+                description: `Has marcado un ejercicio como no completado.`,
                 variant: 'destructive'
             });
         }
 
+        // Persist the change to Firestore
         const dayDocRef = doc(weeklyRoutineRef, dayId);
         await setDoc(dayDocRef, { exercises: dayRoutine.exercises }, { merge: true });
     } catch (error) {
@@ -218,7 +219,7 @@ export default function EjerciciosPage() {
             variant: "destructive"
         });
         // Revert local state if firebase update fails
-        setLocalRoutine(localRoutine);
+        setLocalRoutine(originalLocalRoutine);
     }
   }
   
