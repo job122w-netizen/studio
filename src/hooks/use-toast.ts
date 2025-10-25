@@ -8,8 +8,8 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 5
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_LIMIT = 1; // Only show one toast at a time
+const TOAST_REMOVE_DELAY = 5000; // Auto-dismiss after 5 seconds
 
 type ToasterToast = ToastProps & {
   id: string
@@ -80,7 +80,7 @@ export const reducer = (state: State, action: Action): State => {
     case "ADD_TOAST":
       return {
         ...state,
-        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+        toasts: [action.toast, ...state.toasts],
       }
 
     case "UPDATE_TOAST":
@@ -94,6 +94,7 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
+      // If toastId is provided, dismiss that one. Otherwise, dismiss all.
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -139,7 +140,6 @@ function dispatch(action: Action) {
   })
 }
 
-// Define a more specific type for the toast function argument
 type Toast = Omit<ToasterToast, "id">
 
 function toast(props: Toast) {
@@ -152,33 +152,17 @@ function toast(props: Toast) {
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
-  if (props.component) {
-     const duration = props.duration || 4000;
-     dispatch({
-        type: "ADD_TOAST",
-        toast: {
-            ...props,
-            id,
-            open: true,
-        },
-     });
-     setTimeout(() => {
-        dispatch({ type: "REMOVE_TOAST", toastId: id });
-     }, duration + 500); 
-  } else {
-    dispatch({
-      type: "ADD_TOAST",
-      toast: {
-        ...props,
-        id,
-        open: true,
-        onOpenChange: (open) => {
-          if (!open) dismiss()
-        },
+  dispatch({
+    type: "ADD_TOAST",
+    toast: {
+      ...props,
+      id,
+      open: true,
+      onOpenChange: (open) => {
+        if (!open) dismiss()
       },
-    });
-  }
-
+    },
+  })
 
   return {
     id: id,
@@ -202,6 +186,8 @@ function useToast() {
 
   return {
     ...state,
+    // We slice the array to only return the latest toast, enforcing the "one at a time" rule.
+    toasts: state.toasts.slice(0, TOAST_LIMIT),
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
