@@ -175,21 +175,24 @@ export default function CasinoPage() {
 
         setRolling(true);
         setDiceResultMessage('');
-        await updateCasinoChips(userProfileRef, -diceBetAmount);
+        // No await here for optimistic UI update
+        updateCasinoChips(userProfileRef, -diceBetAmount);
 
-        const newDice1 = Math.floor(Math.random() * 6);
-        const newDice2 = Math.floor(Math.random() * 6);
-        setDice1(newDice1);
-        setDice2(newDice2);
+        setTimeout(async () => {
+            const newDice1 = Math.floor(Math.random() * 6);
+            const newDice2 = Math.floor(Math.random() * 6);
+            setDice1(newDice1);
+            setDice2(newDice2);
 
-        const winnings = diceBetAmount * 2;
-        if (newDice1 === newDice2) {
-            setDiceResultMessage(`¡Ganaste ${winnings} fichas!`);
-            await updateCasinoChips(userProfileRef, winnings);
-        } else {
-            setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
-        }
-        setRolling(false);
+            const winnings = diceBetAmount * 2;
+            if (newDice1 === newDice2) {
+                setDiceResultMessage(`¡Ganaste ${winnings} fichas!`);
+                await updateCasinoChips(userProfileRef, winnings);
+            } else {
+                setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
+            }
+            setRolling(false);
+        }, 300); // A short delay for animation
     };
 
      const spinSlots = async () => {
@@ -201,7 +204,8 @@ export default function CasinoPage() {
 
         setSpinning(true);
         setSlotResultMessage('');
-        await updateCasinoChips(userProfileRef, -cost);
+        // No await here for optimistic UI update
+        updateCasinoChips(userProfileRef, -cost);
         
         const finalReelsResult = [
             slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
@@ -209,9 +213,21 @@ export default function CasinoPage() {
             slotSymbols[Math.floor(Math.random() * slotSymbols.length)]
         ];
         
-        setReels(finalReelsResult);
-        await checkWin(finalReelsResult);
-        setSpinning(false);
+        // Simulate spinning animation
+        const interval = setInterval(() => {
+            setReels([
+                slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+                slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+                slotSymbols[Math.floor(Math.random() * slotSymbols.length)]
+            ]);
+        }, 100);
+
+        setTimeout(async () => {
+            clearInterval(interval);
+            setReels(finalReelsResult);
+            await checkWin(finalReelsResult);
+            setSpinning(false);
+        }, 1000); // Total spin duration
     };
 
     const checkWin = async (finalReels: typeof slotSymbols) => {
@@ -261,7 +277,7 @@ export default function CasinoPage() {
         setSlotResultMessage('¡Mala suerte! Sigue intentando.');
     };
 
-    const startShellGame = async () => {
+    const startShellGame = () => {
         if (!userProfileRef || casinoChips < shellBetAmount) {
             toast({ variant: 'destructive', title: '¡No tienes suficientes fichas!'});
             return;
@@ -271,21 +287,24 @@ export default function CasinoPage() {
             return;
         }
 
-        await updateCasinoChips(userProfileRef, -shellBetAmount);
+        // No await here for optimistic UI update
+        updateCasinoChips(userProfileRef, -shellBetAmount);
         setShellGamePhase('shuffling');
         setShellResultMessage('Observa con atención...');
 
-        const winningCupIndex = Math.floor(Math.random() * 3);
-        const initialCups = cups.map((cup, index) => ({
-            ...cup,
-            hasPrize: index === winningCupIndex,
-            isRevealed: false, // Keep them hidden initially
-        }));
-        
-        const shuffledCups = shuffleArray(initialCups);
-        setCups(shuffledCups);
-        setShellGamePhase('picking');
-        setShellResultMessage('¿Dónde está la ficha?');
+        setTimeout(() => {
+            const winningCupIndex = Math.floor(Math.random() * 3);
+            const initialCups = cups.map((cup, index) => ({
+                ...cup,
+                hasPrize: index === winningCupIndex,
+                isRevealed: false,
+            }));
+            
+            const shuffledCups = shuffleArray(initialCups);
+            setCups(shuffledCups);
+            setShellGamePhase('picking');
+            setShellResultMessage('¿Dónde está la ficha?');
+        }, 1000); // Shuffling animation duration
     };
 
     const handleCupPick = async (pickedCup: CupState) => {
@@ -309,14 +328,15 @@ export default function CasinoPage() {
         setCups(cups.map(cup => ({...cup, hasPrize: false, isRevealed: false})));
     };
 
-    const startMineSweeper = async () => {
+    const startMineSweeper = () => {
         const cost = 5;
         if (!userProfileRef || casinoChips < cost) {
             toast({ variant: 'destructive', title: 'Fichas insuficientes' });
             return;
         }
 
-        await updateCasinoChips(userProfileRef, -cost);
+        // No await here for optimistic UI update
+        updateCasinoChips(userProfileRef, -cost);
         setMinePhase('playing');
         setFoundPrizes([]);
 
@@ -387,19 +407,24 @@ export default function CasinoPage() {
     
         try {
             if (hasPrizes) {
-                foundPrizes.forEach(prize => {
+                for (const prize of foundPrizes) {
                     if (prize === 'casinoChip') {
                         chipWinnings += currentMultiplier;
-                        description += `${currentMultiplier} fichas, `;
                     }
-                    // Here you could add logic for other prizes like gems or goldLingots
-                });
+                    // Here you could add logic for other prizes like gems or goldLingots with await
+                    if (prize === 'gem') {
+                        await updateDoc(userProfileRef, { gems: increment(1) });
+                    }
+                     if (prize === 'goldLingot') {
+                        await updateDoc(userProfileRef, { goldLingots: increment(5) });
+                    }
+                }
         
                 if (chipWinnings > 0) {
                     await updateCasinoChips(userProfileRef, chipWinnings);
                 }
         
-                toast({ title: `¡Premios cobrados! (x${currentMultiplier})`, description: description.slice(0, -2) });
+                toast({ title: `¡Premios cobrados! (x${currentMultiplier})`, description: `Has obtenido ${chipWinnings} fichas y otros premios.` });
             } else {
                 toast({ title: "Partida finalizada", description: "No encontraste premios esta vez."});
             }
