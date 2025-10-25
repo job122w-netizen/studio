@@ -3,6 +3,15 @@ import { PlaceHolderImages } from './placeholder-images';
 
 const getImage = (id: string): ImagePlaceholder | undefined => PlaceHolderImages.find(img => img.id === id);
 
+export type TiendaItem = {
+    id: number;
+    name: string;
+    price: number;
+    description: string;
+    currency: 'gems' | 'goldLingots';
+    consumable: boolean;
+};
+
 export const rankingData = [
   { rank: 1, user: 'Valeria G.', points: 12500, avatar: 'https://i.pravatar.cc/40?img=1' },
   { rank: 2, user: 'Carlos P.', points: 11800, avatar: 'https://i.pravatar.cc/40?img=2' },
@@ -12,7 +21,7 @@ export const rankingData = [
   { rank: 6, user: 'Sofia M.', points: 9800, avatar: 'https://i.pravatar.cc/40?img=6' },
 ];
 
-export const tiendaItems = [
+export const tiendaItems: TiendaItem[] = [
   {
     id: 1,
     name: 'Gema de Enfoque',
@@ -65,7 +74,7 @@ export const tiendaItems = [
     id: 7,
     name: 'Cofre Épico',
     price: 5,
-    description: 'Se abre al instante. Contiene lingotes, fichas y una pequeña probabilidad de ganar el Pase Premium.',
+    description: 'Contiene lingotes, fichas y quizá el Pase Premium.',
     currency: 'gems',
     consumable: true,
   },
@@ -73,7 +82,7 @@ export const tiendaItems = [
     id: 8,
     name: 'Cofre Legendario',
     price: 7,
-    description: 'Se abre al instante. Contiene grandes recompensas y una mayor probabilidad de ganar el Pase Premium.',
+    description: 'Grandes recompensas y más probabilidad del Pase Premium.',
     currency: 'gems',
     consumable: true,
   },

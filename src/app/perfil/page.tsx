@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X, Coins } from "lucide-react";
+import { BarChart, BookOpen, Dumbbell, Edit, Shield, Star, Trophy, GraduationCap, ChevronDown, Save, Camera, LogOut, Flame, Palette, Lock, Trash2, X, Coins, Backpack } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { doc, serverTimestamp, updateDoc, increment, arrayUnion } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc, increment, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
@@ -19,6 +19,8 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { colorThemes } from "@/lib/themes";
+import { Inventory } from "@/components/profile/inventory";
+import { tiendaItems, TiendaItem } from "@/lib/placeholder-data";
 
 const ranks = [
     { name: "Novato", xpThreshold: 0 },
@@ -170,10 +172,8 @@ export default function PerfilPage() {
   const handleSelectTheme = (themeId: string) => {
     if (!userProfileRef) return;
 
-    // Check if the user has unlocked the theme 'default-theme'
     const isDefaultUnlocked = userProfile?.unlockedThemes?.includes('default-theme');
     if (!isDefaultUnlocked) {
-        // If not, add it along with the new theme
         updateDocumentNonBlocking(userProfileRef, { 
             selectedThemeId: themeId,
             unlockedThemes: arrayUnion('default-theme', themeId)
@@ -198,6 +198,67 @@ export default function PerfilPage() {
           title: "Tema restablecido",
           description: "Se ha restaurado el tema predeterminado."
       });
+  };
+
+  const handleUseItem = async (item: TiendaItem) => {
+    if (!userProfileRef || !userProfile || !item.consumable) return;
+
+    const userOwnedItem = userProfile.userItems?.find((ownedItem: any) => ownedItem.itemId === item.id);
+    if (!userOwnedItem) {
+        toast({ variant: 'destructive', title: "Objeto no encontrado", description: "No posees este objeto en tu mochila." });
+        return;
+    }
+
+    const updates: { [key: string]: any } = {};
+    let purchaseDescription = `Has usado ${item.name}.`;
+    let purchaseTitle = "¡Objeto utilizado!";
+
+    switch (item.id) {
+        case 1: // Gema de Enfoque
+            const now = new Date();
+            const expiryDate = new Date(now.getTime() + 14 * 60 * 60 * 1000); // 14 hours
+            updates.focusGemActiveUntil = Timestamp.fromDate(expiryDate);
+            purchaseDescription = "¡Recompensas de estudio duplicadas por 14 horas!";
+            break;
+        case 7: // Cofre épico
+        case 8: // Cofre legendario
+            const isLegendary = item.id === 8;
+            const lingotsWon = isLegendary ? Math.floor(Math.random() * 251) + 250 : Math.floor(Math.random() * 101) + 100;
+            const chipsWon = isLegendary ? Math.floor(Math.random() * 11) + 10 : Math.floor(Math.random() * 6) + 5;
+            
+            updates.goldLingots = increment(lingotsWon);
+            updates.casinoChips = increment(chipsWon);
+
+            let rewardsDescription = `¡Ganaste ${lingotsWon} lingotes y ${chipsWon} fichas!`;
+            
+            const premiumChance = isLegendary ? 0.05 : 0.01;
+            if (Math.random() < premiumChance) {
+                 if (!userProfile.hasPremiumPass) {
+                    updates.hasPremiumPass = true;
+                    rewardsDescription += " ¡Y el Pase HV Premium!";
+                 } else {
+                    updates.gems = increment(5);
+                    rewardsDescription += " ¡Y 5 gemas de consolación!";
+                 }
+            }
+            
+            purchaseDescription = rewardsDescription;
+            purchaseTitle = isLegendary ? "Cofre Legendario Abierto" : "Cofre Épico Abierto";
+            break;
+        default:
+            toast({ variant: 'destructive', title: "No se puede usar", description: "Este objeto no tiene un efecto al usarlo." });
+            return;
+    }
+    
+    // Remove the used item from inventory
+    updates.userItems = arrayRemove(userOwnedItem);
+    
+    updateDocumentNonBlocking(userProfileRef, updates);
+
+    toast({
+        title: purchaseTitle,
+        description: purchaseDescription,
+    });
   };
 
   if (isLoading || !userProfile) {
@@ -328,6 +389,21 @@ export default function PerfilPage() {
         </CardFooter>
       </Card>
       
+      <Card>
+          <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                  <Backpack className="h-5 w-5 text-primary"/> Mochila
+              </CardTitle>
+          </CardHeader>
+          <CardContent>
+              <Inventory 
+                userItems={userProfile.userItems || []} 
+                allItems={tiendaItems}
+                onUseItem={handleUseItem}
+              />
+          </CardContent>
+      </Card>
+
        <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

@@ -1,7 +1,7 @@
 'use client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { tiendaItems as placeholderItems } from "@/lib/placeholder-data";
+import { tiendaItems } from "@/lib/placeholder-data";
 import { Coins, Gem, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -22,7 +22,7 @@ export default function TiendaPage() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-  const handlePurchase = (item: typeof placeholderItems[0]) => {
+  const handlePurchase = (item: typeof tiendaItems[0]) => {
     if (!userProfileRef || !userProfile) return;
 
     const hasEnoughCurrency = item.currency === 'gems'
@@ -39,7 +39,6 @@ export default function TiendaPage() {
         });
         return;
     }
-
 
     if (!hasEnoughCurrency) {
         toast({
@@ -62,53 +61,31 @@ export default function TiendaPage() {
     let purchaseDescription = `Has comprado ${item.name}.`;
     let purchaseTitle = "¡Compra realizada!";
 
-    // Add item effect
-    switch (item.id) {
-        case 1: // Gema de Enfoque
-            const now = new Date();
-            const expiryDate = new Date(now.getTime() + 14 * 60 * 60 * 1000); // 14 hours from now
-            updates.focusGemActiveUntil = Timestamp.fromDate(expiryDate);
-            purchaseDescription = "¡Recompensas de estudio duplicadas por 14 horas!";
-            break;
-        case 5: // 1 gema
-            updates.gems = increment(1 - (item.currency === 'gems' ? item.price : 0));
-            break;
-        case 6: // 10 fichas
-            updates.casinoChips = increment(10);
-            break;
-        case 7: // Cofre épico
-        case 8: { // Cofre legendario
-            const isLegendary = item.id === 8;
-            const lingotsWon = isLegendary ? Math.floor(Math.random() * 251) + 250 : Math.floor(Math.random() * 101) + 100; // 250-500 or 100-200
-            const chipsWon = isLegendary ? Math.floor(Math.random() * 11) + 10 : Math.floor(Math.random() * 6) + 5; // 10-20 or 5-10
-            
-            updates.goldLingots = increment(lingotsWon - (item.currency === 'goldLingots' ? item.price : 0));
-            updates.casinoChips = increment(chipsWon);
-
-            let rewardsDescription = `¡Ganaste ${lingotsWon} lingotes y ${chipsWon} fichas!`;
-            
-            const premiumChance = isLegendary ? 0.05 : 0.01; // 5% for legendary, 1% for epic
-            if (Math.random() < premiumChance) {
-                 if (!userProfile.hasPremiumPass) {
-                    updates.hasPremiumPass = true;
-                    purchaseTitle = "¡Premio Mayor!";
-                    rewardsDescription += " ¡Y el Pase HV Premium!";
-                 } else {
-                    updates.gems = increment((updates.gems?.value || 0) + 5);
-                    rewardsDescription += " ¡Y 5 gemas de consolación!";
-                 }
-            }
-            
-            purchaseDescription = rewardsDescription;
-            purchaseTitle = isLegendary ? "Cofre Legendario Abierto" : "Cofre Épico Abierto";
-
-            break;
+    // Handle item effects or adding to inventory
+    // Consumable items that are not chests will be added to the inventory
+    if (item.consumable) {
+        switch (item.id) {
+            case 5: // 1 gema
+                updates.gems = increment((updates.gems?.value || 0) + 1);
+                break;
+            case 6: // 10 fichas
+                updates.casinoChips = increment(10);
+                break;
+            case 1: // Gema de Enfoque - Added to inventory to be used later
+            case 2: // Poción de Energía
+            case 4: // Escudo Protector
+            case 7: // Cofre Épico
+            case 8: // Cofre Legendario
+                 updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
+                 purchaseDescription = `${item.name} ha sido añadido a tu mochila.`;
+                break;
+            default:
+                 updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
+                break;
         }
-        case 3: // Llave de Logro
-        case 4: // Escudo Protector - Consumable, but handled by arrayUnion/arrayRemove
-        default:
-             updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
-             break;
+    } else {
+        // Non-consumable items are also added to inventory
+        updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
     }
 
     updateDocumentNonBlocking(userProfileRef, updates);
@@ -149,7 +126,7 @@ export default function TiendaPage() {
       </section>
 
       <div className="grid grid-cols-2 gap-4">
-        {placeholderItems.map((item) => (
+        {tiendaItems.map((item) => (
           <Card key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="p-4 flex-grow">
               <CardTitle className="text-base">{item.name}</CardTitle>
