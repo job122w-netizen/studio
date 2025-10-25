@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Square, Plus } from "lucide-react";
+import { Play, Square, Plus, Coins } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, collection, increment } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
@@ -140,12 +140,14 @@ export default function Home() {
         const blocksOf25 = Math.floor(studyDurationMinutes / 25);
         const xpReward = blocksOf25 * 1000;
         const chipReward = blocksOf25 * 3;
+        const lingotReward = blocksOf25 * 1;
         toast({
           title: "¡Sesión de estudio completada!",
-          description: `¡Has ganado ${xpReward} Puntos y ${chipReward} Fichas!`,
+          description: `¡Has ganado ${xpReward} XP, ${lingotReward} lingote y ${chipReward} fichas!`,
         });
         updateDocumentNonBlocking(userProfileRef, {
           experiencePoints: increment(xpReward),
+          goldLingots: increment(lingotReward)
         });
         updateCasinoChips(userProfileRef, chipReward);
     } else if (isCompleted) {
@@ -297,3 +299,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
