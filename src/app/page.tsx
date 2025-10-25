@@ -213,10 +213,6 @@ export default function Home() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <section className="text-center">
-        <p className="text-muted-foreground mt-2 text-lg italic">"{currentQuote}"</p>
-      </section>
-      
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-10 min-h-[400px] bg-background/40">
           
@@ -283,6 +279,10 @@ export default function Home() {
 
         </CardContent>
       </Card>
+
+      <section className="text-center">
+        <p className="text-muted-foreground mt-2 text-sm italic">"{currentQuote}"</p>
+      </section>
     </div>
   );
 }
