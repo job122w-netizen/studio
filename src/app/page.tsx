@@ -92,28 +92,6 @@ export default function Home() {
       }, 1000);
     } else if (remainingTime <= 0 && isStudying) {
       handleStopStudy(true);
-      
-      const xpReward = Math.floor(totalSessionDuration / 60) * 50;
-      
-      // Only give rewards for sessions of 25 minutes or more
-      if (studyDurationMinutes >= 25) {
-        toast({
-          title: "¡Sesión de estudio completada!",
-          description: `¡Has ganado ${xpReward} Puntos, 1 Lingote y 1 Ficha!`,
-        });
-        if (userProfileRef) {
-            updateDocumentNonBlocking(userProfileRef, {
-              experiencePoints: increment(xpReward),
-              goldLingots: increment(1),
-            });
-            updateCasinoChips(userProfileRef, 1);
-        }
-      } else {
-         toast({
-          title: "¡Sesión de estudio completada!",
-          description: `Has estudiado por ${studyDurationMinutes} minutos.`,
-        });
-      }
     }
     
     return () => {
@@ -121,7 +99,7 @@ export default function Home() {
         clearInterval(timerRef.current);
       }
     };
-  }, [isStudying, remainingTime, userProfileRef, toast, totalSessionDuration, studyDurationMinutes]);
+  }, [isStudying, remainingTime]);
 
   const handleStartStudy = () => {
     if (studyDurationMinutes <= 0) {
@@ -146,48 +124,60 @@ export default function Home() {
         setSessionCompleted(true);
     }
     
-    const elapsedTime = totalSessionDuration - remainingTime;
-    
-    if (user && studySessionsRef && sessionStartTime && (elapsedTime > 10 || isCompleted)) {
-      const endTime = new Date();
-      const durationMinutes = Math.floor(elapsedTime / 60);
+    if(timerRef.current) clearInterval(timerRef.current);
 
-      // Only save if the duration is meaningful
-      if (durationMinutes > 0) {
+    if (!sessionStartTime) return;
+
+    const endTime = new Date();
+    // Calculate duration in seconds based on actual timestamps
+    const elapsedTime = Math.floor((endTime.getTime() - sessionStartTime.getTime()) / 1000);
+    const finalDurationMinutes = isCompleted ? studyDurationMinutes : Math.floor(elapsedTime / 60);
+
+    // --- Reward Logic ---
+    if (isCompleted && studyDurationMinutes >= 25 && userProfileRef) {
+        const xpReward = Math.floor(studyDurationMinutes / 25) * 50; // 50 XP per 25 min block
+        toast({
+          title: "¡Sesión de estudio completada!",
+          description: `¡Has ganado ${xpReward} Puntos, 1 Lingote y 1 Ficha!`,
+        });
+        updateDocumentNonBlocking(userProfileRef, {
+          experiencePoints: increment(xpReward),
+          goldLingots: increment(1),
+        });
+        updateCasinoChips(userProfileRef, 1);
+    } else if (isCompleted) {
+        toast({
+          title: "¡Sesión de estudio completada!",
+          description: `Has estudiado por ${studyDurationMinutes} minutos.`,
+        });
+    }
+
+    // --- Save Session Logic ---
+    if (user && studySessionsRef && finalDurationMinutes > 0) {
         addDocumentNonBlocking(studySessionsRef, {
             userId: user.uid,
             subject: 'Estudio General',
             startTime: sessionStartTime,
             endTime: endTime,
-            durationMinutes: durationMinutes
+            durationMinutes: finalDurationMinutes
         }).then(() => {
             if (!isCompleted) { 
                 toast({
                    title: "Sesión guardada",
-                   description: `Has estudiado por ${durationMinutes} minutos.`,
+                   description: `Has estudiado por ${finalDurationMinutes} minutos.`,
                 });
             }
             if(userProfileRef) updateUserStreak(userProfileRef);
         });
-      } else if (!isCompleted) {
-        // Handle the case where the user stops before a full minute but after 10s
+    } else if (!isCompleted && elapsedTime < 60) { // Stopped before 1 min
         toast({
            title: "Sesión no guardada",
            description: "La sesión debe durar al menos 1 minuto para guardarse.",
            variant: 'destructive'
        });
-      }
-       
-    } else if (elapsedTime > 0 && elapsedTime <= 10 && !isCompleted) {
-        toast({
-            variant: "destructive",
-            title: "Sesión no guardada",
-            description: "La sesión de estudio debe durar más de 10 segundos.",
-        });
     }
     
     setSessionStartTime(null);
-    if(timerRef.current) clearInterval(timerRef.current);
   };
 
   const formatTime = (seconds: number) => {
