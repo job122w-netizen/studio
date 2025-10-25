@@ -4,7 +4,7 @@ import * as functions from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 
-if (!getApps().length) {
+if (getApps().length === 0) {
     initializeApp();
 }
 const db = getFirestore();
@@ -16,6 +16,7 @@ const db = getFirestore();
  * @param userData The user's profile data.
  */
 const updateUserRanking = async (userId: string, userData: any) => {
+    // Ensure there is always a valid number for experiencePoints, defaulting to 0.
     const experiencePoints = userData?.experiencePoints || 0;
     const username = userData?.username || 'Usuario Anónimo';
     const imageUrl = userData?.imageUrl || `https://i.pravatar.cc/150?u=${userId}`;
@@ -24,11 +25,12 @@ const updateUserRanking = async (userId: string, userData: any) => {
 
     console.log(`Syncing ranking for user ${userId} with ${experiencePoints} XP, username: ${username}.`);
 
+    // Use set with merge to create or update the document.
     return rankingRef.set({
-        userId: userId,
-        username: username,
-        experiencePoints: experiencePoints,
-        imageUrl: imageUrl,
+        userId,
+        username,
+        experiencePoints,
+        imageUrl,
     }, { merge: true });
 };
 
@@ -38,13 +40,16 @@ const updateUserRanking = async (userId: string, userData: any) => {
 export const onUserUpdateSyncRanking = onDocumentUpdated("/users/{userId}", async (event) => {
     try {
         const userId = event.params.userId;
+        // Use optional chaining for safety, although data should exist on update.
         const newData = event.data?.after.data();
         
         if (newData) {
             await updateUserRanking(userId, newData);
+        } else {
+             console.log(`No data found for user ${userId} on update event.`);
         }
     } catch (error) {
-        console.error("Error in onUserUpdateSyncRanking:", error);
+        console.error(`Error in onUserUpdateSyncRanking for user ${event.params.userId}:`, error);
     }
 });
 
@@ -54,13 +59,16 @@ export const onUserUpdateSyncRanking = onDocumentUpdated("/users/{userId}", asyn
 export const onUserCreateSyncRanking = onDocumentCreated("/users/{userId}", async (event) => {
      try {
         const userId = event.params.userId;
+        // Data will exist on a create event.
         const newData = event.data?.data();
         
         if (newData) {
             await updateUserRanking(userId, newData);
+        } else {
+            console.log(`No data found for new user ${userId} on create event.`);
         }
     } catch (error) {
-        console.error("Error in onUserCreateSyncRanking:", error);
+        console.error(`Error in onUserCreateSyncRanking for user ${event.params.userId}:`, error);
     }
 });
 
@@ -78,6 +86,11 @@ export const syncAllUsersToRanking = functions.https.onCall(async (data, context
 
     try {
         const usersSnapshot = await db.collection('users').get();
+        if (usersSnapshot.empty) {
+            console.log("No users found to sync.");
+            return { result: "No users found to sync." };
+        }
+
         const batch = db.batch();
         
         usersSnapshot.docs.forEach(doc => {
