@@ -20,7 +20,11 @@ const studyQuotes = [
     "Involúcrame y lo aprendo.",
     "El aprendizaje es un tesoro que seguirá a su dueño a todas partes.",
     "La inversión en conocimiento paga el mejor interés.",
-    "Nunca consideres el estudio como una obligación, sino como una oportunidad."
+    "Nunca consideres el estudio como una obligación, sino como una oportunidad.",
+    "¿Sabías que tu cerebro crea nuevas conexiones neuronales cada vez que aprendes algo nuevo?",
+    "¿Sabías que enseñar a otros es una de las formas más efectivas de consolidar tu conocimiento?",
+    "¿Sabías que los errores aumentan la actividad cerebral y son una parte crucial del proceso de aprendizaje?",
+    "¿Sabías que dormir bien después de estudiar ayuda a tu cerebro a consolidar los recuerdos y lo aprendido?"
 ];
 
 export default function Home() {
