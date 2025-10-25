@@ -48,12 +48,28 @@ export default function Home() {
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [totalSessionDuration, setTotalSessionDuration] = useState(25 * 60);
   const [showCustomSlider, setShowCustomSlider] = useState(false);
-  const [currentQuote, setCurrentQuote] = useState('');
+  const [currentQuote, setCurrentQuote] = useState(studyQuotes[0]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
+    // Set initial quote
     setCurrentQuote(studyQuotes[Math.floor(Math.random() * studyQuotes.length)]);
+
+    // Set interval to change quote every 30 seconds
+    const quoteInterval = setInterval(() => {
+      setCurrentQuote(prevQuote => {
+        let newQuote = prevQuote;
+        // Ensure the new quote is different from the current one
+        while (newQuote === prevQuote) {
+          newQuote = studyQuotes[Math.floor(Math.random() * studyQuotes.length)];
+        }
+        return newQuote;
+      });
+    }, 30000); // 30 seconds
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(quoteInterval);
   }, []);
 
   useEffect(() => {
@@ -196,18 +212,17 @@ export default function Home() {
       <Card className="shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center gap-10 min-h-[400px] bg-background/40">
           
-           <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground">
-             <div 
-                  className={cn(
-                      "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
-                      (isStudying || sessionCompleted) && "animate-pulse-glow",
-                      !isStudying && !sessionCompleted && "shadow-subtle-glow"
-                  )}
-                  style={{
-                    height: `${sphereSize}px`,
-                    width: `${sphereSize}px`,
-                  }}
-                />
+          <div 
+              className={cn(
+                  "relative flex items-center justify-center rounded-full bg-primary/80 transition-all duration-1000 ease-linear",
+                  (isStudying || sessionCompleted) && "animate-pulse-glow",
+                  !isStudying && !sessionCompleted && "shadow-subtle-glow"
+              )}
+              style={{
+                height: `${sphereSize}px`,
+                width: `${sphereSize}px`,
+              }}
+            />
 
             {isStudying || sessionCompleted ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center text-foreground mt-4">
@@ -257,7 +272,6 @@ export default function Home() {
                     </Button>
                 </div>
             )}
-           </div>
 
         </CardContent>
       </Card>
