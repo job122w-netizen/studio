@@ -1,142 +1,134 @@
-/**
- * @fileoverview Firestore Security Rules for Desafío HV App
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for private user data,
- * while allowing public read access to certain collections like store items,
- * profile backgrounds, and color themes. Ranking data is also publicly readable.
- *
- * Data Structure:
- * - User-specific data is nested under `/users/{userId}`.
- * - Public data (store items, backgrounds, themes) resides in top-level collections.
- * - Ranking data resides in the top-level `/rankings` collection, keyed by `userId`.
- *
- * Key Security Decisions:
- * - Users can only access their own profile data and related subcollections.
- * - Listing of user documents (`/users`) is disallowed to prevent enumeration.
- * - Public collections are readable by anyone, including unauthenticated users.
- * - The `ranking` collection is publicly readable to enable leaderboards.
- *
- * Denormalization for Authorization:
- * - User-specific documents (under `/users/{userId}`) must have their `userId`
- *   property match the `userId` in the path. This is enforced on creation and immutability is enforced on update.
- *
- * Structural Segregation:
- * - Private user data is stored under `/users/{userId}`, while public data is
- *   stored in separate top-level collections (`/storeItems`, `/profileBackgrounds`, `/colorThemes`).
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the document.
-     * @param {string} userId The user ID to compare against the request's auth UID.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the document, and that the document exists.
-     * @param {string} userId The user ID to compare against the resource's user ID.
-     */
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Enforces document ownership for writes.
+     * @description Protects private user profile data.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user123' creates their profile.
-     * @deny (create) User with UID 'user123' tries to create profile for 'user456'.
-     * @allow (update) User with UID 'user123' updates their own profile.
-     * @deny (update) User with UID 'user123' tries to update profile for 'user456'.
-     * @deny (delete) Non-owner tries to delete the profile
-     * @principle Enforces document ownership for writes
+     * @allow (create, update, delete): Authenticated user with matching UID.
+     * @deny (create, update, delete): Mismatched UID or unauthenticated user.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Prevent user enumeration
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      // Allows a user to read their own profile data.
+      allow get: if isOwner(userId);
+      // Disallows listing of all user profiles.
+      allow list: if false;
+
+      // Allows a user to create their own profile if the userId matches their auth.uid.
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Allows a user to update their own profile if the userId matches their auth.uid.
+      allow update: if isExistingOwner(userId);
+      // Allows a user to delete their own profile if the userId matches their auth.uid.
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access to study sessions.
+     * @description Protects study session data for a specific user.
      * @path /users/{userId}/studySessions/{studySessionId}
-     * @allow (create) User with UID 'user123' creates a study session.
-     * @deny (create) User with UID 'user123' tries to create a study session for 'user456'.
-     * @allow (update) User with UID 'user123' updates their own study session.
-     * @deny (update) User with UID 'user123' tries to update a study session for 'user456'.
-     * @principle Restricts access to a user's own data tree
+     * @allow (create, update, delete): Authenticated user with matching UID.
+     * @deny (create, update, delete): Mismatched UID or unauthenticated user.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/studySessions/{studySessionId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
 
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access to weekly routines.
+     * @description Protects a user's weekly exercise routine for a specific day of the week.
      * @path /users/{userId}/weeklyRoutine/{dayId}
-     * @allow (create) User with UID 'user123' creates a weekly routine.
-     * @deny (create) User with UID 'user123' tries to create a weekly routine for 'user456'.
-     * @allow (update) User with UID 'user123' updates their own weekly routine.
-     * @deny (update) User with UID 'user123' tries to update a weekly routine for 'user456'.
-     * @principle Restricts access to a user's own data tree
+     * @allow (create, update, delete): Authenticated user with matching UID.
+     * @deny (create, update, delete): Mismatched UID or unauthenticated user.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/weeklyRoutine/{dayId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
 
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access to user exercises.
+     * @description Protects information about a user's completion of an exercise.
      * @path /users/{userId}/userExercises/{userExerciseId}
-     * @allow (create) User with UID 'user123' creates a user exercise.
-     * @deny (create) User with UID 'user123' tries to create a user exercise for 'user456'.
-     * @allow (update) User with UID 'user123' updates their own user exercise.
-     * @deny (update) User with UID 'user123' tries to update a user exercise for 'user456'.
-     * @principle Restricts access to a user's own data tree
+     * @allow (create, update, delete): Authenticated user with matching UID.
+     * @deny (create, update, delete): Mismatched UID or unauthenticated user.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/userExercises/{userExerciseId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
 
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows public read access to store items, with no write access.
+     * @description Stores a list of available store items. Publicly readable.
      * @path /storeItems/{storeItemId}
-     * @allow (get) Any user can read a store item.
-     * @allow (list) Any user can list store items.
-     * @deny (create) No one can create store items through the client.
-     * @deny (update) No one can update store items through the client.
-     * @deny (delete) No one can delete store items through the client.
-     * @principle Public read access with no write access
+     * @allow (get, list): Any user can read the store items.
+     * @deny (create, update, delete): No user can create, update, or delete store items.
+     * @principle Public read access with restricted writes.
      */
     match /storeItems/{storeItemId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
 
       allow create: if false;
       allow update: if false;
@@ -144,35 +136,43 @@ service cloud.firestore {
     }
 
     /**
-     * @description Enforces user-specific access to user items.
+     * @description Protects information about items owned by a user.
      * @path /users/{userId}/userItems/{userItemId}
-     * @allow (create) User with UID 'user123' creates a user item.
-     * @deny (create) User with UID 'user123' tries to create a user item for 'user456'.
-     * @allow (update) User with UID 'user123' updates their own user item.
-     * @deny (update) User with UID 'user123' tries to update a user item for 'user456'.
-     * @principle Restricts access to a user's own data tree
+     * @allow (create, update, delete): Authenticated user with matching UID.
+     * @deny (create, update, delete): Mismatched UID or unauthenticated user.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/userItems/{userItemId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
 
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows public read access to the HV Pass definition, with no write access.
+     * @description Stores the definition of the HV Pass rewards for version 1. Publicly readable.
      * @path /hvPass/v1
-     * @allow (get) Any user can read the HV Pass definition.
-     * @allow (list) Any user can list the HV Pass definitions.
-     * @deny (create) No one can create HV Pass definitions through the client.
-     * @deny (update) No one can update HV Pass definitions through the client.
-     * @deny (delete) No one can delete HV Pass definitions through the client.
-     * @principle Public read access with no write access
+     * @allow (get, list): Any user can read the HV Pass rewards.
+     * @deny (create, update, delete): No user can create, update, or delete HV Pass rewards.
+     * @principle Public read access with restricted writes.
      */
     match /hvPass/v1 {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
 
       allow create: if false;
       allow update: if false;
@@ -180,73 +180,92 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows public read access to profile backgrounds, with no write access.
+     * @description List of all available profile backgrounds. Publicly readable.
      * @path /profileBackgrounds/{backgroundId}
-     * @allow (get) Any user can read a profile background.
-     * @allow (list) Any user can list profile backgrounds.
-     * @deny (create) No one can create profile backgrounds through the client.
-     * @deny (update) No one can update profile backgrounds through the client.
-     * @deny (delete) No one can delete profile backgrounds through the client.
-     * @principle Public read access with no write access
+     * @allow (get, list): Any user can read the profile backgrounds.
+     * @deny (create, update, delete): No user can create, update, or delete profile backgrounds.
+     * @principle Public read access with restricted writes.
      */
-    match /profileBackgrounds/{backgroundId} {
-      allow get, list: if true;
+     match /profileBackgrounds/{backgroundId} {
+        allow get: if true;
+        allow list: if true;
 
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+        allow create: if false;
+        allow update: if false;
+        allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to color themes, with no write access.
+     * @description List of all available app color themes. Publicly readable.
      * @path /colorThemes/{themeId}
-     * @allow (get) Any user can read a color theme.
-     * @allow (list) Any user can list color themes.
-     * @deny (create) No one can create color themes through the client.
-     * @deny (update) No one can update color themes through the client.
-     * @deny (delete) No one can delete color themes through the client.
-     * @principle Public read access with no write access
+     * @allow (get, list): Any user can read the color themes.
+     * @deny (create, update, delete): No user can create, update, or delete color themes.
+     * @principle Public read access with restricted writes.
      */
-    match /colorThemes/{themeId} {
-      allow get, list: if true;
+     match /colorThemes/{themeId} {
+        allow get: if true;
+        allow list: if true;
 
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+        allow create: if false;
+        allow update: if false;
+        allow delete: if false;
     }
 
     /**
-     * @description Enforces user-specific access to casino games.
+     * @description Stores casino game history for a user.
      * @path /users/{userId}/casinoGames/{casinoGameId}
-     * @allow (create) User with UID 'user123' creates a casino game.
-     * @deny (create) User with UID 'user123' tries to create a casino game for 'user456'.
-     * @allow (update) User with UID 'user123' updates their own casino game.
-     * @deny (update) User with UID 'user123' tries to update a casino game for 'user456'.
-     * @principle Restricts access to a user's own data tree
+     * @allow (create, update, delete): Authenticated user with matching UID.
+     * @deny (create, update, delete): Mismatched UID or unauthenticated user.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/casinoGames/{casinoGameId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
 
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
-     /**
-     * @description Allows public read access to ranking data, with owner-only creation.
+    /**
+     * @description Stores public-facing ranking data for each user.
      * @path /rankings/{userId}
-     * @allow (get) Any user can read ranking data.
-     * @allow (list) Any user can list ranking data.
-     * @allow (create) Only the user matching the userId can create their ranking data.
-     * @deny (update) No one can update ranking data through the client.
-     * @deny (delete) No one can delete ranking data through the client.
-     * @principle Public read, owner-only create.
+     * @allow (get, list): Any user can read the rankings.
+     * @allow (create, update): Authenticated user with matching UID.
+     * @deny (create, update): Mismatched UID or unauthenticated user.
+     * @deny delete: No user can delete ranking data.
+     * @principle Public read access with owner-only writes.
      */
     match /rankings/{userId} {
-      allow get, list: if true;
-      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if true;
+      allow list: if true;
+
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isExistingOwner(userId);
       allow delete: if false;
     }
   }
