@@ -63,6 +63,7 @@ export default function AuthPage() {
     const userProfileSnap = await getDoc(userProfileRef);
 
     if (userProfileSnap.exists()) {
+        // If profile exists, update it with potentially new info from provider
         const updateData: { username?: string; imageUrl?: string | null; email?: string; } = {};
         if (user.displayName && user.displayName !== userProfileSnap.data().username) {
             updateData.username = user.displayName;
@@ -78,6 +79,7 @@ export default function AuthPage() {
             await updateDoc(userProfileRef, updateData);
         }
     } else {
+        // If profile doesn't exist, create it
         const newUserProfile = {
             username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
             email: user.email || 'anonimo@desafiohv.com',
@@ -109,26 +111,32 @@ export default function AuthPage() {
   };
 
   const handleAuthError = (errorCode: string) => {
-    let description = "Ocurrió un error inesperado.";
+    let description = "Ocurrió un error inesperado. Por favor, intenta de nuevo.";
     switch (errorCode) {
+        case 'auth/user-not-found':
         case AuthErrorCodes.USER_DELETED:
-            description = "El usuario no existe.";
+            description = "El usuario no existe. Por favor, regístrate.";
             break;
         case AuthErrorCodes.INVALID_EMAIL:
-            description = "El correo electrónico no es válido.";
+            description = "El formato del correo electrónico no es válido.";
             break;
         case "auth/invalid-credential":
-        case AuthErrorCodes.INVALID_PASSWORD:
-             description = "Correo o contraseña incorrectos.";
+            description = "Correo o contraseña incorrectos. Por favor, verifica tus credenciales.";
             break;
         case AuthErrorCodes.EMAIL_EXISTS:
-             description = "El correo electrónico ya está en uso por otra cuenta.";
+             description = "El correo electrónico ya está en uso por otra cuenta. Intenta iniciar sesión.";
             break;
         case AuthErrorCodes.WEAK_PASSWORD:
-            description = "La contraseña es demasiado débil (mínimo 6 caracteres).";
+            description = "La contraseña es demasiado débil. Debe tener al menos 6 caracteres.";
+            break;
+        case 'auth/network-request-failed':
+            description = "Error de red. Por favor, comprueba tu conexión a internet.";
+            break;
+        case 'auth/popup-closed-by-user':
+            description = "El proceso de inicio de sesión fue cancelado.";
             break;
         default:
-            description = "Por favor, revisa tus credenciales e inténtalo de nuevo."
+            console.error("Unhandled Auth Error:", errorCode);
             break;
     }
     toast({
@@ -271,3 +279,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
+    
