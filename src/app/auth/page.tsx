@@ -37,6 +37,11 @@ export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,13 +63,17 @@ export default function AuthPage() {
     const userProfileSnap = await getDoc(userProfileRef);
 
     if (userProfileSnap.exists()) {
-        const updateData: { username?: string; imageUrl?: string | null; } = {};
-        if (user.displayName) {
+        const updateData: { username?: string; imageUrl?: string | null; email?: string; } = {};
+        if (user.displayName && user.displayName !== userProfileSnap.data().username) {
             updateData.username = user.displayName;
         }
-        if (user.photoURL) {
+        if (user.photoURL && user.photoURL !== userProfileSnap.data().imageUrl) {
             updateData.imageUrl = user.photoURL;
         }
+        if(user.email && user.email !== userProfileSnap.data().email) {
+            updateData.email = user.email;
+        }
+
         if (Object.keys(updateData).length > 0) {
             await updateDoc(userProfileRef, updateData);
         }
@@ -174,7 +183,7 @@ export default function AuthPage() {
     }
   }
 
-  if (isUserLoading || user) {
+  if (!isClient || isUserLoading || user) {
     return (
         <div className="flex justify-center items-center h-full">
             <p>Cargando...</p>

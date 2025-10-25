@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/layout/header';
@@ -53,6 +53,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [isClient, setIsClient] = useState(false)
+ 
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   return (
     <html lang="es" className="h-full" suppressHydrationWarning>
       <body className={cn(ptSans.variable, 'font-body antialiased h-full bg-muted/40')}>
@@ -71,7 +77,7 @@ export default function RootLayout({
                 </main>
                 <MobileNav />
               </div>
-              <Toaster />
+              {isClient && <Toaster />}
             </AppThemeManager>
           </FirebaseClientProvider>
         </ThemeProvider>
@@ -79,5 +85,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
