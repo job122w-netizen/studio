@@ -12,7 +12,6 @@ import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -107,8 +106,13 @@ export default function PerfilPage() {
 
   const handleSave = async () => {
     if (userProfileRef && editingUsername.trim() !== '') {
-        updateDocumentNonBlocking(userProfileRef, { username: editingUsername.trim() });
-        toast({ title: "Perfil actualizado", description: "Tu nombre de usuario ha sido cambiado." });
+        try {
+            await updateDoc(userProfileRef, { username: editingUsername.trim() });
+            toast({ title: "Perfil actualizado", description: "Tu nombre de usuario ha sido cambiado." });
+        } catch (error) {
+            console.error("Error saving username: ", error);
+            toast({ title: "Error", description: "No se pudo actualizar el nombre.", variant: "destructive" });
+        }
     }
     setIsEditing(false);
   };
@@ -117,10 +121,15 @@ export default function PerfilPage() {
     fileInputRef.current?.click();
   };
 
-  const handleResetAvatar = () => {
+  const handleResetAvatar = async () => {
       if (userProfileRef) {
-          updateDocumentNonBlocking(userProfileRef, { imageUrl: null });
-          toast({ title: "Avatar restablecido", description: "Tu foto de perfil ha sido eliminada." });
+          try {
+            await updateDoc(userProfileRef, { imageUrl: null });
+            toast({ title: "Avatar restablecido", description: "Tu foto de perfil ha sido eliminada." });
+          } catch (error) {
+            console.error("Error resetting avatar: ", error);
+            toast({ title: "Error", description: "No se pudo restablecer el avatar.", variant: "destructive" });
+          }
       }
   };
 
@@ -130,8 +139,13 @@ export default function PerfilPage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        updateDocumentNonBlocking(userProfileRef, { imageUrl: dataUrl });
-        toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
+        try {
+            await updateDoc(userProfileRef, { imageUrl: dataUrl });
+            toast({ title: "Avatar actualizado", description: "Tu foto de perfil ha sido cambiada." });
+        } catch (error) {
+            console.error("Error updating avatar: ", error);
+            toast({ title: "Error", description: "No se pudo actualizar la foto.", variant: "destructive" });
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -153,53 +167,73 @@ export default function PerfilPage() {
     }
   };
 
-  const handleSelectBackground = (backgroundId: string) => {
+  const handleSelectBackground = async (backgroundId: string) => {
     if (!userProfileRef) return;
-    updateDocumentNonBlocking(userProfileRef, { selectedBackgroundId: backgroundId });
-    toast({
-        title: "Fondo actualizado",
-        description: "Tu nuevo fondo de perfil ha sido guardado."
-    });
+    try {
+        await updateDoc(userProfileRef, { selectedBackgroundId: backgroundId });
+        toast({
+            title: "Fondo actualizado",
+            description: "Tu nuevo fondo de perfil ha sido guardado."
+        });
+    } catch (error) {
+        console.error("Error selecting background: ", error);
+        toast({ title: "Error", description: "No se pudo cambiar el fondo.", variant: "destructive" });
+    }
   };
 
-  const handleResetBackground = () => {
+  const handleResetBackground = async () => {
     if (!userProfileRef) return;
-    updateDocumentNonBlocking(userProfileRef, { selectedBackgroundId: null });
-    toast({
-        title: "Fondo restablecido",
-        description: "Se ha restaurado el fondo predeterminado."
-    });
+    try {
+        await updateDoc(userProfileRef, { selectedBackgroundId: null });
+        toast({
+            title: "Fondo restablecido",
+            description: "Se ha restaurado el fondo predeterminado."
+        });
+    } catch (error) {
+        console.error("Error resetting background: ", error);
+        toast({ title: "Error", description: "No se pudo restablecer el fondo.", variant: "destructive" });
+    }
   };
 
-  const handleSelectTheme = (themeId: string) => {
+  const handleSelectTheme = async (themeId: string) => {
     if (!userProfileRef) return;
 
     const isDefaultUnlocked = userProfile?.unlockedThemes?.includes('default-theme');
-    if (!isDefaultUnlocked) {
-        updateDocumentNonBlocking(userProfileRef, { 
-            selectedThemeId: themeId,
-            unlockedThemes: arrayUnion('default-theme', themeId)
-        });
-    } else {
-        updateDocumentNonBlocking(userProfileRef, { 
-            selectedThemeId: themeId,
-            unlockedThemes: arrayUnion(themeId) 
-        });
-    }
+    try {
+        if (!isDefaultUnlocked) {
+            await updateDoc(userProfileRef, { 
+                selectedThemeId: themeId,
+                unlockedThemes: arrayUnion('default-theme', themeId)
+            });
+        } else {
+            await updateDoc(userProfileRef, { 
+                selectedThemeId: themeId,
+                unlockedThemes: arrayUnion(themeId) 
+            });
+        }
 
-    toast({
-        title: "Tema actualizado",
-        description: "Tu nuevo tema ha sido guardado y aplicado."
-    });
+        toast({
+            title: "Tema actualizado",
+            description: "Tu nuevo tema ha sido guardado y aplicado."
+        });
+    } catch (error) {
+        console.error("Error selecting theme: ", error);
+        toast({ title: "Error", description: "No se pudo cambiar el tema.", variant: "destructive" });
+    }
   };
 
-  const handleResetTheme = () => {
+  const handleResetTheme = async () => {
       if (!userProfileRef) return;
-      updateDocumentNonBlocking(userProfileRef, { selectedThemeId: 'default-theme' });
-      toast({
-          title: "Tema restablecido",
-          description: "Se ha restaurado el tema predeterminado."
-      });
+      try {
+        await updateDoc(userProfileRef, { selectedThemeId: 'default-theme' });
+        toast({
+            title: "Tema restablecido",
+            description: "Se ha restaurado el tema predeterminado."
+        });
+      } catch (error) {
+        console.error("Error resetting theme: ", error);
+        toast({ title: "Error", description: "No se pudo restablecer el tema.", variant: "destructive" });
+      }
   };
 
   const handleUseItem = async (item: TiendaItem) => {
@@ -255,15 +289,19 @@ export default function PerfilPage() {
     // Remove the used item from inventory
     updates.userItems = arrayRemove(userOwnedItem);
     
-    updateDocumentNonBlocking(userProfileRef, updates);
-
-    toast({
-        title: purchaseTitle,
-        description: purchaseDescription,
-    });
+    try {
+        await updateDoc(userProfileRef, updates);
+        toast({
+            title: purchaseTitle,
+            description: purchaseDescription,
+        });
+    } catch (error) {
+        console.error("Error using item: ", error);
+        toast({ title: "Error", description: "No se pudo usar el objeto.", variant: "destructive" });
+    }
   };
 
-  const handleClaimAchievement = (achievement: StudyAchievement | StreakAchievement, type: 'study' | 'streak') => {
+  const handleClaimAchievement = async (achievement: StudyAchievement | StreakAchievement, type: 'study' | 'streak') => {
     if (!userProfileRef) return;
     
     const { reward } = achievement;
@@ -298,12 +336,16 @@ export default function PerfilPage() {
         }
     }
 
-    updateDocumentNonBlocking(userProfileRef, updates);
-
-    toast({
-        title: `¡Logro Desbloqueado: ${achievement.name}!`,
-        description: description + rewards.join(', ') + '.',
-    });
+    try {
+        await updateDoc(userProfileRef, updates);
+        toast({
+            title: `¡Logro Desbloqueado: ${achievement.name}!`,
+            description: description + rewards.join(', ') + '.',
+        });
+    } catch (error) {
+        console.error("Error claiming achievement: ", error);
+        toast({ title: "Error", description: "No se pudo reclamar la recompensa.", variant: "destructive" });
+    }
   };
   
   if (isLoading || !userProfile) {

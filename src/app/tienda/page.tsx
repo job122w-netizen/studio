@@ -5,8 +5,7 @@ import { tiendaItems } from "@/lib/placeholder-data";
 import { Coins, Gem, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, increment, arrayUnion, Timestamp } from "firebase/firestore";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { doc, increment, arrayUnion, Timestamp, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,7 +21,7 @@ export default function TiendaPage() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-  const handlePurchase = (item: typeof tiendaItems[0]) => {
+  const handlePurchase = async (item: typeof tiendaItems[0]) => {
     if (!userProfileRef || !userProfile) return;
 
     const hasEnoughCurrency = item.currency === 'gems'
@@ -88,12 +87,20 @@ export default function TiendaPage() {
         updates.userItems = arrayUnion({ itemId: item.id, purchaseDate: new Date().toISOString() });
     }
 
-    updateDocumentNonBlocking(userProfileRef, updates);
-
-    toast({
-        title: purchaseTitle,
-        description: purchaseDescription,
-    });
+    try {
+        await updateDoc(userProfileRef, updates);
+        toast({
+            title: purchaseTitle,
+            description: purchaseDescription,
+        });
+    } catch (error) {
+        console.error("Error purchasing item: ", error);
+        toast({
+            title: "Error de compra",
+            description: "No se pudo completar la compra. Intenta de nuevo.",
+            variant: "destructive",
+        });
+    }
   };
   
   const isLoading = isUserLoading || isProfileLoading;

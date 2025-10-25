@@ -4,12 +4,11 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, setDoc, increment } from "firebase/firestore";
+import { doc, collection, setDoc, increment, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Edit, Plus, Save, Trash2, X, CheckCircle } from "lucide-react";
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { updateUserStreak } from '@/lib/streaks';
@@ -79,18 +78,28 @@ export default function EjerciciosPage() {
     }
   }, [weeklyRoutine, isRoutineLoading]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!weeklyRoutineRef) return;
-    localRoutine.forEach(day => {
-      const dayDocRef = doc(weeklyRoutineRef, day.id);
-      const dataToSave = { exercises: day.exercises.map(({id, name, completed}) => ({id, name, completed: !!completed})) };
-      setDocumentNonBlocking(dayDocRef, dataToSave, { merge: true });
-    });
-    setIsEditing(false);
-    toast({
-      title: "Rutina guardada",
-      description: "Tus cambios se han guardado correctamente.",
-    });
+    try {
+      const promises = localRoutine.map(day => {
+        const dayDocRef = doc(weeklyRoutineRef, day.id);
+        const dataToSave = { exercises: day.exercises.map(({id, name, completed}) => ({id, name, completed: !!completed})) };
+        return setDoc(dayDocRef, dataToSave, { merge: true });
+      });
+      await Promise.all(promises);
+      setIsEditing(false);
+      toast({
+        title: "Rutina guardada",
+        description: "Tus cambios se han guardado correctamente.",
+      });
+    } catch (error) {
+       console.error("Error saving routine: ", error);
+       toast({
+        title: "Error al guardar",
+        description: "No se pudo guardar la rutina. Inténtalo de nuevo.",
+        variant: "destructive"
+       });
+    }
   };
 
   const handleAddExercise = () => {
@@ -156,50 +165,61 @@ export default function EjerciciosPage() {
     const dayRoutine = newLocalRoutine.find(d => d.id === dayId);
     if (!dayRoutine) return;
     
-    const xpReward = 100;
-    
-    if (isCompleting) {
-      updateDocumentNonBlocking(userProfileRef, {
-        experiencePoints: increment(xpReward)
-      });
-      toast({
-        title: "¡Ejercicio completado!",
-        description: `¡Has ganado ${xpReward} XP!`,
-      });
-      const { updated, newStreak } = await updateUserStreak(userProfileRef);
-      if (updated && newStreak > 0) {
+    try {
+        const xpReward = 100;
+        
+        if (isCompleting) {
+          await updateDoc(userProfileRef, {
+            experiencePoints: increment(xpReward)
+          });
+          toast({
+            title: "¡Ejercicio completado!",
+            description: `¡Has ganado ${xpReward} XP!`,
+          });
+          const { updated, newStreak } = await updateUserStreak(userProfileRef);
+          if (updated && newStreak > 0) {
+            toast({
+                duration: 5000,
+                component: <StreakToast streak={newStreak} />,
+            });
+          }
+
+          const isDayNowCompleted = dayRoutine.exercises.length > 0 && dayRoutine.exercises.every(ex => ex.completed);
+
+          if (isDayNowCompleted && !wasDayAlreadyCompleted) {
+            await updateDoc(userProfileRef, {
+                goldLingots: increment(3)
+            });
+            await updateCasinoChips(userProfileRef, 3);
+            toast({
+                title: "¡Rutina del día completada!",
+                description: "¡Has ganado 3 lingotes de oro y 3 fichas de casino por tu disciplina!",
+            });
+          }
+
+        } else {
+             await updateDoc(userProfileRef, {
+                experiencePoints: increment(-xpReward)
+             });
+             toast({
+                title: "Ejercicio deshecho",
+                description: `Se han restado ${xpReward} XP.`,
+                variant: 'destructive'
+            });
+        }
+
+        const dayDocRef = doc(weeklyRoutineRef, dayId);
+        await setDoc(dayDocRef, { exercises: dayRoutine.exercises }, { merge: true });
+    } catch (error) {
+        console.error("Error toggling exercise: ", error);
         toast({
-            duration: 5000,
-            component: <StreakToast streak={newStreak} />,
+            title: "Error",
+            description: "No se pudo actualizar el ejercicio. Por favor, intenta de nuevo.",
+            variant: "destructive"
         });
-      }
-
-      const isDayNowCompleted = dayRoutine.exercises.length > 0 && dayRoutine.exercises.every(ex => ex.completed);
-
-      if (isDayNowCompleted && !wasDayAlreadyCompleted) {
-        updateDocumentNonBlocking(userProfileRef, {
-            goldLingots: increment(3)
-        });
-        updateCasinoChips(userProfileRef, 3);
-        toast({
-            title: "¡Rutina del día completada!",
-            description: "¡Has ganado 3 lingotes de oro y 3 fichas de casino por tu disciplina!",
-        });
-      }
-
-    } else {
-         updateDocumentNonBlocking(userProfileRef, {
-            experiencePoints: increment(-xpReward)
-         });
-         toast({
-            title: "Ejercicio deshecho",
-            description: `Se han restado ${xpReward} XP.`,
-            variant: 'destructive'
-        });
+        // Revert local state if firebase update fails
+        setLocalRoutine(localRoutine);
     }
-
-    const dayDocRef = doc(weeklyRoutineRef, dayId);
-    setDocumentNonBlocking(dayDocRef, { exercises: dayRoutine.exercises }, { merge: true });
   }
   
   const isLoading = isUserLoading || isRoutineLoading;

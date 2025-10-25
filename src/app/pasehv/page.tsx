@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Award, CheckCircle, Coins, Lock, Star, Ticket, Zap, Box, Gem, Palette } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { Progress } from "@/components/ui/progress";
 import { hvPassLevels, type HvPassReward } from "@/lib/placeholder-data";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const XP_PER_LEVEL = 2000;
 
@@ -48,13 +47,22 @@ export default function PaseHVPage() {
 
   const hasPremiumPass = userProfile?.hasPremiumPass ?? false;
 
-  const handlePurchasePass = () => {
+  const handlePurchasePass = async () => {
     if (!userProfileRef) return;
-    updateDocumentNonBlocking(userProfileRef, { hasPremiumPass: true });
-    toast({
-        title: "¡Pase Premium Activado!",
-        description: "¡Ahora tienes acceso a todas las recompensas exclusivas!",
-    });
+    try {
+        await updateDoc(userProfileRef, { hasPremiumPass: true });
+        toast({
+            title: "¡Pase Premium Activado!",
+            description: "¡Ahora tienes acceso a todas las recompensas exclusivas!",
+        });
+    } catch (error) {
+        console.error("Error purchasing pass: ", error);
+        toast({
+            title: "Error",
+            description: "No se pudo activar el pase premium. Intenta de nuevo.",
+            variant: "destructive"
+        });
+    }
   }
 
   const currentLevel = userProfile?.hvPassLevel ?? 1;
@@ -167,5 +175,3 @@ export default function PaseHVPage() {
     </div>
   );
 }
-
-    

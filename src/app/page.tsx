@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Square, Plus, Coins } from "lucide-react";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, collection, increment } from "firebase/firestore";
+import { doc, collection, increment, addDoc, updateDoc } from "firebase/firestore";
 import { useEffect, useState, useRef } from "react";
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { updateUserStreak } from "@/lib/streaks";
@@ -134,86 +133,95 @@ export default function Home() {
     const elapsedTime = Math.floor((endTime.getTime() - sessionStartTime.getTime()) / 1000);
     const finalDurationMinutes = isCompleted ? studyDurationMinutes : Math.floor(elapsedTime / 60);
 
-    // --- Reward Logic ---
-    if (isCompleted && studyDurationMinutes >= 25 && userProfileRef && userProfile) {
-        const blocksOf25 = Math.floor(studyDurationMinutes / 25);
-        let xpReward = blocksOf25 * 1000;
-        let chipReward = blocksOf25 * 3;
-        let lingotReward = blocksOf25 * 1;
+    try {
+        // --- Reward Logic ---
+        if (isCompleted && studyDurationMinutes >= 25 && userProfileRef && userProfile) {
+            const blocksOf25 = Math.floor(studyDurationMinutes / 25);
+            let xpReward = blocksOf25 * 1000;
+            let chipReward = blocksOf25 * 3;
+            let lingotReward = blocksOf25 * 1;
 
-        // Check for active Focus Gem
-        const now = new Date();
-        const focusGemExpiry = userProfile.focusGemActiveUntil?.toDate();
-        let gemActive = false;
-        if (focusGemExpiry && focusGemExpiry > now) {
-            xpReward *= 2;
-            chipReward *= 2;
-            lingotReward *= 2;
-            gemActive = true;
-        }
-
-        const toastTitle = gemActive ? "¡Estudio Potenciado!" : "¡Sesión de estudio completada!";
-        const toastDescription = `¡Has ganado ${xpReward} XP, ${lingotReward} lingote(s) y ${chipReward} fichas!`;
-
-        toast({
-          title: toastTitle,
-          description: toastDescription,
-        });
-
-        updateDocumentNonBlocking(userProfileRef, {
-          experiencePoints: increment(xpReward),
-          goldLingots: increment(lingotReward)
-        });
-        updateCasinoChips(userProfileRef, chipReward);
-    } else if (isCompleted) {
-        toast({
-          title: "¡Sesión de estudio completada!",
-          description: `Has estudiado por ${studyDurationMinutes} minutos.`,
-        });
-    }
-
-    // --- Save Session Logic ---
-    if (user && studySessionsRef && finalDurationMinutes > 0) {
-        const studyHoursIncrement = finalDurationMinutes / 60;
-        
-        await addDocumentNonBlocking(studySessionsRef, {
-            userId: user.uid,
-            subject: 'Estudio General',
-            startTime: sessionStartTime,
-            endTime: endTime,
-            durationMinutes: finalDurationMinutes
-        });
-
-        if (userProfileRef) {
-            updateDocumentNonBlocking(userProfileRef, {
-                studyHours: increment(studyHoursIncrement)
-            });
-        }
-
-        if (!isCompleted) { 
-            toast({
-               title: "Sesión guardada",
-               description: `Has estudiado por ${finalDurationMinutes} minutos.`,
-            });
-        }
-        if(userProfileRef) {
-            const { updated, newStreak } = await updateUserStreak(userProfileRef);
-            if (updated && newStreak > 0) {
-              toast({
-                  duration: 5000,
-                  component: <StreakToast streak={newStreak} />,
-              });
+            // Check for active Focus Gem
+            const now = new Date();
+            const focusGemExpiry = userProfile.focusGemActiveUntil?.toDate();
+            let gemActive = false;
+            if (focusGemExpiry && focusGemExpiry > now) {
+                xpReward *= 2;
+                chipReward *= 2;
+                lingotReward *= 2;
+                gemActive = true;
             }
+
+            const toastTitle = gemActive ? "¡Estudio Potenciado!" : "¡Sesión de estudio completada!";
+            const toastDescription = `¡Has ganado ${xpReward} XP, ${lingotReward} lingote(s) y ${chipReward} fichas!`;
+
+            toast({
+              title: toastTitle,
+              description: toastDescription,
+            });
+
+            await updateDoc(userProfileRef, {
+              experiencePoints: increment(xpReward),
+              goldLingots: increment(lingotReward)
+            });
+            await updateCasinoChips(userProfileRef, chipReward);
+        } else if (isCompleted) {
+            toast({
+              title: "¡Sesión de estudio completada!",
+              description: `Has estudiado por ${studyDurationMinutes} minutos.`,
+            });
         }
-    } else if (!isCompleted && elapsedTime < 60) { // Stopped before 1 min
+
+        // --- Save Session Logic ---
+        if (user && studySessionsRef && finalDurationMinutes > 0) {
+            const studyHoursIncrement = finalDurationMinutes / 60;
+            
+            await addDoc(studySessionsRef, {
+                userId: user.uid,
+                subject: 'Estudio General',
+                startTime: sessionStartTime,
+                endTime: endTime,
+                durationMinutes: finalDurationMinutes
+            });
+
+            if (userProfileRef) {
+                await updateDoc(userProfileRef, {
+                    studyHours: increment(studyHoursIncrement)
+                });
+            }
+
+            if (!isCompleted) { 
+                toast({
+                   title: "Sesión guardada",
+                   description: `Has estudiado por ${finalDurationMinutes} minutos.`,
+                });
+            }
+            if(userProfileRef) {
+                const { updated, newStreak } = await updateUserStreak(userProfileRef);
+                if (updated && newStreak > 0) {
+                  toast({
+                      duration: 5000,
+                      component: <StreakToast streak={newStreak} />,
+                  });
+                }
+            }
+        } else if (!isCompleted && elapsedTime < 60) { // Stopped before 1 min
+            toast({
+               title: "Sesión no guardada",
+               description: "La sesión debe durar al menos 1 minuto para guardarse.",
+               variant: 'destructive'
+           });
+        }
+    } catch (error) {
+        console.error("Error saving study session or rewards: ", error);
         toast({
-           title: "Sesión no guardada",
-           description: "La sesión debe durar al menos 1 minuto para guardarse.",
-           variant: 'destructive'
-       });
+            title: "Error",
+            description: "No se pudo guardar la sesión de estudio. Por favor, intenta de nuevo.",
+            variant: "destructive"
+        });
+    } finally {
+        setSessionStartTime(null);
     }
-    
-    setSessionStartTime(null);
   };
 
   const formatTime = (seconds: number) => {

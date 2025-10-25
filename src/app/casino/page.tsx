@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Coins, Ticket, Gem, Star, CupSoda, Bomb, HelpCircle, Gift, Minus, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useUser, useDoc, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
-import { doc, increment } from "firebase/firestore";
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, increment, updateDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -387,18 +387,22 @@ export default function CasinoPage() {
     
             const currentBombStreak = userProfile?.bombStreak ?? 0;
             const newBombStreak = currentBombStreak + 1;
-    
-            if (newBombStreak >= 3) {
-                toast({ variant: 'destructive', title: '¡BOOM!', description: 'Tercera bomba consecutiva. ¡El multiplicador se ha reiniciado!' });
-                updateDocumentNonBlocking(userProfileRef, {
-                    bombStreak: 0,
-                    mineSweeperMultiplier: 1,
-                });
-            } else {
-                toast({ variant: 'destructive', title: '¡BOOM!', description: `Has encontrado una bomba. Racha de bombas: ${newBombStreak}/3.` });
-                updateDocumentNonBlocking(userProfileRef, {
-                    bombStreak: increment(1),
-                });
+            
+            try {
+                if (newBombStreak >= 3) {
+                    toast({ variant: 'destructive', title: '¡BOOM!', description: 'Tercera bomba consecutiva. ¡El multiplicador se ha reiniciado!' });
+                    await updateDoc(userProfileRef, {
+                        bombStreak: 0,
+                        mineSweeperMultiplier: 1,
+                    });
+                } else {
+                    toast({ variant: 'destructive', title: '¡BOOM!', description: `Has encontrado una bomba. Racha de bombas: ${newBombStreak}/3.` });
+                    await updateDoc(userProfileRef, {
+                        bombStreak: increment(1),
+                    });
+                }
+            } catch (error) {
+                console.error("Error updating bomb streak: ", error);
             }
     
             // Reveal all bombs
@@ -421,29 +425,34 @@ export default function CasinoPage() {
         let description = 'Has cobrado tus premios: ';
         let hasPrizes = foundPrizes.length > 0;
     
-        if (hasPrizes) {
-            foundPrizes.forEach(prize => {
-                if (prize === 'casinoChip') {
-                    chipWinnings += currentMultiplier;
-                    description += `${currentMultiplier} fichas, `;
+        try {
+            if (hasPrizes) {
+                foundPrizes.forEach(prize => {
+                    if (prize === 'casinoChip') {
+                        chipWinnings += currentMultiplier;
+                        description += `${currentMultiplier} fichas, `;
+                    }
+                    // Here you could add logic for other prizes like gems or goldLingots
+                });
+        
+                if (chipWinnings > 0) {
+                    await updateCasinoChips(userProfileRef, chipWinnings);
                 }
-                // Here you could add logic for other prizes like gems or goldLingots
-            });
-    
-            if (chipWinnings > 0) {
-                await updateCasinoChips(userProfileRef, chipWinnings);
+        
+                toast({ title: `¡Premios cobrados! (x${currentMultiplier})`, description: description.slice(0, -2) });
+            } else {
+                toast({ title: "Partida finalizada", description: "No encontraste premios esta vez."});
             }
-    
-            toast({ title: `¡Premios cobrados! (x${currentMultiplier})`, description: description.slice(0, -2) });
-        } else {
-            toast({ title: "Partida finalizada", description: "No encontraste premios esta vez."});
+        
+            // Increase multiplier and reset bomb streak on successful cash out
+            await updateDoc(userProfileRef, {
+                mineSweeperMultiplier: increment(1),
+                bombStreak: 0
+            });
+        } catch (error) {
+            console.error("Error cashing out mines: ", error);
+            toast({ title: "Error", description: "No se pudieron cobrar los premios.", variant: "destructive" });
         }
-    
-        // Increase multiplier and reset bomb streak on successful cash out
-        updateDocumentNonBlocking(userProfileRef, {
-            mineSweeperMultiplier: increment(1),
-            bombStreak: 0
-        });
     
         setMinePhase('betting');
     };
