@@ -104,6 +104,11 @@
             "type": "array",
             "description": "List of IDs of study achievements whose rewards have been claimed.",
             "items": { "type": "number" }
+        },
+        "claimedStreakAchievements": {
+            "type": "array",
+            "description": "List of IDs of streak achievements whose rewards have been claimed.",
+            "items": { "type": "number" }
         }
       },
       "required": [

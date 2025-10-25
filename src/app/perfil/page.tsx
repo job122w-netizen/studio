@@ -22,7 +22,9 @@ import { colorThemes } from "@/lib/themes";
 import { Inventory } from "@/components/profile/inventory";
 import { tiendaItems, TiendaItem } from "@/lib/placeholder-data";
 import { studyAchievements, StudyAchievement } from "@/lib/achievements";
+import { streakAchievements, StreakAchievement } from "@/lib/achievements-streak";
 import { AchievementsList } from "@/components/profile/achievements";
+import { AchievementsStreakList } from "@/components/profile/achievements-streak";
 
 
 const ranks = [
@@ -85,6 +87,7 @@ export default function PerfilPage() {
     : 100;
 
   const totalStudyHours = Math.floor(userProfile?.studyHours || 0);
+  const currentStreak = userProfile?.currentStreak || 0;
 
   const stats = [
     { icon: Star, label: "Puntos HV", value: userProfile?.experiencePoints?.toLocaleString('es-ES') || "0" },
@@ -260,13 +263,17 @@ export default function PerfilPage() {
     });
   };
 
-  const handleClaimAchievement = (achievement: StudyAchievement) => {
+  const handleClaimAchievement = (achievement: StudyAchievement | StreakAchievement, type: 'study' | 'streak') => {
     if (!userProfileRef) return;
     
     const { reward } = achievement;
-    const updates: { [key: string]: any } = {
-        claimedStudyAchievements: arrayUnion(achievement.id)
-    };
+    const updates: { [key: string]: any } = {};
+
+    if (type === 'study') {
+        updates.claimedStudyAchievements = arrayUnion(achievement.id);
+    } else {
+        updates.claimedStreakAchievements = arrayUnion(achievement.id);
+    }
 
     let description = 'Has recibido: ';
     const rewards: string[] = [];
@@ -448,21 +455,6 @@ export default function PerfilPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-primary" /> Logros de Estudio
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AchievementsList
-            totalStudyHours={totalStudyHours}
-            claimedAchievements={userProfile.claimedStudyAchievements || []}
-            onClaim={handleClaimAchievement}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary"/> Temas de Color</div>
              <Button variant="ghost" size="sm" onClick={handleResetTheme}>Restablecer</Button>
@@ -532,6 +524,36 @@ export default function PerfilPage() {
           ) : (
             <p className="text-center text-muted-foreground">Desbloquea fondos en el Pase HV para personalizar tu perfil.</p>
           )}
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" /> Logros de Racha
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AchievementsStreakList
+            currentStreak={currentStreak}
+            claimedAchievements={userProfile.claimedStreakAchievements || []}
+            onClaim={(achievement) => handleClaimAchievement(achievement, 'streak')}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" /> Logros de Estudio
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AchievementsList
+            totalStudyHours={totalStudyHours}
+            claimedAchievements={userProfile.claimedStudyAchievements || []}
+            onClaim={(achievement) => handleClaimAchievement(achievement, 'study')}
+          />
         </CardContent>
       </Card>
     </div>

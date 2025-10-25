@@ -1,24 +1,23 @@
 'use client';
 
-import { Trophy, CheckCircle } from "lucide-react";
+import { Trophy, CheckCircle, Flame } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { studyAchievements, type StudyAchievement } from "@/lib/achievements";
-import { Badge } from "../ui/badge";
+import { streakAchievements, type StreakAchievement } from "@/lib/achievements-streak";
 
-type AchievementsListProps = {
-    totalStudyHours: number;
+type AchievementsStreakListProps = {
+    currentStreak: number;
     claimedAchievements: number[];
-    onClaim: (achievement: StudyAchievement) => void;
+    onClaim: (achievement: StreakAchievement) => void;
 };
 
-export function AchievementsList({ totalStudyHours, claimedAchievements, onClaim }: AchievementsListProps) {
+export function AchievementsStreakList({ currentStreak, claimedAchievements, onClaim }: AchievementsStreakListProps) {
     return (
         <ul className="space-y-4">
-            {studyAchievements.map((ach) => {
-                const isCompleted = totalStudyHours >= ach.hours;
+            {streakAchievements.map((ach) => {
+                const isCompleted = currentStreak >= ach.days;
                 const isClaimed = claimedAchievements.includes(ach.id);
-                const progress = isCompleted ? 100 : (totalStudyHours / ach.hours) * 100;
+                const progress = isCompleted ? 100 : (currentStreak / ach.days) * 100;
                 
                 let rewardText = [];
                 if (ach.reward.xp) rewardText.push(`${ach.reward.xp.toLocaleString()} XP`);
@@ -27,12 +26,11 @@ export function AchievementsList({ totalStudyHours, claimedAchievements, onClaim
                 if (ach.reward.gems) rewardText.push(`${ach.reward.gems} Gemas`);
                 if (ach.reward.chest) rewardText.push(`1 Cofre ${ach.reward.chest === 'epic' ? 'Épico' : 'Legendario'}`);
 
-
                 return (
                     <li key={ach.id} className="flex flex-col gap-3 p-4 border rounded-lg bg-muted/50">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <Trophy className={`h-8 w-8 transition-colors ${isCompleted ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                                <Flame className={`h-8 w-8 transition-colors ${isCompleted ? 'text-orange-500' : 'text-muted-foreground'}`} />
                                 <div>
                                     <p className={`font-semibold transition-colors ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>{ach.name}</p>
                                     <p className="text-sm text-muted-foreground">{ach.description}</p>
@@ -52,7 +50,7 @@ export function AchievementsList({ totalStudyHours, claimedAchievements, onClaim
                         {!isCompleted && (
                             <div className="space-y-1">
                                 <Progress value={progress} className="h-2" />
-                                <p className="text-xs text-muted-foreground text-right">{totalStudyHours.toLocaleString()} / {ach.hours.toLocaleString()} horas</p>
+                                <p className="text-xs text-muted-foreground text-right">{currentStreak.toLocaleString()} / {ach.days.toLocaleString()} días</p>
                             </div>
                         )}
                         
