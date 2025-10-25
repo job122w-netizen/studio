@@ -198,20 +198,10 @@ export default function PerfilPage() {
   const handleSelectTheme = async (themeId: string) => {
     if (!userProfileRef) return;
 
-    const isDefaultUnlocked = userProfile?.unlockedThemes?.includes('default-theme');
     try {
-        if (!isDefaultUnlocked) {
-            await updateDoc(userProfileRef, { 
-                selectedThemeId: themeId,
-                unlockedThemes: arrayUnion('default-theme', themeId)
-            });
-        } else {
-            await updateDoc(userProfileRef, { 
-                selectedThemeId: themeId,
-                unlockedThemes: arrayUnion(themeId) 
-            });
-        }
-
+        await updateDoc(userProfileRef, { 
+            selectedThemeId: themeId
+        });
         toast({
             title: "Tema actualizado",
             description: "Tu nuevo tema ha sido guardado y aplicado."
@@ -524,22 +514,25 @@ export default function PerfilPage() {
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                 {colorThemes.map(theme => {
                     const isUnlocked = userProfile.unlockedThemes?.includes(theme.id);
-                    
-                    if (!isUnlocked) return null;
-
                     const isSelected = (userProfile.selectedThemeId ?? 'default-theme') === theme.id;
+                    
                     return (
                         <div 
                             key={theme.id} 
                             className={cn(
                                 "relative aspect-square rounded-lg flex items-center justify-center border-4 transition-all",
                                 isSelected ? "border-primary shadow-lg" : "border-transparent",
-                                "cursor-pointer hover:border-primary/50"
+                                isUnlocked ? "cursor-pointer hover:border-primary/50" : "cursor-not-allowed"
                             )}
                             style={{ backgroundColor: `hsl(${theme.primary})`}}
-                            onClick={() => handleSelectTheme(theme.id)}
+                            onClick={() => isUnlocked && handleSelectTheme(theme.id)}
                         >
                             <span className="font-bold text-xs text-primary-foreground mix-blend-difference">{theme.name}</span>
+                             {!isUnlocked && (
+                                <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-md">
+                                    <Lock className="h-6 w-6 text-white"/>
+                                </div>
+                             )}
                         </div>
                     )
                 })}
