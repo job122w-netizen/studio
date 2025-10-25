@@ -170,13 +170,6 @@ export default function Home() {
             });
         }
         if(userProfileRef) {
-            // FOR TESTING: Always trigger streak animation
-            toast({
-                duration: 5000,
-                component: <StreakToast streak={(userProfile?.currentStreak || 0) + 1} />,
-            });
-            // Restore this code after testing
-            /*
             const { updated, newStreak } = await updateUserStreak(userProfileRef);
             if (updated && newStreak > 0) {
                 toast({
@@ -184,7 +177,6 @@ export default function Home() {
                     component: <StreakToast streak={newStreak} />,
                 });
             }
-            */
         }
     } else if (!isCompleted && elapsedTime < 60) { // Stopped before 1 min
         toast({
