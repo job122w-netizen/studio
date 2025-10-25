@@ -58,7 +58,6 @@ export default function AuthPage() {
     const userProfileSnap = await getDoc(userProfileRef);
 
     if (userProfileSnap.exists()) {
-        // Profile exists, update it with the latest info from the auth provider
         const updateData: { username?: string; imageUrl?: string | null; } = {};
         if (user.displayName) {
             updateData.username = user.displayName;
@@ -70,14 +69,14 @@ export default function AuthPage() {
             await updateDoc(userProfileRef, updateData);
         }
     } else {
-        // Profile doesn't exist, create a new one
         const newUserProfile = {
             username: user.displayName || (user.isAnonymous ? 'Usuario Anónimo' : user.email?.split('@')[0]) || 'Usuario',
             email: user.email || 'anonimo@desafiohv.com',
             level: 1,
             experiencePoints: 0,
+            studyHours: 0,
             goldLingots: 0,
-            casinoChips: 0,
+            casinoChips: 100,
             gems: 0,
             createdAt: serverTimestamp(),
             imageUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,

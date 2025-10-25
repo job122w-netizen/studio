@@ -102,6 +102,11 @@ export default {
           '50%': { 
             boxShadow: '0 0 80px 30px hsl(var(--primary) / 0.7)'
           },
+        },
+        'cup-shuffle': {
+          '0%, 100%': { transform: 'translateY(0) scale(1)', zIndex: '1' },
+          '25%': { transform: 'translateY(-20px) scale(1.05)', zIndex: '2' },
+          '75%': { transform: 'translateY(-20px) scale(1.05)', zIndex: '2' },
         }
       },
       animation: {
@@ -109,6 +114,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'pulse-glow': 'pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'cup-shuffle': 'cup-shuffle 0.5s ease-in-out',
       },
     },
   },

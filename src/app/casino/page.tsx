@@ -56,17 +56,26 @@ const shuffleArray = <T,>(array: T[]): T[] => {
     return newArray;
 };
 
-const Cup = ({ isRevealed, hasPrize, onClick, phase }: { isRevealed: boolean, hasPrize: boolean, onClick: () => void, phase: ShellGamePhase }) => (
+const Cup = ({ cupState, onClick, phase, order }: { cupState: CupState, onClick: () => void, phase: ShellGamePhase, order: number }) => (
     <div
         className={cn(
-            "relative transition-transform duration-300",
+            "relative transition-all duration-500 ease-in-out",
             phase === 'picking' && "cursor-pointer hover:scale-110",
+            phase === 'shuffling' && 'animate-cup-shuffle',
+            cupState.isRevealed && '-translate-y-4'
         )}
+        style={{ order }}
         onClick={onClick}
     >
         <CupSoda className="h-24 w-24 text-primary" />
-        {isRevealed && hasPrize && (
-            <Ticket className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-red-500 animate-fade-in" />
+        {cupState.isRevealed && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 animate-fade-in">
+                {cupState.hasPrize ? (
+                    <Ticket className="h-full w-full text-red-500" />
+                ) : (
+                    <span className="text-2xl">❌</span>
+                )}
+            </div>
         )}
     </div>
 );
@@ -141,6 +150,7 @@ export default function CasinoPage() {
         { id: 1, hasPrize: false, isRevealed: false },
         { id: 2, hasPrize: false, isRevealed: false },
     ]);
+    const [cupOrder, setCupOrder] = useState([0, 1, 2]);
     const [shellResultMessage, setShellResultMessage] = useState('');
     const [shellBetAmount, setShellBetAmount] = useState(1);
 
@@ -175,7 +185,6 @@ export default function CasinoPage() {
 
         setRolling(true);
         setDiceResultMessage('');
-        // No await here for optimistic UI update
         updateCasinoChips(userProfileRef, -diceBetAmount);
         
         const rollInterval = setInterval(() => {
@@ -198,7 +207,7 @@ export default function CasinoPage() {
                 setDiceResultMessage('¡No hubo suerte! Inténtalo de nuevo.');
             }
             setRolling(false);
-        }, 1000); // Animation duration
+        }, 1000);
     };
 
      const spinSlots = () => {
@@ -210,7 +219,6 @@ export default function CasinoPage() {
 
         setSpinning(true);
         setSlotResultMessage('');
-        // No await here for optimistic UI update
         updateCasinoChips(userProfileRef, -cost);
         
         const finalReelsResult = [
@@ -219,7 +227,6 @@ export default function CasinoPage() {
             slotSymbols[Math.floor(Math.random() * slotSymbols.length)]
         ];
         
-        // Simulate spinning animation
         const interval = setInterval(() => {
             setReels([
                 slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
@@ -233,7 +240,7 @@ export default function CasinoPage() {
             setReels(finalReelsResult);
             await checkWin(finalReelsResult);
             setSpinning(false);
-        }, 1000); // Total spin duration
+        }, 1000);
     };
 
     const checkWin = async (finalReels: typeof slotSymbols) => {
@@ -292,25 +299,41 @@ export default function CasinoPage() {
             setShellResultMessage('La apuesta mínima es 1 ficha.');
             return;
         }
-
-        // No await here for optimistic UI update
+        
         updateCasinoChips(userProfileRef, -shellBetAmount);
         setShellGamePhase('shuffling');
         setShellResultMessage('Observa con atención...');
 
-        setTimeout(() => {
-            const winningCupIndex = Math.floor(Math.random() * 3);
-            const initialCups = cups.map((cup, index) => ({
-                ...cup,
-                hasPrize: index === winningCupIndex,
-                isRevealed: false,
-            }));
-            
-            const shuffledCups = shuffleArray(initialCups);
-            setCups(shuffledCups);
-            setShellGamePhase('picking');
-            setShellResultMessage('¿Dónde está la ficha?');
-        }, 1000); // Shuffling animation duration
+        const winningCupIndex = Math.floor(Math.random() * 3);
+        const initialCups = cups.map((cup, index) => ({
+            ...cup,
+            hasPrize: index === winningCupIndex,
+            isRevealed: false,
+        }));
+        setCups(initialCups);
+
+        // Fun animation sequence
+        const animationSequence = [
+            [1, 0, 2], // Swap 0 and 1
+            [1, 2, 0], // Swap 1 and 2 (original positions)
+            [2, 1, 0], // Swap 0 and 2
+            [0, 1, 2], // Back to original
+            shuffleArray([0,1,2]),
+            shuffleArray([0,1,2]),
+        ];
+
+        let i = 0;
+        const shuffleInterval = setInterval(() => {
+            setCupOrder(animationSequence[i]);
+            i++;
+            if (i >= animationSequence.length) {
+                clearInterval(shuffleInterval);
+                setTimeout(() => {
+                    setShellGamePhase('picking');
+                    setShellResultMessage('¿Dónde está la ficha?');
+                }, 500);
+            }
+        }, 500);
     };
 
     const handleCupPick = async (pickedCup: CupState) => {
@@ -319,19 +342,22 @@ export default function CasinoPage() {
         setShellGamePhase('result');
         setCups(cups.map(cup => ({ ...cup, isRevealed: true })));
 
-        if (pickedCup.hasPrize) {
-            const winnings = shellBetAmount * 2;
-            setShellResultMessage(`¡Correcto! ¡Has ganado ${winnings} fichas!`);
-            await updateCasinoChips(userProfileRef, winnings);
-        } else {
-            setShellResultMessage('¡Incorrecto! Mejor suerte la próxima vez.');
-        }
+        setTimeout(async () => {
+            if (pickedCup.hasPrize) {
+                const winnings = shellBetAmount * 2;
+                setShellResultMessage(`¡Correcto! ¡Has ganado ${winnings} fichas!`);
+                await updateCasinoChips(userProfileRef, winnings);
+            } else {
+                setShellResultMessage('¡Incorrecto! Mejor suerte la próxima vez.');
+            }
+        }, 300);
     };
     
     const resetShellGame = () => {
         setShellGamePhase('betting');
         setShellResultMessage('');
         setCups(cups.map(cup => ({...cup, hasPrize: false, isRevealed: false})));
+        setCupOrder([0, 1, 2]);
     };
 
     const startMineSweeper = () => {
@@ -341,14 +367,13 @@ export default function CasinoPage() {
             return;
         }
 
-        // No await here for optimistic UI update
         updateCasinoChips(userProfileRef, -cost);
         setMinePhase('playing');
         setFoundPrizes([]);
 
         const content: MineCellContent[] = Array(BOMB_COUNT).fill('bomb');
         let prizes: MineCellContent[] = ['gem', 'goldLingot', 'casinoChip', 'empty', 'empty'];
-        if ((userProfile?.mineSweeperMultiplier ?? 1) >= 20 && Math.random() < 0.1) { // 10% chance for premium pass at max multiplier
+        if ((userProfile?.mineSweeperMultiplier ?? 1) >= 20 && Math.random() < 0.1) {
             prizes[Math.floor(Math.random() * prizes.length)] = 'premiumPass';
         }
         content.push(...prizes);
@@ -417,7 +442,6 @@ export default function CasinoPage() {
                     if (prize === 'casinoChip') {
                         chipWinnings += currentMultiplier;
                     }
-                    // Here you could add logic for other prizes like gems or goldLingots with await
                     if (prize === 'gem') {
                         await updateDoc(userProfileRef, { gems: increment(1) });
                     }
@@ -435,7 +459,6 @@ export default function CasinoPage() {
                 toast({ title: "Partida finalizada", description: "No encontraste premios esta vez."});
             }
         
-            // Increase multiplier and reset bomb streak on successful cash out
             await updateDoc(userProfileRef, {
                 mineSweeperMultiplier: increment(1),
                 bombStreak: 0
@@ -542,10 +565,10 @@ export default function CasinoPage() {
                         {cups.map((cup) => (
                              <Cup
                                 key={cup.id}
-                                isRevealed={cup.isRevealed}
-                                hasPrize={cup.hasPrize}
+                                cupState={cup}
                                 onClick={() => handleCupPick(cup)}
                                 phase={shellGamePhase}
+                                order={cupOrder[cup.id]}
                             />
                         ))}
                     </div>
